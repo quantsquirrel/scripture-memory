@@ -15,7 +15,7 @@ describe('parseRef', () => {
   })
 
   it('모르는 책 이름은 null', () => {
-    expect(parseRef('창세기 1:1')).toBeNull()
+    expect(parseRef('룻기 1:16')).toBeNull()
   })
 })
 

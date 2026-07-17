@@ -485,3 +485,64 @@ h3 {
   line-height: 1.8;
   margin: 12px 0;
 }
+
+/* 컬렉션 탭/진행률 */
+.col-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.col-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 4px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.col-tab.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.col-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: var(--text);
+  font: inherit;
+  padding: 7px 0;
+  cursor: pointer;
+}
+
+.col-label {
+  flex: 0 0 72px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.col-bar {
+  flex: 1;
+}
+
+.group-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--blue);
+  margin: 14px 0 2px;
+  text-transform: none;
+}

@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { SERIES, TOPIC_TITLES, VERSES, type VerseEntry } from '../data/verses'
+import {
+  COLLECTIONS,
+  collectionOf,
+  sectionsOf,
+  topicsOf,
+  VERSES,
+  versesOfTopic,
+  type VerseEntry,
+} from '../data/verses'
 import { getAllCards, getAllLearning } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
 import type { LearnProgress, StoredCard } from '../lib/types'
@@ -8,6 +16,7 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
   const [learning, setLearning] = useState<Map<string, LearnProgress>>(new Map())
   const [cards, setCards] = useState<Map<string, StoredCard[]>>(new Map())
   const [open, setOpen] = useState<string | null>(null)
+  const [col, setCol] = useState(COLLECTIONS[0].key)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -42,34 +51,67 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
     }
   }
 
+  const graduatedCount = (ck: string) =>
+    VERSES.filter((v) => collectionOf(v).key === ck && (learning.get(v.id)?.step ?? 0) >= 3)
+      .length
+
   return (
     <div>
-      {SERIES.map((s) => (
+      <div className="col-tabs">
+        {COLLECTIONS.map((c) => {
+          const total = VERSES.filter((v) => collectionOf(v).key === c.key).length
+          return (
+            <button
+              key={c.key}
+              className={`col-tab${col === c.key ? ' active' : ''}`}
+              onClick={() => setCol(c.key)}
+            >
+              <span>{c.short}</span>
+              <span className="muted small">
+                {graduatedCount(c.key)}/{total}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {sectionsOf(col).map((s) => (
         <section key={s.key} className="panel">
           <h2>
-            {s.key}. {s.title} <span className="muted small">{s.subtitle}</span>
+            {s.title} {s.subtitle && <span className="muted small">{s.subtitle}</span>}
           </h2>
-          {VERSES.filter((v) => v.topicKey[0] === s.key).map((v, i, arr) => {
-            const st = status(v)
-            const showTopic = i === 0 || arr[i - 1].topicKey !== v.topicKey
+          {topicsOf(s.key).map((t, i, arr) => {
+            const showGroup = t.group && (i === 0 || arr[i - 1].group !== t.group)
             return (
-              <div key={v.id}>
-                {showTopic && <h3 className="topic-title">{TOPIC_TITLES[v.topicKey]}</h3>}
-                <button
-                  className="verse-row"
-                  onClick={() => setOpen(open === v.id ? null : v.id)}
-                >
-                  <span>{v.refAbbr}</span>
-                  <span className={`status ${st.cls}`}>{st.label}</span>
-                </button>
-                {open === v.id && (
-                  <div className="verse-detail">
-                    <p className="verse">{v.text}</p>
-                    <button className="btn" onClick={() => onLearn(v.id)}>
-                      {st.cls === 'st-new' ? '학습 시작' : st.cls === 'st-learning' ? '학습 이어가기' : '다시 훈련'}
-                    </button>
-                  </div>
-                )}
+              <div key={t.key}>
+                {showGroup && <h3 className="group-title">{t.group}</h3>}
+                <h3 className="topic-title">{t.title}</h3>
+                {versesOfTopic(t.key).map((v) => {
+                  const st = status(v)
+                  return (
+                    <div key={v.id}>
+                      <button
+                        className="verse-row"
+                        onClick={() => setOpen(open === v.id ? null : v.id)}
+                      >
+                        <span>{v.refAbbr}</span>
+                        <span className={`status ${st.cls}`}>{st.label}</span>
+                      </button>
+                      {open === v.id && (
+                        <div className="verse-detail">
+                          <p className="verse">{v.text}</p>
+                          <button className="btn" onClick={() => onLearn(v.id)}>
+                            {st.cls === 'st-new'
+                              ? '학습 시작'
+                              : st.cls === 'st-learning'
+                                ? '학습 이어가기'
+                                : '다시 훈련'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )
           })}

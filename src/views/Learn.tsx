@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { seriesOf, topicOf, VERSE_BY_ID } from '../data/verses'
+import { collectionOf, crumbOf, DUPLICATES, refKeyOf, topicOf, VERSE_BY_ID } from '../data/verses'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { DiffView } from '../components/DiffView'
 import { gradeTyping, type TypingGrade } from '../lib/diff'
-import { getLearning, graduateVerse, putLearning } from '../lib/db'
+import { getAllLearning, getLearning, graduateVerse, putLearning } from '../lib/db'
 
 const STEP_TITLES = ['본문 익히기', '첫글자 복원', '타이핑 검증', '졸업']
 
@@ -23,9 +23,18 @@ export function Learn({
   const [flResult, setFlResult] = useState<number | null>(null)
   const [attempt, setAttempt] = useState('')
   const [grade, setGrade] = useState<TypingGrade | null>(null)
+  const [dupDone, setDupDone] = useState<string | null>(null)
 
   useEffect(() => {
     void getLearning(verseId).then((p) => setStep(p ? Math.min(p.step, 2) : 0))
+    const v = VERSE_BY_ID[verseId]
+    if (!v) return
+    const dups = (DUPLICATES[refKeyOf(v)] ?? []).filter((id) => id !== verseId)
+    if (dups.length === 0) return
+    void getAllLearning().then((ls) => {
+      const done = ls.find((l) => l.step >= 3 && dups.includes(l.verseId))
+      setDupDone(done ? done.verseId : null)
+    })
   }, [verseId])
 
   if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
@@ -53,7 +62,7 @@ export function Learn({
 
       <div className="panel">
         <span className="chip">
-          {seriesOf(verse).key}. {seriesOf(verse).title} — {topicOf(verse)}
+          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
         </span>
 
         {step === 0 && (
@@ -66,9 +75,19 @@ export function Learn({
               주제 → <em>장절</em> → 말씀 → <em>장절</em>
               <br />
               <span className="muted small">
-                "{topicOf(verse)}, {verse.refAbbr}, …말씀…, {verse.refAbbr}"
+                "{topicOf(verse).title}, {verse.refAbbr}, …말씀…, {verse.refAbbr}"
               </span>
             </div>
+            {dupDone && (
+              <div className="callout">
+                이미 <strong>{VERSE_BY_ID[dupDone].refAbbr}</strong> (
+                {collectionOf(VERSE_BY_ID[dupDone]).short} ·{' '}
+                {topicOf(VERSE_BY_ID[dupDone]).title})로 암송한 구절입니다.
+                <button className="btn" onClick={() => void advance(2)}>
+                  타이핑 검증으로 건너뛰기
+                </button>
+              </div>
+            )}
             <button className="btn btn-primary" onClick={() => void advance(1)}>
               낭송했어요 — 다음
             </button>

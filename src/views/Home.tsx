@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { SERIES, VERSE_BY_ID, VERSES } from '../data/verses'
+import { collectionOf, COLLECTIONS, VERSE_BY_ID, VERSES } from '../data/verses'
 import { dueCards, getAllLearning, nextDueAt, reviewsSince } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
 import type { LearnProgress } from '../lib/types'
@@ -78,13 +78,14 @@ export function Home({
         )}
         {nextNew ? (
           <button className="btn" onClick={() => onLearn(nextNew.id)}>
-            다음 구절: {nextNew.id} · {nextNew.refAbbr}
+            다음 구절: {collectionOf(nextNew).short} · {nextNew.refAbbr}
           </button>
         ) : (
-          !inProgress && <p>60구절을 모두 학습했습니다! 🎉</p>
+          !inProgress && <p>모든 구절을 학습했습니다! 🎉</p>
         )}
         <p className="muted small">
-          이번 주 새 구절 {newThisWeek}/2 (TMS 권장: 주 2구절)
+          이번 주 새 구절 {newThisWeek}/2 (TMS 권장: 주 2구절) · 순서: 5확신 → 8동행 →
+          60구절 → DEP
         </p>
       </section>
 
@@ -97,22 +98,26 @@ export function Home({
           />
         </div>
         <p className="muted small">
-          {graduated.size}/{VERSES.length} 구절 암송 중
+          전체 {graduated.size}/{VERSES.length} 구절 암송 중
         </p>
-        <div className="series-grid">
-          {SERIES.map((s) => {
-            const total = VERSES.filter((v) => v.topicKey[0] === s.key)
-            const done = total.filter((v) => graduated.has(v.id))
-            return (
-              <button key={s.key} className="series-cell" onClick={onBrowse}>
-                <span className="series-key">{s.key}</span>
-                <span className="muted small">
-                  {done.length}/{total.length}
-                </span>
-              </button>
-            )
-          })}
-        </div>
+        {COLLECTIONS.map((c) => {
+          const total = VERSES.filter((v) => collectionOf(v).key === c.key)
+          const done = total.filter((v) => graduated.has(v.id))
+          return (
+            <button key={c.key} className="col-row" onClick={onBrowse}>
+              <span className="col-label">{c.short}</span>
+              <span className="progress col-bar">
+                <span
+                  className="progress-fill"
+                  style={{ width: `${(done.length / total.length) * 100}%` }}
+                />
+              </span>
+              <span className="muted small">
+                {done.length}/{total.length}
+              </span>
+            </button>
+          )
+        })}
       </section>
     </div>
   )

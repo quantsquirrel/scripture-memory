@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { seriesOf, topicOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
+import { crumbOf, topicOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
 import { DiffView } from '../components/DiffView'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { RatingBar } from '../components/RatingBar'
@@ -103,8 +103,8 @@ function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
   if (sc.direction === 'topic') {
     return (
       <div className="prompt">
-        <span className="chip">{seriesOf(verse).key}. {seriesOf(verse).title}</span>
-        <h2 className="prompt-main">{topicOf(verse)}</h2>
+        <span className="chip">{crumbOf(verse).join(' · ')}</span>
+        <h2 className="prompt-main">{topicOf(verse).title}</h2>
         <p className="muted">이 주제의 장절과 말씀을 낭송하세요</p>
       </div>
     )
@@ -131,7 +131,7 @@ function Answer({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
       <div className="answer">
         <h3>{verse.ref}</h3>
         <p className="muted">
-          {seriesOf(verse).key}. {seriesOf(verse).title} — {topicOf(verse)}
+          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
         </p>
       </div>
     )
