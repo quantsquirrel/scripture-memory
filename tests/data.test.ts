@@ -15,13 +15,21 @@ describe('verses.json v2 무결성', () => {
     expect(COLLECTIONS.map((c) => c.key)).toEqual(['AS', 'LV', 'TMS60', 'DEP'])
   })
 
-  it('총 313구절 (5+8+60+240)', () => {
-    expect(VERSES).toHaveLength(313)
+  it('총 315구절 (5+8+60+242)', () => {
+    expect(VERSES).toHaveLength(315)
     const count = (k: string) => VERSES.filter((v) => collectionOf(v).key === k).length
     expect(count('AS')).toBe(5)
     expect(count('LV')).toBe(8)
     expect(count('TMS60')).toBe(60)
-    expect(count('DEP')).toBe(240)
+    expect(count('DEP')).toBe(242)
+  })
+
+  it('세계비전 9주제 18구절 — 약속성취의 영광 포함 (책자 대조 완료)', () => {
+    const wv = VERSES.filter((v) => topicOf(v).section === 'D8')
+    expect(wv).toHaveLength(18)
+    expect(VERSE_BY_ID['D8-9a'].refAbbr).toBe('합 2:14')
+    expect(VERSE_BY_ID['D8-9b'].refAbbr).toBe('말 1:11')
+    expect(topicOf(VERSE_BY_ID['D8-9a']).title).toBe('약속성취의 영광')
   })
 
   it('id는 유일하고 모든 구절이 계층에 연결된다', () => {
