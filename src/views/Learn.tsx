@@ -149,11 +149,30 @@ export function Learn({
         {step === 2 && (
           <>
             <h2 className="prompt-main">{verse.ref}</h2>
-            {grade && <DiffView grade={grade} />}
-            {grade?.perfect ? (
-              <button className="btn btn-primary" onClick={() => void advance(3)}>
-                졸업 — 복습 큐에 추가
-              </button>
+            {grade ? (
+              <>
+                <DiffView grade={grade} />
+                {grade.perfect ? (
+                  <button className="btn btn-primary" onClick={() => void advance(3)}>
+                    졸업 — 복습 큐에 추가
+                  </button>
+                ) : (
+                  <>
+                    <p className="muted small">
+                      틀린 곳을 확인했으면 정답을 가리고 기억만으로 다시 도전하세요.
+                    </p>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        setAttempt('')
+                        setGrade(null)
+                      }}
+                    >
+                      다시 도전 (정답 가리고 재입력)
+                    </button>
+                  </>
+                )}
+              </>
             ) : (
               <>
                 <textarea
