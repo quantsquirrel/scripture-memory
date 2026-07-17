@@ -1,0 +1,59 @@
+# 말씀암송 — 주제별 성경암송 PWA
+
+네비게이토 주제별 성경암송(TMS) 60구절을 **축자(word-perfect) 암기**와 **장기 유지**
+양쪽에서 훈련하는 로컬 퍼스트 PWA. 서버 없이 브라우저(IndexedDB)에만 기록하며,
+아이폰/안드로이드 홈 화면에 설치해 오프라인으로 쓸 수 있다.
+
+## 핵심 설계
+
+- **학습 사다리** (새 구절): 본문 익히기(낭송 규칙: 주제→장절→말씀→장절) →
+  첫글자 복원(엿보기 2회 이하) → 타이핑 검증(word-perfect) → 졸업.
+- **3방향 카드**: 졸업 시 `주제→말씀`, `장절→말씀`, `말씀→장절` 카드가 각각
+  독립 FSRS 상태로 생성된다.
+- **FSRS 스케줄링**: [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs),
+  목표 기억율 90%.
+- **객관 채점 → 등급 자동 제안**: 타이핑은 어절 LCS diff(구두점 무시)로
+  정확도를 계산해 FSRS 등급(다시/어려움/좋음)을 제안한다. 첫글자 모드는 엿보기
+  횟수로, 장절 입력은 정오로 제안한다. 최종 선택은 사용자가 확정.
+- **복습 모드 정책**: 어린 카드(reps<3) 첫글자 → 이후 낭송+자가채점,
+  5회마다 타이핑 감사. `말씀→장절` 방향은 항상 장절 입력.
+
+## 본문 데이터
+
+- 역본: **성경전서 개역한글판(1961)** — 저작재산권 보호기간 만료(2011-12-31),
+  퍼블릭 도메인.
+- 추출: 대한성서공회 온라인 본문(bskorea.or.kr, version=HAN)에서 장 단위로
+  추출·각주 제거 후, 독립 소스 2종(GitHub KRV 데이터셋)과 어절 단위 전수 대조.
+- 구절 목록: TMS 5시리즈 × 6주제 × 2구절 = 60구절(총 66개 절). 복수 소스로
+  교차 검증.
+- `src/data/verses.json` 스키마: `시리즈(대제목) - 주제(제목) - 장절 - 말씀`.
+
+## 개발
+
+```bash
+npm install
+npm run dev        # 개발 서버
+npm test           # vitest (diff/장절 파서/FSRS 래퍼)
+npm run typecheck  # tsc --noEmit
+npm run build      # 프로덕션 빌드 (PWA 포함)
+npm run preview    # 빌드 결과 로컬 서빙
+```
+
+## 구조
+
+```
+src/
+  data/verses.json   60구절 데이터 (개역한글)
+  data/verses.ts     타입·조회 헬퍼
+  lib/fsrs.ts        ts-fsrs 래퍼 (직렬화/등급 적용/간격 미리보기)
+  lib/diff.ts        어절 LCS diff 채점, 등급 매핑
+  lib/firstLetter.ts 첫글자 힌트
+  lib/refInput.ts    장절 입력 파서/채점
+  lib/policy.ts      복습 모드 선택 정책
+  lib/db.ts          IndexedDB (카드/복습 로그/학습 진행/백업)
+  views/             Home · Learn · Review · Browse · Settings
+```
+
+## 백업
+
+설정 → 내보내기로 전체 상태(JSON)를 보관하고, 새 기기에서 가져오기로 복원한다.
