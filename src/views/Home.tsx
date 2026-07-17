@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { collectionOf, COLLECTIONS, VERSE_BY_ID, VERSES } from '../data/verses'
-import { dueCards, getAllLearning, nextDueAt, reviewsSince } from '../lib/db'
+import { dueCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
+import { computeGoal, DEFAULT_GOAL_DATE, type GoalInfo } from '../lib/goal'
 import type { LearnProgress } from '../lib/types'
 
 interface HomeData {
@@ -9,6 +10,7 @@ interface HomeData {
   todayReviews: number
   learning: LearnProgress[]
   nextDue: string | null
+  goal: GoalInfo
 }
 
 export function Home({
@@ -30,8 +32,15 @@ export function Home({
       reviewsSince(midnight.toISOString()),
       getAllLearning(),
       nextDueAt(),
-    ]).then(([due, today, learning, next]) =>
-      setData({ due: due.length, todayReviews: today.length, learning, nextDue: next }),
+      getSetting<string>('goalDate'),
+    ]).then(([due, today, learning, next, goalDate]) =>
+      setData({
+        due: due.length,
+        todayReviews: today.length,
+        learning,
+        nextDue: next,
+        goal: computeGoal(goalDate ?? DEFAULT_GOAL_DATE, learning),
+      }),
     )
   }, [])
 
@@ -71,21 +80,37 @@ export function Home({
 
       <section className="panel">
         <h2>새 구절 학습</h2>
+        {!data.goal.past && data.goal.remaining > 0 && (
+          <p>
+            <strong className="big-number">D-{data.goal.daysLeft}</strong>{' '}
+            <span className="muted">
+              {data.goal.goalDate.slice(5).replace('-', '/')}까지 {data.goal.remaining}구절
+            </span>
+            <br />
+            오늘 목표{' '}
+            <strong>
+              {data.goal.todayNew}/{data.goal.dailyTarget}
+            </strong>
+            {data.goal.todayNew >= data.goal.dailyTarget && ' ✅ 달성!'}
+          </p>
+        )}
+        {data.goal.past && data.goal.remaining > 0 && (
+          <p className="muted small">목표일이 지났습니다 — 설정에서 목표일을 조정하세요.</p>
+        )}
         {inProgress && (
           <button className="btn" onClick={() => onLearn(inProgress.verseId)}>
             이어서: {VERSE_BY_ID[inProgress.verseId].refAbbr} (단계 {inProgress.step + 1}/4)
           </button>
         )}
         {nextNew ? (
-          <button className="btn" onClick={() => onLearn(nextNew.id)}>
+          <button className="btn btn-primary" onClick={() => onLearn(nextNew.id)}>
             다음 구절: {collectionOf(nextNew).short} · {nextNew.refAbbr}
           </button>
         ) : (
-          !inProgress && <p>모든 구절을 학습했습니다! 🎉</p>
+          !inProgress && <p>모든 구절을 학습했습니다! 🎉 이제 유지 복습만 하면 됩니다.</p>
         )}
         <p className="muted small">
-          이번 주 새 구절 {newThisWeek}/2 (TMS 권장: 주 2구절) · 순서: 5확신 → 8동행 →
-          60구절 → DEP
+          이번 주 새 구절 {newThisWeek}개 · 순서: 5확신 → 8동행 → 60구절 → DEP
         </p>
       </section>
 

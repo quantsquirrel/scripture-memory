@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collectionOf, crumbOf, DUPLICATES, refKeyOf, topicOf, VERSE_BY_ID } from '../data/verses'
+import { collectionOf, crumbOf, DUPLICATES, refKeyOf, topicOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { DiffView } from '../components/DiffView'
 import { gradeTyping, type TypingGrade } from '../lib/diff'
@@ -11,10 +11,12 @@ export function Learn({
   verseId,
   onExit,
   onReview,
+  onLearn,
 }: {
   verseId: string
   onExit: () => void
   onReview: () => void
+  onLearn: (verseId: string) => void
 }) {
   const verse = VERSE_BY_ID[verseId]
   const [step, setStep] = useState<number | null>(null)
@@ -24,6 +26,7 @@ export function Learn({
   const [attempt, setAttempt] = useState('')
   const [grade, setGrade] = useState<TypingGrade | null>(null)
   const [dupDone, setDupDone] = useState<string | null>(null)
+  const [nextId, setNextId] = useState<string | null>(null)
 
   useEffect(() => {
     void getLearning(verseId).then((p) => setStep(p ? Math.min(p.step, 2) : 0))
@@ -36,6 +39,15 @@ export function Learn({
       setDupDone(done ? done.verseId : null)
     })
   }, [verseId])
+
+  useEffect(() => {
+    if (step !== 3) return
+    void getAllLearning().then((ls) => {
+      const grad = new Set(ls.filter((l) => l.step >= 3).map((l) => l.verseId))
+      const nxt = VERSES.find((v) => !grad.has(v.id))
+      setNextId(nxt ? nxt.id : null)
+    })
+  }, [step])
 
   if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
   if (step === null) return <p className="muted">불러오는 중…</p>
@@ -174,11 +186,16 @@ export function Learn({
               <br />
               FSRS 스케줄에 편입되었습니다.
             </p>
+            {nextId && (
+              <button className="btn btn-primary" onClick={() => onLearn(nextId)}>
+                다음 구절: {VERSE_BY_ID[nextId].refAbbr}
+              </button>
+            )}
             <div className="btn-row">
               <button className="btn" onClick={onExit}>
                 홈으로
               </button>
-              <button className="btn btn-primary" onClick={onReview}>
+              <button className="btn" onClick={onReview}>
                 바로 복습
               </button>
             </div>

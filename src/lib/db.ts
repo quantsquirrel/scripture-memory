@@ -128,6 +128,15 @@ export async function importAll(bundle: ExportBundle): Promise<void> {
   await tx.done
 }
 
+export async function getSetting<T>(key: string): Promise<T | undefined> {
+  const row = await (await db()).get('settings', key)
+  return row?.value as T | undefined
+}
+
+export async function setSetting(key: string, value: unknown): Promise<void> {
+  await (await db()).put('settings', { key, value })
+}
+
 export async function resetAll(): Promise<void> {
   const d = await db()
   const tx = d.transaction(['cards', 'reviews', 'learning', 'settings'], 'readwrite')

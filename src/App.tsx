@@ -42,6 +42,7 @@ export default function App() {
             verseId={view.verseId}
             onExit={() => go({ name: 'home' })}
             onReview={() => go({ name: 'review' })}
+            onLearn={(verseId) => go({ name: 'learn', verseId })}
           />
         )}
         {view.name === 'browse' && (

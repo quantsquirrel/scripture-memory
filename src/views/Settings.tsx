@@ -1,16 +1,69 @@
 import { useEffect, useRef, useState } from 'react'
-import { exportAll, getAllLearning, importAll, resetAll, reviewCount } from '../lib/db'
+import {
+  exportAll,
+  getAllLearning,
+  getSetting,
+  importAll,
+  resetAll,
+  reviewCount,
+  setSetting,
+} from '../lib/db'
+import { DEFAULT_GOAL_DATE } from '../lib/goal'
+import { syncNow } from '../lib/sync'
 
 export function Settings({ onChanged }: { onChanged: () => void }) {
   const [stats, setStats] = useState<{ reviews: number; graduated: number } | null>(null)
   const [msg, setMsg] = useState('')
+  const [goalDate, setGoalDate] = useState(DEFAULT_GOAL_DATE)
+  const [token, setToken] = useState('')
+  const [gistId, setGistId] = useState('')
+  const [syncMsg, setSyncMsg] = useState('')
+  const [syncing, setSyncing] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    void Promise.all([reviewCount(), getAllLearning()]).then(([r, l]) =>
-      setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length }),
-    )
+    void Promise.all([
+      reviewCount(),
+      getAllLearning(),
+      getSetting<string>('goalDate'),
+      getSetting<string>('syncToken'),
+      getSetting<string>('syncGistId'),
+      getSetting<string>('lastSyncAt'),
+    ]).then(([r, l, g, t, gid, last]) => {
+      setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length })
+      if (g) setGoalDate(g)
+      if (t) setToken(t)
+      if (gid) setGistId(gid)
+      if (last) setSyncMsg(`마지막 동기화: ${new Date(last).toLocaleString('ko-KR')}`)
+    })
   }, [msg])
+
+  const saveGoal = async (d: string) => {
+    setGoalDate(d)
+    await setSetting('goalDate', d)
+    setMsg('목표일을 저장했습니다.')
+    onChanged()
+  }
+
+  const doSync = async () => {
+    setSyncing(true)
+    setSyncMsg('동기화 중…')
+    try {
+      await setSetting('syncToken', token.trim())
+      await setSetting('syncGistId', gistId.trim())
+      const r = await syncNow({ token: token.trim(), gistId: gistId.trim() })
+      const now = new Date().toISOString()
+      await setSetting('lastSyncAt', now)
+      setSyncMsg(
+        `동기화 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`,
+      )
+      onChanged()
+    } catch (e) {
+      setSyncMsg(`실패: ${e instanceof Error ? e.message : String(e)}`)
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   const doExport = async () => {
     const bundle = await exportAll()
@@ -53,6 +106,54 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
       </section>
 
       <section className="panel">
+        <h2>암송 목표일</h2>
+        <input
+          className="ref-input"
+          type="date"
+          value={goalDate}
+          onChange={(e) => void saveGoal(e.target.value)}
+        />
+        <p className="muted small">
+          남은 구절 ÷ 남은 날짜로 일일 새 구절 목표를 자동 계산합니다. 목표일 이후에는
+          FSRS가 알아서 복습 간격을 늘려 유지 모드로 전환됩니다.
+        </p>
+      </section>
+
+      <section className="panel">
+        <h2>기기 간 동기화 (GitHub Gist)</h2>
+        <input
+          className="ref-input"
+          type="password"
+          placeholder="GitHub 토큰 (gist 권한만)"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          autoCapitalize="off"
+          autoCorrect="off"
+        />
+        <input
+          className="ref-input"
+          placeholder="Gist ID"
+          value={gistId}
+          onChange={(e) => setGistId(e.target.value)}
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button
+          className="btn btn-primary"
+          disabled={syncing || !token.trim() || !gistId.trim()}
+          onClick={() => void doSync()}
+        >
+          {syncing ? '동기화 중…' : '지금 동기화'}
+        </button>
+        {syncMsg && <p className="muted small">{syncMsg}</p>}
+        <p className="muted small">
+          복습 기록은 합집합으로, 카드·학습 상태는 더 진행된 쪽으로 병합됩니다. 토큰은
+          이 기기(IndexedDB)에만 저장됩니다. 공부 시작 전과 후에 한 번씩 눌러 주세요.
+        </p>
+      </section>
+
+      <section className="panel">
         <h2>데이터</h2>
         <div className="btn-row">
           <button className="btn" onClick={() => void doExport()}>
@@ -77,10 +178,6 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           }}
         />
         {msg && <p className="muted small">{msg}</p>}
-        <p className="muted small">
-          복습 기록은 이 기기의 브라우저(IndexedDB)에만 저장됩니다. 주기적으로
-          내보내기를 권장합니다.
-        </p>
       </section>
 
       <section className="panel">
