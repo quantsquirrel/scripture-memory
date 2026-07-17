@@ -6,3 +6,4 @@ dev-dist/
 .playwright-mcp/
 *.png
 !public/icons/*.png
+.claude/
