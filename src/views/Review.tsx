@@ -5,8 +5,8 @@ import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { RatingBar } from '../components/RatingBar'
 import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } from '../lib/diff'
 import { gradeRef } from '../lib/refInput'
-import { applyRating, formatInterval } from '../lib/fsrs'
-import { addReview, dueCards, nextDueAt, putCard } from '../lib/db'
+import { formatInterval } from '../lib/fsrs'
+import { dueCards, nextDueAt, submitReview } from '../lib/db'
 import { reviewMode } from '../lib/policy'
 import type { ReviewMode, StoredCard } from '../lib/types'
 
@@ -30,18 +30,7 @@ export function Review({ onExit }: { onExit: () => void }) {
       peeks: number | null,
     ) => {
       if (!current) return
-      const updated = { ...current, card: applyRating(current.card, r) }
-      await putCard(updated)
-      await addReview({
-        cardKey: current.key,
-        verseId: current.verseId,
-        direction: current.direction,
-        mode,
-        rating: r,
-        accuracy,
-        peeks,
-        ts: new Date().toISOString(),
-      })
+      await submitReview(current, r, mode, { accuracy, peeks })
       setDone((d) => d + 1)
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)
