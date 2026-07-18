@@ -7,6 +7,8 @@ import type { LearnProgress } from '../lib/types'
 
 interface HomeData {
   due: number
+  dueVerses: number
+  overdue: number
   todayReviews: number
   learning: LearnProgress[]
   nextDue: string | null
@@ -36,6 +38,8 @@ export function Home({
     ]).then(([due, today, learning, next, goalDate]) =>
       setData({
         due: due.length,
+        dueVerses: new Set(due.map((c) => c.verseId)).size,
+        overdue: due.filter((c) => c.card.due < midnight.toISOString()).length,
         todayReviews: today.length,
         learning,
         nextDue: next,
@@ -59,7 +63,11 @@ export function Home({
         {data.due > 0 ? (
           <>
             <p>
-              <strong className="big-number">{data.due}</strong>장이 기다리고 있습니다
+              <strong className="big-number">{data.dueVerses}</strong>구절 · 카드 {data.due}장이
+              기다리고 있습니다
+              {data.overdue > 0 && (
+                <span className="muted"> · 밀린 카드 {data.overdue}장</span>
+              )}
               {data.todayReviews > 0 && (
                 <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
               )}
