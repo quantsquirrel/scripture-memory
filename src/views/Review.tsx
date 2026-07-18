@@ -6,9 +6,12 @@ import { RatingBar } from '../components/RatingBar'
 import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } from '../lib/diff'
 import { gradeRef } from '../lib/refInput'
 import { formatInterval } from '../lib/fsrs'
-import { dueCards, nextDueAt, submitReview } from '../lib/db'
-import { reviewMode } from '../lib/policy'
+import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../lib/db'
+import { orderQueue, reviewMode } from '../lib/policy'
 import type { ReviewMode, StoredCard } from '../lib/types'
+
+/** 큐를 비운 뒤, 몇 분 안에 due가 오는 학습 단계 카드를 당겨 재도전하는 창 */
+const LEARN_AHEAD_MS = 20 * 60_000
 
 export function Review({ onExit }: { onExit: () => void }) {
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
@@ -17,7 +20,7 @@ export function Review({ onExit }: { onExit: () => void }) {
   const [nextDue, setNextDue] = useState<string | null>(null)
 
   useEffect(() => {
-    void dueCards().then(setQueue)
+    void dueCards().then((cards) => setQueue(orderQueue(cards)))
   }, [])
 
   const current = queue && idx < queue.length ? queue[idx] : null
@@ -35,9 +38,10 @@ export function Review({ onExit }: { onExit: () => void }) {
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)
       } else {
-        const more = await dueCards()
+        let more = await dueCards()
+        if (more.length === 0) more = await upcomingLearningCards(LEARN_AHEAD_MS)
         if (more.length > 0) {
-          setQueue(more)
+          setQueue(orderQueue(more))
           setIdx(0)
         } else {
           setQueue([])
@@ -55,7 +59,7 @@ export function Review({ onExit }: { onExit: () => void }) {
     return (
       <div className="panel center">
         <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
-        {done > 0 && <p>이번 세션에서 {done}장을 복습했습니다.</p>}
+        {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
         {nextDue && (
           <p className="muted">
             다음 복습: {formatInterval(new Date(nextDue).getTime() - Date.now())} 후

@@ -7,7 +7,7 @@ import {
   type ReviewMode,
   type StoredCard,
 } from './types'
-import { applyRating, newCard } from './fsrs'
+import { applyRating, newCard, State } from './fsrs'
 
 interface TmsDB extends DBSchema {
   cards: { key: string; value: StoredCard }
@@ -54,6 +54,24 @@ export async function nextDueAt(): Promise<string | null> {
   const all = await getAllCards()
   if (all.length === 0) return null
   return all.reduce((min, c) => (c.card.due < min ? c.card.due : min), all[0].card.due)
+}
+
+/**
+ * 학습·재학습 단계에 있고 aheadMs 안에 due가 도래하는 카드 (learn-ahead).
+ * 큐를 다 비운 세션 말미에, 방금 틀려서 몇 분 뒤로 잡힌 카드를 같은 세션에서
+ * 이어 재도전하기 위해 쓴다. 며칠 간격의 복습(Review) 카드는 당기지 않는다.
+ */
+export async function upcomingLearningCards(
+  aheadMs: number,
+  now: Date = new Date(),
+): Promise<StoredCard[]> {
+  const all = await getAllCards()
+  const horizon = new Date(now.getTime() + aheadMs).toISOString()
+  return all.filter(
+    (c) =>
+      (c.card.state === State.Learning || c.card.state === State.Relearning) &&
+      c.card.due <= horizon,
+  )
 }
 
 export async function addReview(r: ReviewEntry): Promise<void> {
