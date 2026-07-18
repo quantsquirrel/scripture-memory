@@ -10,6 +10,13 @@ import {
 } from '../lib/db'
 import { DEFAULT_GOAL_DATE } from '../lib/goal'
 import { syncNow } from '../lib/sync'
+import { getTheme, setTheme, type Theme } from '../lib/theme'
+
+const THEME_OPTIONS: [Theme, string][] = [
+  ['auto', '자동'],
+  ['light', '라이트'],
+  ['dark', '다크'],
+]
 
 export function Settings({ onChanged }: { onChanged: () => void }) {
   const [stats, setStats] = useState<{ reviews: number; graduated: number } | null>(null)
@@ -19,7 +26,13 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
   const [gistId, setGistId] = useState('')
   const [syncMsg, setSyncMsg] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(() => getTheme())
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const chooseTheme = (t: Theme) => {
+    setTheme(t)
+    setThemeState(t)
+  }
 
   useEffect(() => {
     void Promise.all([
@@ -103,6 +116,25 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
             <strong>{stats.graduated}</strong>구절
           </p>
         )}
+      </section>
+
+      <section className="panel">
+        <h2>화면 테마</h2>
+        <div className="seg-row">
+          {THEME_OPTIONS.map(([v, label]) => (
+            <button
+              key={v}
+              className={`seg${theme === v ? ' active' : ''}`}
+              onClick={() => chooseTheme(v)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="muted small">
+          '자동'은 기기(OS)의 다크/라이트 설정을 따릅니다. 라이트나 다크를 고르면 OS
+          설정과 무관하게 이 기기에서 항상 유지됩니다.
+        </p>
       </section>
 
       <section className="panel">

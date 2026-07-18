@@ -14,8 +14,9 @@
   --radius: 14px;
 }
 
+/* 자동 모드(data-theme 미지정)에서 OS가 라이트일 때만 적용 */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #f4f2ec;
     --panel: #ffffff;
     --panel2: #eee9dd;
@@ -29,6 +30,22 @@
     --warn: #9a7018;
     --bad: #a8453a;
   }
+}
+
+/* 라이트 강제 선택 (OS 설정과 무관) */
+:root[data-theme='light'] {
+  --bg: #f4f2ec;
+  --panel: #ffffff;
+  --panel2: #eee9dd;
+  --line: #ddd6c6;
+  --text: #26293a;
+  --muted: #6e7383;
+  --accent: #b57f1e;
+  --accent-text: #fffbef;
+  --blue: #38598c;
+  --ok: #3d7a4a;
+  --warn: #9a7018;
+  --bad: #a8453a;
 }
 
 * {
@@ -330,6 +347,31 @@ h3 {
 .diff-legend {
   font-size: 0.8rem;
   color: var(--muted);
+}
+
+/* 세그먼트 토글 (테마 선택 등) */
+.seg-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.seg {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.seg.active {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: var(--accent);
 }
 
 /* 등급 버튼 */
