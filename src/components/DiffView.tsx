@@ -1,6 +1,8 @@
-import type { TypingGrade } from '../lib/diff'
+import { Fragment } from 'react'
+import { wordBoundaries, type TypingGrade } from '../lib/diff'
 
-export function DiffView({ grade }: { grade: TypingGrade }) {
+export function DiffView({ grade, target }: { grade: TypingGrade; target: string }) {
+  const boundaries = wordBoundaries(target)
   return (
     <div className="diff-view">
       <div className={`diff-score ${grade.perfect ? 'good' : grade.accuracy >= 0.9 ? 'warn' : 'bad'}`}>
@@ -8,9 +10,10 @@ export function DiffView({ grade }: { grade: TypingGrade }) {
       </div>
       <p className="diff-words verse">
         {grade.ops.map((op, i) => (
-          <span key={i} className={`diff-${op.type}`}>
-            {op.word}{' '}
-          </span>
+          <Fragment key={i}>
+            <span className={`diff-${op.type}`}>{op.word}</span>
+            {op.ti !== undefined && boundaries.has(op.ti) ? ' ' : ''}
+          </Fragment>
         ))}
       </p>
       {!grade.perfect && (

@@ -230,7 +230,7 @@ function CardFace({
       )}
       {mode === 'typing' && grade && (
         <>
-          <DiffView grade={grade} />
+          <DiffView grade={grade} target={verse.text} />
           <Answer sc={sc} verse={verse} />
           <RatingBar
             card={sc.card}

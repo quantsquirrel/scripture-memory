@@ -151,7 +151,7 @@ export function Learn({
             <h2 className="prompt-main">{verse.ref}</h2>
             {grade ? (
               <>
-                <DiffView grade={grade} />
+                <DiffView grade={grade} target={verse.text} />
                 {grade.perfect ? (
                   <button className="btn btn-primary" onClick={() => void advance(3)}>
                     졸업 — 복습 큐에 추가
