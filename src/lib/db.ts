@@ -1,6 +1,13 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
-import { DIRECTIONS, type Direction, type LearnProgress, type ReviewEntry, type StoredCard } from './types'
-import { newCard } from './fsrs'
+import {
+  DIRECTIONS,
+  type Direction,
+  type LearnProgress,
+  type ReviewEntry,
+  type ReviewMode,
+  type StoredCard,
+} from './types'
+import { applyRating, newCard } from './fsrs'
 
 interface TmsDB extends DBSchema {
   cards: { key: string; value: StoredCard }
@@ -51,6 +58,36 @@ export async function nextDueAt(): Promise<string | null> {
 
 export async function addReview(r: ReviewEntry): Promise<void> {
   await (await db()).add('reviews', r)
+}
+
+/**
+ * 복습 결과 반영의 유일한 경로.
+ * 등급 적용(cards)과 증거 기록(reviews)을 한 트랜잭션으로 묶어,
+ * 증거 없이 FSRS 상태만 바뀌는 경로가 생기지 않게 한다.
+ */
+export async function submitReview(
+  sc: StoredCard,
+  rating: 1 | 2 | 3 | 4,
+  mode: ReviewMode,
+  evidence: { accuracy: number | null; peeks: number | null },
+  now: Date = new Date(),
+): Promise<StoredCard> {
+  const updated: StoredCard = { ...sc, card: applyRating(sc.card, rating, now) }
+  const d = await db()
+  const tx = d.transaction(['cards', 'reviews'], 'readwrite')
+  await tx.objectStore('cards').put(updated)
+  await tx.objectStore('reviews').add({
+    cardKey: sc.key,
+    verseId: sc.verseId,
+    direction: sc.direction,
+    mode,
+    rating,
+    accuracy: evidence.accuracy,
+    peeks: evidence.peeks,
+    ts: now.toISOString(),
+  })
+  await tx.done
+  return updated
 }
 
 export async function reviewsSince(sinceIso: string): Promise<ReviewEntry[]> {

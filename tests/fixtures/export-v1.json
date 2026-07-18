@@ -1,0 +1,103 @@
+{
+  "app": "scripture-memory",
+  "version": 1,
+  "exportedAt": "2026-07-18T09:00:00.000Z",
+  "cards": [
+    {
+      "key": "AS1a:topic",
+      "verseId": "AS1a",
+      "direction": "topic",
+      "card": {
+        "due": "2026-07-21T03:12:45.000Z",
+        "stability": 5.8235,
+        "difficulty": 4.1273,
+        "elapsed_days": 2,
+        "scheduled_days": 3,
+        "reps": 6,
+        "lapses": 1,
+        "learning_steps": 0,
+        "state": 2,
+        "last_review": "2026-07-18T03:12:45.000Z"
+      }
+    },
+    {
+      "key": "AS1a:ref",
+      "verseId": "AS1a",
+      "direction": "ref",
+      "card": {
+        "due": "2026-07-19T03:13:02.000Z",
+        "stability": 2.114,
+        "difficulty": 6.005,
+        "elapsed_days": 1,
+        "scheduled_days": 1,
+        "reps": 4,
+        "lapses": 0,
+        "learning_steps": 0,
+        "state": 2,
+        "last_review": "2026-07-18T03:13:02.000Z"
+      }
+    },
+    {
+      "key": "AS1a:text",
+      "verseId": "AS1a",
+      "direction": "text",
+      "card": {
+        "due": "2026-07-18T03:23:10.000Z",
+        "stability": 0.4072,
+        "difficulty": 7.2102,
+        "elapsed_days": 0,
+        "scheduled_days": 0,
+        "reps": 1,
+        "lapses": 0,
+        "learning_steps": 1,
+        "state": 1
+      }
+    }
+  ],
+  "reviews": [
+    {
+      "cardKey": "AS1a:topic",
+      "verseId": "AS1a",
+      "direction": "topic",
+      "mode": "firstLetter",
+      "rating": 3,
+      "accuracy": null,
+      "peeks": 0,
+      "ts": "2026-07-15T22:04:11.000Z"
+    },
+    {
+      "cardKey": "AS1a:topic",
+      "verseId": "AS1a",
+      "direction": "topic",
+      "mode": "typing",
+      "rating": 2,
+      "accuracy": 0.9285714285714286,
+      "peeks": null,
+      "ts": "2026-07-17T01:44:39.000Z"
+    },
+    {
+      "cardKey": "AS1a:topic",
+      "verseId": "AS1a",
+      "direction": "topic",
+      "mode": "recite",
+      "rating": 3,
+      "accuracy": null,
+      "peeks": null,
+      "ts": "2026-07-18T03:12:45.000Z"
+    },
+    {
+      "cardKey": "AS1a:text",
+      "verseId": "AS1a",
+      "direction": "text",
+      "mode": "refInput",
+      "rating": 1,
+      "accuracy": 0,
+      "peeks": null,
+      "ts": "2026-07-18T03:23:10.000Z"
+    }
+  ],
+  "learning": [
+    { "verseId": "AS1a", "step": 3, "updatedAt": "2026-07-14T12:30:00.000Z" },
+    { "verseId": "AS2a", "step": 1, "updatedAt": "2026-07-18T08:55:00.000Z" }
+  ]
+}
