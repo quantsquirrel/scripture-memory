@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react'
 import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import { dueCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
+import { dueCards, getAllCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
-import { computeGoal, DEFAULT_GOAL_DATE, type GoalInfo } from '../lib/goal'
+import {
+  computeGoal,
+  computeReadiness,
+  DEFAULT_GOAL_DATE,
+  DEFAULT_REVIEW_BUFFER_DAYS,
+  type ExamReadiness,
+  type GoalInfo,
+} from '../lib/goal'
 import type { LearnProgress } from '../lib/types'
 
 interface HomeData {
@@ -13,6 +20,7 @@ interface HomeData {
   learning: LearnProgress[]
   nextDue: string | null
   goal: GoalInfo
+  readiness: ExamReadiness
 }
 
 export function Home({
@@ -33,9 +41,12 @@ export function Home({
       dueCards(),
       reviewsSince(midnight.toISOString()),
       getAllLearning(),
+      getAllCards(),
       nextDueAt(),
       getSetting<string>('goalDate'),
-    ]).then(([due, today, learning, next, goalDate]) =>
+      getSetting<number>('goalBufferDays'),
+    ]).then(([due, today, learning, cards, next, goalDate, buffer]) => {
+      const gd = goalDate ?? DEFAULT_GOAL_DATE
       setData({
         due: due.length,
         dueVerses: new Set(due.map((c) => c.verseId)).size,
@@ -43,9 +54,10 @@ export function Home({
         todayReviews: today.length,
         learning,
         nextDue: next,
-        goal: computeGoal(goalDate ?? DEFAULT_GOAL_DATE, learning),
-      }),
-    )
+        goal: computeGoal(gd, learning, new Date(), buffer ?? DEFAULT_REVIEW_BUFFER_DAYS),
+        readiness: computeReadiness(cards, gd),
+      })
+    })
   }, [])
 
   if (!data) return <p className="muted">불러오는 중…</p>
@@ -55,6 +67,10 @@ export function Home({
   const nextNew = VERSES.find((v) => !graduated.has(v.id) && v.id !== inProgress?.verseId)
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString()
   const newThisWeek = data.learning.filter((l) => l.step >= 3 && l.updatedAt >= weekAgo).length
+  const learnEnd = new Date(
+    new Date(`${data.goal.goalDate}T12:00:00`).getTime() - data.goal.bufferDays * 86400_000,
+  )
+  const learnEndLabel = `${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`
 
   // 진행률 행: 기초 3과정(5확신+8동행+60구절)은 한 묶음, DEP는 섹션별, 180구절은 통째
   const coreKeys = new Set(['AS', 'LV', 'TMS60'])
@@ -121,6 +137,11 @@ export function Home({
               {data.goal.todayNew}/{data.goal.dailyTarget}
             </strong>
             {data.goal.todayNew >= data.goal.dailyTarget && ' ✅ 달성!'}
+            <br />
+            <span className="muted small">
+              새 구절은 {learnEndLabel}까지 완료 목표 — 마지막 {data.goal.bufferDays}일은
+              복습으로 굳히기
+            </span>
           </p>
         )}
         {data.goal.past && data.goal.remaining > 0 && (
@@ -153,6 +174,16 @@ export function Home({
         </div>
         <p className="muted small">
           전체 {graduated.size}/{VERSES.length} 구절 암송 중
+        </p>
+        <div className="progress">
+          <div
+            className="progress-fill"
+            style={{ width: `${(data.readiness.ready / data.readiness.total) * 100}%` }}
+          />
+        </div>
+        <p className="muted small">
+          시험 준비 {data.readiness.ready}/{data.readiness.total} — 지금 복습을 멈춰도{' '}
+          {data.goal.goalDate.slice(5).replace('-', '/')}에 기억률 90% 이상으로 예측되는 구절
         </p>
         {progressRows.map((row) => {
           const done = row.verses.filter((v) => graduated.has(v.id))

@@ -62,6 +62,11 @@ export function intervalPreview(
   return out
 }
 
+/** when 시점까지 추가 복습이 없다고 가정한 예측 기억률 (0~1) */
+export function retrievabilityAt(s: SerializedCard, when: Date): number {
+  return scheduler.get_retrievability(reviveCard(s), when, false)
+}
+
 export function formatInterval(ms: number): string {
   const min = Math.max(1, Math.round(ms / 60000))
   if (min < 60) return `${min}분`
