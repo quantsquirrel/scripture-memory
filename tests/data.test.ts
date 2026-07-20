@@ -11,17 +11,36 @@ import {
 } from '../src/data/verses'
 
 describe('verses.json v2 무결성', () => {
-  it('컬렉션 4개가 학습 순서대로 정렬된다', () => {
-    expect(COLLECTIONS.map((c) => c.key)).toEqual(['AS', 'LV', 'TMS60', 'DEP'])
+  it('컬렉션 5개가 학습 순서대로 정렬된다', () => {
+    expect(COLLECTIONS.map((c) => c.key)).toEqual(['AS', 'LV', 'TMS60', 'DEP', 'TMS180'])
+    expect(COLLECTIONS.find((c) => c.key === 'DEP')!.short).toBe('DEP242')
   })
 
-  it('총 315구절 (5+8+60+242)', () => {
-    expect(VERSES).toHaveLength(315)
+  it('총 495구절 (5+8+60+242+180)', () => {
+    expect(VERSES).toHaveLength(495)
     const count = (k: string) => VERSES.filter((v) => collectionOf(v).key === k).length
     expect(count('AS')).toBe(5)
     expect(count('LV')).toBe(8)
     expect(count('TMS60')).toBe(60)
     expect(count('DEP')).toBe(242)
+    expect(count('TMS180')).toBe(180)
+  })
+
+  it('180구절: 5시리즈 × 36구절, 파트 그룹 연결', () => {
+    for (const [skey, title] of [
+      ['T1', '하나님을 알아감'],
+      ['T2', '사랑 안에서 자라감'],
+      ['T3', '믿음 안에서 자라감'],
+      ['T4', '승리 안에서 행함'],
+      ['T5', '그리스도를 증거함'],
+    ] as const) {
+      const vs = VERSES.filter((v) => topicOf(v).section === skey)
+      expect(vs, skey).toHaveLength(36)
+      expect(sectionOf(vs[0]).title).toBe(title)
+    }
+    expect(VERSE_BY_ID['T1-1a'].refAbbr).toBe('요 1:1,14')
+    expect(topicOf(VERSE_BY_ID['T1-1a']).group).toBe('예수 그리스도')
+    expect(VERSE_BY_ID['T5-36a'].refAbbr).toBe('골 2:9-10')
   })
 
   it('세계비전 9주제 18구절 — 약속성취의 영광 포함 (책자 대조 완료)', () => {
@@ -47,7 +66,7 @@ describe('verses.json v2 무결성', () => {
     expect(VERSE_BY_ID['E6b'].refAbbr).toBe('마 5:16')
   })
 
-  it('VERSES 순서가 5확신 → 8동행 → 60구절 → DEP', () => {
+  it('VERSES 순서가 5확신 → 8동행 → 60구절 → DEP → 180구절', () => {
     const orders = VERSES.map((v) => collectionOf(v).order)
     expect([...orders].sort((a, b) => a - b)).toEqual(orders)
   })
@@ -64,6 +83,7 @@ describe('verses.json v2 무결성', () => {
     const depBridge = VERSES.find(
       (v) => collectionOf(v).key === 'DEP' && topicOf(v).group === '다리예화',
     )!
-    expect(crumbOf(depBridge)).toEqual(['DEP 242', '증거', '다리예화'])
+    expect(crumbOf(depBridge)).toEqual(['DEP242', '증거', '다리예화'])
+    expect(crumbOf(VERSE_BY_ID['T1-1a'])).toEqual(['180구절', '하나님을 알아감', '예수 그리스도'])
   })
 })
