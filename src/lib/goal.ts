@@ -2,7 +2,7 @@ import { collectionOf, COLLECTIONS, VERSES } from '../data/verses'
 import { retrievabilityAt, State } from './fsrs'
 import { DIRECTIONS, type LearnProgress, type StoredCard } from './types'
 
-export const DEFAULT_GOAL_DATE = '2026-08-20'
+export const DEFAULT_GOAL_DATE = '2026-08-26'
 /** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
 export const DEFAULT_REVIEW_BUFFER_DAYS = 7
 /** 시험 준비 판정 기준: 시험일 예측 기억률 */
