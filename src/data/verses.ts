@@ -45,7 +45,7 @@ export const COLLECTIONS: CollectionInfo[] = [...data.collections].sort(
 )
 export const SECTIONS: SectionInfo[] = data.sections
 export const TOPICS: TopicInfo[] = data.topics
-/** 학습 권장 순서(5확신 → 8동행 → 60구절 → DEP) 그대로 정렬되어 있다 */
+/** 학습 권장 순서(5확신 → 8동행 → 60구절 → DEP242 → 180구절) 그대로 정렬되어 있다 */
 export const VERSES: VerseEntry[] = data.verses
 
 export const VERSE_BY_ID: Record<string, VerseEntry> = Object.fromEntries(

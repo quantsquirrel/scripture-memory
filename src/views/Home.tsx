@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collectionOf, COLLECTIONS, VERSE_BY_ID, VERSES } from '../data/verses'
+import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import { dueCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
 import { computeGoal, DEFAULT_GOAL_DATE, type GoalInfo } from '../lib/goal'
@@ -56,6 +56,26 @@ export function Home({
   const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString()
   const newThisWeek = data.learning.filter((l) => l.step >= 3 && l.updatedAt >= weekAgo).length
 
+  // 진행률 행: 기초 3과정(5확신+8동행+60구절)은 한 묶음, DEP는 섹션별, 180구절은 통째
+  const coreKeys = new Set(['AS', 'LV', 'TMS60'])
+  const progressRows = [
+    {
+      key: 'core',
+      label: '5확신·8동행·60구절',
+      verses: VERSES.filter((v) => coreKeys.has(collectionOf(v).key)),
+    },
+    ...sectionsOf('DEP').map((s, i) => ({
+      key: s.key,
+      label: `${i + 1}. ${s.title}`,
+      verses: VERSES.filter((v) => sectionOf(v).key === s.key),
+    })),
+    {
+      key: 'TMS180',
+      label: '180구절',
+      verses: VERSES.filter((v) => collectionOf(v).key === 'TMS180'),
+    },
+  ]
+
   return (
     <div>
       <section className="panel">
@@ -92,7 +112,8 @@ export function Home({
           <p>
             <strong className="big-number">D-{data.goal.daysLeft}</strong>{' '}
             <span className="muted">
-              {data.goal.goalDate.slice(5).replace('-', '/')}까지 {data.goal.remaining}구절
+              {data.goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은{' '}
+              {data.goal.remaining}구절
             </span>
             <br />
             오늘 목표{' '}
@@ -118,7 +139,7 @@ export function Home({
           !inProgress && <p>모든 구절을 학습했습니다! 🎉 이제 유지 복습만 하면 됩니다.</p>
         )}
         <p className="muted small">
-          이번 주 새 구절 {newThisWeek}개 · 순서: 5확신 → 8동행 → 60구절 → DEP
+          이번 주 새 구절 {newThisWeek}개 · 순서: 5확신 → 8동행 → 60구절 → DEP242 → 180구절
         </p>
       </section>
 
@@ -133,20 +154,19 @@ export function Home({
         <p className="muted small">
           전체 {graduated.size}/{VERSES.length} 구절 암송 중
         </p>
-        {COLLECTIONS.map((c) => {
-          const total = VERSES.filter((v) => collectionOf(v).key === c.key)
-          const done = total.filter((v) => graduated.has(v.id))
+        {progressRows.map((row) => {
+          const done = row.verses.filter((v) => graduated.has(v.id))
           return (
-            <button key={c.key} className="col-row" onClick={onBrowse}>
-              <span className="col-label">{c.short}</span>
+            <button key={row.key} className="col-row" onClick={onBrowse}>
+              <span className="col-label">{row.label}</span>
               <span className="progress col-bar">
                 <span
                   className="progress-fill"
-                  style={{ width: `${(done.length / total.length) * 100}%` }}
+                  style={{ width: `${(done.length / row.verses.length) * 100}%` }}
                 />
               </span>
               <span className="muted small">
-                {done.length}/{total.length}
+                {done.length}/{row.verses.length}
               </span>
             </button>
           )
