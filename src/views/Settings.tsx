@@ -8,7 +8,7 @@ import {
   reviewCount,
   setSetting,
 } from '../lib/db'
-import { DEFAULT_GOAL_DATE } from '../lib/goal'
+import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS } from '../lib/goal'
 import { syncNow } from '../lib/sync'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 
@@ -22,6 +22,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
   const [stats, setStats] = useState<{ reviews: number; graduated: number } | null>(null)
   const [msg, setMsg] = useState('')
   const [goalDate, setGoalDate] = useState(DEFAULT_GOAL_DATE)
+  const [bufferDays, setBufferDays] = useState(DEFAULT_REVIEW_BUFFER_DAYS)
   const [token, setToken] = useState('')
   const [gistId, setGistId] = useState('')
   const [syncMsg, setSyncMsg] = useState('')
@@ -39,12 +40,14 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
       reviewCount(),
       getAllLearning(),
       getSetting<string>('goalDate'),
+      getSetting<number>('goalBufferDays'),
       getSetting<string>('syncToken'),
       getSetting<string>('syncGistId'),
       getSetting<string>('lastSyncAt'),
-    ]).then(([r, l, g, t, gid, last]) => {
+    ]).then(([r, l, g, buf, t, gid, last]) => {
       setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length })
       if (g) setGoalDate(g)
+      if (buf !== undefined) setBufferDays(buf)
       if (t) setToken(t)
       if (gid) setGistId(gid)
       if (last) setSyncMsg(`마지막 동기화: ${new Date(last).toLocaleString('ko-KR')}`)
@@ -55,6 +58,14 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
     setGoalDate(d)
     await setSetting('goalDate', d)
     setMsg('목표일을 저장했습니다.')
+    onChanged()
+  }
+
+  const saveBuffer = async (n: number) => {
+    const v = Math.min(30, Math.max(0, Math.floor(n)))
+    setBufferDays(v)
+    await setSetting('goalBufferDays', v)
+    setMsg('복습 정착 기간을 저장했습니다.')
     onChanged()
   }
 
@@ -145,9 +156,23 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           value={goalDate}
           onChange={(e) => void saveGoal(e.target.value)}
         />
+        <label className="muted small" htmlFor="buffer-days">
+          복습 정착 기간 (일)
+        </label>
+        <input
+          id="buffer-days"
+          className="ref-input"
+          type="number"
+          min={0}
+          max={30}
+          value={bufferDays}
+          onChange={(e) => void saveBuffer(Number(e.target.value))}
+        />
         <p className="muted small">
-          남은 구절 ÷ 남은 날짜로 일일 새 구절 목표를 자동 계산합니다. 목표일 이후에는
-          FSRS가 알아서 복습 간격을 늘려 유지 모드로 전환됩니다.
+          시험(목표일)에 암송할 수 있으려면 외운 뒤 복습으로 굳힐 시간이 필요합니다. 새
+          구절 학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를 계산하고,
+          남은 기간은 복습만 합니다. 목표일 이후에는 FSRS가 알아서 복습 간격을 늘려 유지
+          모드로 전환됩니다.
         </p>
       </section>
 
