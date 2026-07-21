@@ -106,7 +106,7 @@ function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
     return (
       <div className="prompt">
         <h2 className="prompt-main">{verse.ref}</h2>
-        <p className="muted">말씀을 낭송하세요</p>
+        <p className="muted">이 장절의 제목과 말씀을 낭송하세요</p>
       </div>
     )
   }
@@ -131,6 +131,11 @@ function Answer({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
   }
   return (
     <div className="answer">
+      {sc.direction === 'ref' && (
+        <p className="muted">
+          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
+        </p>
+      )}
       <p className="answer-ref">{verse.ref}</p>
       <p className="verse">{verse.text}</p>
       <p className="answer-ref">{verse.ref}</p>
