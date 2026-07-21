@@ -11,6 +11,7 @@ import {
   type ExamReadiness,
   type GoalInfo,
 } from '../lib/goal'
+import { BulletBar, ForecastBars } from '../components/StatCharts'
 import {
   dueForecast,
   queueProgress,
@@ -138,10 +139,19 @@ export function Home({
               ` 다음 복습: ${formatInterval(new Date(data.nextDue).getTime() - Date.now())} 후`}
           </p>
         )}
+        {data.queue.rate !== null && (
+          <>
+            <BulletBar rate={data.queue.rate} />
+            <p className="muted small">
+              오늘 소화 {data.queue.done}/{data.queue.done + data.queue.remaining}장 (
+              {Math.round(data.queue.rate * 100)}%)
+            </p>
+          </>
+        )}
+        <ForecastBars forecast={data.forecast} />
         <p className="muted small">
-          {data.queue.rate !== null &&
-            `오늘 소화 ${data.queue.done}/${data.queue.done + data.queue.remaining}장 (${Math.round(data.queue.rate * 100)}%) · `}
-          내일 {data.forecast.tomorrow}장 · 향후 7일 하루 평균 {Math.round(data.forecast.avgPerDay)}장 예정
+          향후 7일 예보 — 내일 {data.forecast.tomorrow}장 · 하루 평균{' '}
+          {Math.round(data.forecast.avgPerDay)}장
         </p>
       </section>
 
@@ -209,11 +219,14 @@ export function Home({
           {data.goal.goalDate.slice(5).replace('-', '/')}에 기억률 90% 이상으로 예측되는 구절
         </p>
         {data.retention.rate !== null && (
-          <p className="muted small">
-            지난 7일 기억률 {Math.round(data.retention.rate * 100)}% (목표{' '}
-            {Math.round(EXAM_RETENTION * 100)}%) · 카드별 하루 첫 시도 {data.retention.total}회
-            기준
-          </p>
+          <>
+            <BulletBar rate={data.retention.rate} target={EXAM_RETENTION} />
+            <p className="muted small">
+              지난 7일 기억률 {Math.round(data.retention.rate * 100)}% (눈금 = 목표{' '}
+              {Math.round(EXAM_RETENTION * 100)}%) · 카드별 하루 첫 시도 {data.retention.total}회
+              기준
+            </p>
+          </>
         )}
         {progressRows.map((row) => {
           const done = row.verses.filter((v) => graduated.has(v.id))
