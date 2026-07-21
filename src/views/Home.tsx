@@ -7,9 +7,18 @@ import {
   computeReadiness,
   DEFAULT_GOAL_DATE,
   DEFAULT_REVIEW_BUFFER_DAYS,
+  EXAM_RETENTION,
   type ExamReadiness,
   type GoalInfo,
 } from '../lib/goal'
+import {
+  dueForecast,
+  queueProgress,
+  trueRetention,
+  type DueForecast,
+  type QueueProgress,
+  type TrueRetention,
+} from '../lib/stats'
 import type { LearnProgress } from '../lib/types'
 
 interface HomeData {
@@ -21,6 +30,9 @@ interface HomeData {
   nextDue: string | null
   goal: GoalInfo
   readiness: ExamReadiness
+  queue: QueueProgress
+  retention: TrueRetention
+  forecast: DueForecast
 }
 
 export function Home({
@@ -37,16 +49,19 @@ export function Home({
   useEffect(() => {
     const midnight = new Date()
     midnight.setHours(0, 0, 0, 0)
+    const retentionSince = new Date(midnight)
+    retentionSince.setDate(retentionSince.getDate() - 7)
     void Promise.all([
       dueCards(),
-      reviewsSince(midnight.toISOString()),
+      reviewsSince(retentionSince.toISOString()),
       getAllLearning(),
       getAllCards(),
       nextDueAt(),
       getSetting<string>('goalDate'),
       getSetting<number>('goalBufferDays'),
-    ]).then(([due, today, learning, cards, next, goalDate, buffer]) => {
+    ]).then(([due, week, learning, cards, next, goalDate, buffer]) => {
       const gd = goalDate ?? DEFAULT_GOAL_DATE
+      const today = week.filter((r) => r.ts >= midnight.toISOString())
       setData({
         due: due.length,
         dueVerses: new Set(due.map((c) => c.verseId)).size,
@@ -56,6 +71,9 @@ export function Home({
         nextDue: next,
         goal: computeGoal(gd, learning, new Date(), buffer ?? DEFAULT_REVIEW_BUFFER_DAYS),
         readiness: computeReadiness(cards, gd),
+        queue: queueProgress(today, due.length),
+        retention: trueRetention(week),
+        forecast: dueForecast(cards, 7),
       })
     })
   }, [])
@@ -120,6 +138,11 @@ export function Home({
               ` 다음 복습: ${formatInterval(new Date(data.nextDue).getTime() - Date.now())} 후`}
           </p>
         )}
+        <p className="muted small">
+          {data.queue.rate !== null &&
+            `오늘 소화 ${data.queue.done}/${data.queue.done + data.queue.remaining}장 (${Math.round(data.queue.rate * 100)}%) · `}
+          내일 {data.forecast.tomorrow}장 · 향후 7일 하루 평균 {Math.round(data.forecast.avgPerDay)}장 예정
+        </p>
       </section>
 
       <section className="panel">
@@ -185,6 +208,13 @@ export function Home({
           시험 준비 {data.readiness.ready}/{data.readiness.total} — 지금 복습을 멈춰도{' '}
           {data.goal.goalDate.slice(5).replace('-', '/')}에 기억률 90% 이상으로 예측되는 구절
         </p>
+        {data.retention.rate !== null && (
+          <p className="muted small">
+            지난 7일 기억률 {Math.round(data.retention.rate * 100)}% (목표{' '}
+            {Math.round(EXAM_RETENTION * 100)}%) · 카드별 하루 첫 시도 {data.retention.total}회
+            기준
+          </p>
+        )}
         {progressRows.map((row) => {
           const done = row.verses.filter((v) => graduated.has(v.id))
           return (
