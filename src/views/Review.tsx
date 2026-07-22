@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { crumbOf, topicOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
+import { crumbOf, topicOf, topicOrdinalOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
 import { DiffView } from '../components/DiffView'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { RatingBar } from '../components/RatingBar'
@@ -94,11 +94,19 @@ export function Review({ onExit }: { onExit: () => void }) {
 
 function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
   if (sc.direction === 'topic') {
+    const { nth, total } = topicOrdinalOf(verse)
     return (
       <div className="prompt">
         <span className="chip">{crumbOf(verse).join(' · ')}</span>
-        <h2 className="prompt-main">{topicOf(verse).title}</h2>
-        <p className="muted">이 주제의 장절과 말씀을 낭송하세요</p>
+        <h2 className="prompt-main">
+          {topicOf(verse).title}
+          {total > 1 && <span className="prompt-ord">{nth}/{total}</span>}
+        </h2>
+        <p className="muted">
+          {total > 1
+            ? `이 주제 ${total}구절 중 ${ordinalKo(nth)} 구절의 장절과 말씀을 낭송하세요`
+            : '이 주제의 장절과 말씀을 낭송하세요'}
+        </p>
       </div>
     )
   }
@@ -116,6 +124,10 @@ function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
       <p className="muted">이 말씀의 장절은?</p>
     </div>
   )
+}
+
+function ordinalKo(n: number): string {
+  return ['첫째', '둘째', '셋째', '넷째'][n - 1] ?? `${n}번째`
 }
 
 function Answer({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {

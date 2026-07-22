@@ -93,6 +93,12 @@ export const topicsOf = (sectionKey: string): TopicInfo[] =>
 export const versesOfTopic = (topicKey: string): VerseEntry[] =>
   VERSES.filter((v) => v.topicKey === topicKey)
 
+/** 주제 안에서 이 구절의 순번. 순서 정본은 데이터 순서(= TMS 카드 팩의 고정 순서). */
+export function topicOrdinalOf(v: VerseEntry): { nth: number; total: number } {
+  const siblings = versesOfTopic(v.topicKey)
+  return { nth: siblings.findIndex((s) => s.id === v.id) + 1, total: siblings.length }
+}
+
 /** 장절 동일성 키 (컬렉션 간 중복 구절 탐지) */
 export function refKeyOf(v: VerseEntry): string {
   return `${v.bookAbbr}${v.chapter}:${v.verses.join(',')}`
