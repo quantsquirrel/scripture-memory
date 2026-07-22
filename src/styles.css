@@ -246,6 +246,14 @@ h3 {
   margin: 8px 0 4px;
 }
 
+.prompt-ord {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  vertical-align: 2px;
+}
+
 .answer {
   border-top: 1px dashed var(--line);
   margin-top: 14px;

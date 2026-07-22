@@ -6,6 +6,7 @@ import {
   DUPLICATES,
   sectionOf,
   topicOf,
+  topicOrdinalOf,
   VERSE_BY_ID,
   VERSES,
 } from '../src/data/verses'
@@ -75,6 +76,20 @@ describe('verses.json v2 무결성', () => {
     const dupIds = Object.values(DUPLICATES).flat()
     expect(dupIds).toContain('B5b') // 계 3:20은 DEP 다리예화에도 있음
     expect(Object.keys(DUPLICATES).length).toBeGreaterThan(10)
+  })
+
+  it('topicOrdinalOf가 주제 안 순번을 데이터 순서대로 매긴다', () => {
+    // B5 "그리스도를 모셔야 함": 요 1:12 → 계 3:20 (카드 팩 고정 순서)
+    expect(topicOrdinalOf(VERSE_BY_ID['B5a'])).toEqual({ nth: 1, total: 2 })
+    expect(topicOrdinalOf(VERSE_BY_ID['B5b'])).toEqual({ nth: 2, total: 2 })
+    // 1구절 주제는 total 1
+    expect(topicOrdinalOf(VERSE_BY_ID['AS1a']).total).toBe(1)
+    // 모든 구절의 순번이 주제 안에서 유일하고 1..total 범위다
+    for (const v of VERSES) {
+      const { nth, total } = topicOrdinalOf(v)
+      expect(nth, v.id).toBeGreaterThanOrEqual(1)
+      expect(nth, v.id).toBeLessThanOrEqual(total)
+    }
   })
 
   it('crumbOf가 컬렉션·섹션·그룹 경로를 만든다', () => {
