@@ -7,11 +7,8 @@ import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } fr
 import { gradeRef } from '../lib/refInput'
 import { formatInterval } from '../lib/fsrs'
 import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../lib/db'
-import { orderQueue, reviewMode } from '../lib/policy'
+import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../lib/policy'
 import type { ReviewMode, StoredCard } from '../lib/types'
-
-/** 큐를 비운 뒤, 몇 분 안에 due가 오는 학습 단계 카드를 당겨 재도전하는 창 */
-const LEARN_AHEAD_MS = 20 * 60_000
 
 export function Review({ onExit }: { onExit: () => void }) {
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
@@ -20,7 +17,11 @@ export function Review({ onExit }: { onExit: () => void }) {
   const [nextDue, setNextDue] = useState<string | null>(null)
 
   useEffect(() => {
-    void dueCards().then((cards) => setQueue(orderQueue(cards)))
+    // 홈에서 learn-ahead 카드로 진입한 경우 due 큐가 비어 있을 수 있다
+    void dueCards().then(async (cards) => {
+      if (cards.length === 0) cards = await upcomingLearningCards(LEARN_AHEAD_MS)
+      setQueue(orderQueue(cards))
+    })
   }, [])
 
   const current = queue && idx < queue.length ? queue[idx] : null

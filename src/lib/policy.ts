@@ -1,6 +1,12 @@
 import type { Direction, ReviewMode, StoredCard } from './types'
 
 /**
+ * learn-ahead 창: 몇 분 안에 due가 오는 학습·재학습 단계 카드를 당겨
+ * 재도전하는 시간 창. 복습 세션 말미와 홈 화면이 같은 창을 쓴다.
+ */
+export const LEARN_AHEAD_MS = 20 * 60_000
+
+/**
  * 복습 모드 선택 정책.
  * - 말씀→장절 방향은 항상 장절 입력(객관 채점).
  * - 어린 카드(reps<3)는 첫글자 훈련으로 축자 회상을 강제.
