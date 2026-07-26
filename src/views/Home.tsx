@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react'
 import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import { dueCards, getAllCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
+import {
+  dueCards,
+  getAllCards,
+  getAllLearning,
+  getSetting,
+  nextDueAt,
+  reviewsSince,
+  upcomingLearningCards,
+} from '../lib/db'
 import { DEFAULT_RETENTION, formatInterval } from '../lib/fsrs'
+import { LEARN_AHEAD_MS } from '../lib/policy'
 import {
   computeGoal,
   computeReadiness,
@@ -26,6 +35,7 @@ import type { LearnProgress } from '../lib/types'
 interface HomeData {
   due: number
   dueVerses: number
+  upcoming: number
   overdue: number
   todayReviews: number
   learning: LearnProgress[]
@@ -62,6 +72,7 @@ export function Home({
     retentionSince.setDate(retentionSince.getDate() - 7)
     void Promise.all([
       dueCards(),
+      upcomingLearningCards(LEARN_AHEAD_MS),
       reviewsSince(retentionSince.toISOString()),
       getAllLearning(),
       getAllCards(),
@@ -69,12 +80,13 @@ export function Home({
       getSetting<string>('goalDate'),
       getSetting<number>('goalBufferDays'),
       getSetting<boolean>('examMode'),
-    ]).then(([due, week, learning, cards, next, goalDate, buffer, examMode]) => {
+    ]).then(([due, upcoming, week, learning, cards, next, goalDate, buffer, examMode]) => {
       const gd = goalDate ?? DEFAULT_GOAL_DATE
       const today = week.filter((r) => r.ts >= midnight.toISOString())
       setData({
         due: due.length,
         dueVerses: new Set(due.map((c) => c.verseId)).size,
+        upcoming: upcoming.length,
         overdue: due.filter((c) => c.card.due < midnight.toISOString()).length,
         todayReviews: today.length,
         learning,
@@ -141,6 +153,20 @@ export function Home({
             </p>
             <button className="btn btn-primary" onClick={onReview}>
               복습 시작
+            </button>
+          </>
+        ) : data.upcoming > 0 ? (
+          <>
+            <p>
+              다시 도전할 카드 <strong>{data.upcoming}</strong>장이 잠시 후 돌아옵니다
+              {data.nextDue &&
+                ` (${formatInterval(new Date(data.nextDue).getTime() - Date.now())} 후)`}
+              {data.todayReviews > 0 && (
+                <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
+              )}
+            </p>
+            <button className="btn btn-primary" onClick={onReview}>
+              지금 이어서 복습
             </button>
           </>
         ) : (
