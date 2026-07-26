@@ -36,6 +36,12 @@ interface HomeData {
   forecast: DueForecast
 }
 
+/** "YYYY-MM-DD" → "M/D" */
+const formatMonthDay = (iso: string) => {
+  const [, m, d] = iso.split('-')
+  return `${Number(m)}/${Number(d)}`
+}
+
 export function Home({
   onReview,
   onLearn,
@@ -158,24 +164,40 @@ export function Home({
       <section className="panel">
         <h2>새 구절 학습</h2>
         {!data.goal.past && data.goal.remaining > 0 && (
-          <p>
-            <strong className="big-number">D-{data.goal.daysLeft}</strong>{' '}
-            <span className="muted">
-              {data.goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은{' '}
-              {data.goal.remaining}구절
-            </span>
-            <br />
-            오늘 목표{' '}
-            <strong>
-              {data.goal.todayNew}/{data.goal.dailyTarget}
-            </strong>
-            {data.goal.todayNew >= data.goal.dailyTarget && ' ✅ 달성!'}
-            <br />
-            <span className="muted small">
+          <>
+            <p>
+              <strong className="big-number">D-{data.goal.daysLeft}</strong>{' '}
+              <span className="muted">
+                {data.goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은{' '}
+                {data.goal.remaining}구절
+              </span>
+              <br />
+              최근 7일 하루 <strong>{data.goal.recentPace.toFixed(1)}</strong>구절 · 필요 페이스
+              하루 {data.goal.requiredPace.toFixed(1)}구절
+              {data.goal.todayNew > 0 && ` · 오늘 ${data.goal.todayNew}구절`}
+              <br />
+              {data.goal.projectedDone && data.goal.aheadDays !== null ? (
+                <span>
+                  이 페이스면 {formatMonthDay(data.goal.projectedDone)} 완료 —{' '}
+                  {data.goal.aheadDays > 0 && `마감(${learnEndLabel})보다 ${data.goal.aheadDays}일 여유`}
+                  {data.goal.aheadDays < 0 && `마감(${learnEndLabel})보다 ${-data.goal.aheadDays}일 부족`}
+                  {data.goal.aheadDays === 0 && `마감(${learnEndLabel})에 딱 맞음`}
+                </span>
+              ) : (
+                <span className="muted">최근 7일 새 구절이 없어 페이스를 잴 수 없습니다</span>
+              )}
+            </p>
+            {data.goal.requiredPace > 0 && (
+              <BulletBar
+                rate={data.goal.recentPace / (data.goal.requiredPace * 1.5)}
+                target={1 / 1.5}
+              />
+            )}
+            <p className="muted small">
               새 구절은 {learnEndLabel}까지 완료 목표 — 마지막 {data.goal.bufferDays}일은
-              복습으로 굳히기
-            </span>
-          </p>
+              복습으로 굳히기 (눈금 = 필요 페이스)
+            </p>
+          </>
         )}
         {data.goal.past && data.goal.remaining > 0 && (
           <p className="muted small">목표일이 지났습니다 — 설정에서 목표일을 조정하세요.</p>

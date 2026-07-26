@@ -15,6 +15,9 @@ const GOAL_VERSE_IDS = new Set(
 )
 export const GOAL_VERSE_COUNT = GOAL_VERSE_IDS.size
 
+/** 실제 페이스 산출에 쓰는 최근 관찰 기간 (일) */
+export const PACE_WINDOW_DAYS = 7
+
 export interface GoalInfo {
   goalDate: string
   daysLeft: number
@@ -24,10 +27,20 @@ export interface GoalInfo {
   /** 오늘 시작 기준 남은 구절 수(오늘 졸업분 포함) */
   remainingAtDayStart: number
   remaining: number
-  dailyTarget: number
   todayNew: number
+  /** 최근 PACE_WINDOW_DAYS일 실제 페이스 (구절/일, 목표 범위만) */
+  recentPace: number
+  /** 남은 구절을 학습 마감까지 끝내는 데 필요한 페이스 (구절/일) */
+  requiredPace: number
+  /** 현재 페이스 유지 시 예상 완료일 (YYYY-MM-DD). 최근 페이스 0이거나 남은 구절 없으면 null */
+  projectedDone: string | null
+  /** 예상 완료일이 학습 마감(목표일 − 정착 기간)보다 며칠 빠른가 (+여유/−부족) */
+  aheadDays: number | null
   past: boolean
 }
+
+const fmtLocalDate = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 export function computeGoal(
   goalDate: string,
@@ -45,7 +58,19 @@ export function computeGoal(
   const past = end.getTime() < now.getTime()
   const learnDaysLeft = Math.max(1, daysLeft - bufferDays)
   const remainingAtDayStart = remaining + todayNew
-  const dailyTarget = past ? 0 : Math.ceil(remainingAtDayStart / learnDaysLeft)
+  const paceSince = now.getTime() - PACE_WINDOW_DAYS * 86400_000
+  const recentPace =
+    graduated.filter((l) => new Date(l.updatedAt).getTime() >= paceSince).length /
+    PACE_WINDOW_DAYS
+  const requiredPace = past ? 0 : remainingAtDayStart / learnDaysLeft
+  const learnEnd = new Date(end.getTime() - bufferDays * 86400_000)
+  let projectedDone: string | null = null
+  let aheadDays: number | null = null
+  if (remaining > 0 && recentPace > 0) {
+    const done = new Date(now.getTime() + (remaining / recentPace) * 86400_000)
+    projectedDone = fmtLocalDate(done)
+    aheadDays = Math.round((learnEnd.getTime() - done.getTime()) / 86400_000)
+  }
   return {
     goalDate,
     daysLeft,
@@ -53,8 +78,11 @@ export function computeGoal(
     bufferDays,
     remainingAtDayStart,
     remaining,
-    dailyTarget,
     todayNew,
+    recentPace,
+    requiredPace,
+    projectedDone,
+    aheadDays,
     past,
   }
 }
