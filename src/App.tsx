@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { applySchedulerSettings } from './lib/db'
 import { Browse } from './views/Browse'
 import { Home } from './views/Home'
 import { Learn } from './views/Learn'
@@ -15,6 +16,11 @@ type View =
 export default function App() {
   const [view, setView] = useState<View>({ name: 'home' })
   const [epoch, setEpoch] = useState(0)
+
+  // 시험 모드 설정 → 스케줄러 목표 기억률. 설정 변경(epoch 증가) 시 재적용
+  useEffect(() => {
+    void applySchedulerSettings()
+  }, [epoch])
 
   const go = (v: View) => {
     setView(v)

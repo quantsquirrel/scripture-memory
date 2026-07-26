@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import { dueCards, getAllCards, getAllLearning, getSetting, nextDueAt, reviewsSince } from '../lib/db'
-import { formatInterval } from '../lib/fsrs'
+import { DEFAULT_RETENTION, formatInterval } from '../lib/fsrs'
 import {
   computeGoal,
   computeReadiness,
   DEFAULT_GOAL_DATE,
   DEFAULT_REVIEW_BUFFER_DAYS,
   EXAM_RETENTION,
+  examModeActive,
   type ExamReadiness,
   type GoalInfo,
 } from '../lib/goal'
@@ -31,6 +32,7 @@ interface HomeData {
   nextDue: string | null
   goal: GoalInfo
   readiness: ExamReadiness
+  examActive: boolean
   queue: QueueProgress
   retention: TrueRetention
   forecast: DueForecast
@@ -66,7 +68,8 @@ export function Home({
       nextDueAt(),
       getSetting<string>('goalDate'),
       getSetting<number>('goalBufferDays'),
-    ]).then(([due, week, learning, cards, next, goalDate, buffer]) => {
+      getSetting<boolean>('examMode'),
+    ]).then(([due, week, learning, cards, next, goalDate, buffer, examMode]) => {
       const gd = goalDate ?? DEFAULT_GOAL_DATE
       const today = week.filter((r) => r.ts >= midnight.toISOString())
       setData({
@@ -78,6 +81,7 @@ export function Home({
         nextDue: next,
         goal: computeGoal(gd, learning, new Date(), buffer ?? DEFAULT_REVIEW_BUFFER_DAYS),
         readiness: computeReadiness(cards, gd),
+        examActive: examModeActive(examMode ?? false, gd),
         queue: queueProgress(today, due.length),
         retention: trueRetention(week),
         forecast: dueForecast(cards, 7),
@@ -87,6 +91,8 @@ export function Home({
 
   if (!data) return <p className="muted">불러오는 중…</p>
 
+  // 관측 기억률 눈금: 현재 스케줄러가 겨냥하는 목표 기억률과 정렬
+  const retentionTarget = data.examActive ? EXAM_RETENTION : DEFAULT_RETENTION
   const graduated = new Set(data.learning.filter((l) => l.step >= 3).map((l) => l.verseId))
   const inProgress = data.learning.find((l) => l.step > 0 && l.step < 3)
   const nextNew = VERSES.find((v) => !graduated.has(v.id) && v.id !== inProgress?.verseId)
@@ -159,6 +165,12 @@ export function Home({
           향후 7일 예보 — 내일 {data.forecast.tomorrow}장 · 하루 평균{' '}
           {Math.round(data.forecast.avgPerDay)}장
         </p>
+        {data.examActive && (
+          <p className="muted small">
+            시험 모드 — 목표 기억률 {Math.round(EXAM_RETENTION * 100)}% 기준으로 복습
+            간격을 짧게 잡는 중
+          </p>
+        )}
       </section>
 
       <section className="panel">
@@ -238,14 +250,15 @@ export function Home({
         </div>
         <p className="muted small">
           시험 준비 {data.readiness.ready}/{data.readiness.total} — 지금 복습을 멈춰도{' '}
-          {data.goal.goalDate.slice(5).replace('-', '/')}에 기억률 90% 이상으로 예측되는 구절
+          {data.goal.goalDate.slice(5).replace('-', '/')}에 기억률{' '}
+          {Math.round(EXAM_RETENTION * 100)}% 이상으로 예측되는 구절
         </p>
         {data.retention.rate !== null && (
           <>
-            <BulletBar rate={data.retention.rate} target={EXAM_RETENTION} />
+            <BulletBar rate={data.retention.rate} target={retentionTarget} />
             <p className="muted small">
               지난 7일 기억률 {Math.round(data.retention.rate * 100)}% (눈금 = 목표{' '}
-              {Math.round(EXAM_RETENTION * 100)}%) · 카드별 하루 첫 시도 {data.retention.total}회
+              {Math.round(retentionTarget * 100)}%) · 카드별 하루 첫 시도 {data.retention.total}회
               기준
             </p>
           </>

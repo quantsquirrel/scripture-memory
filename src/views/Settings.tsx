@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  applySchedulerSettings,
   exportAll,
   getAllLearning,
   getSetting,
@@ -8,7 +9,8 @@ import {
   reviewCount,
   setSetting,
 } from '../lib/db'
-import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS } from '../lib/goal'
+import { DEFAULT_RETENTION } from '../lib/fsrs'
+import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS, EXAM_RETENTION } from '../lib/goal'
 import { syncNow } from '../lib/sync'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 
@@ -23,6 +25,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
   const [msg, setMsg] = useState('')
   const [goalDate, setGoalDate] = useState(DEFAULT_GOAL_DATE)
   const [bufferDays, setBufferDays] = useState(DEFAULT_REVIEW_BUFFER_DAYS)
+  const [examMode, setExamModeState] = useState(false)
   const [token, setToken] = useState('')
   const [gistId, setGistId] = useState('')
   const [syncMsg, setSyncMsg] = useState('')
@@ -41,13 +44,15 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
       getAllLearning(),
       getSetting<string>('goalDate'),
       getSetting<number>('goalBufferDays'),
+      getSetting<boolean>('examMode'),
       getSetting<string>('syncToken'),
       getSetting<string>('syncGistId'),
       getSetting<string>('lastSyncAt'),
-    ]).then(([r, l, g, buf, t, gid, last]) => {
+    ]).then(([r, l, g, buf, em, t, gid, last]) => {
       setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length })
       if (g) setGoalDate(g)
       if (buf !== undefined) setBufferDays(buf)
+      if (em !== undefined) setExamModeState(em)
       if (t) setToken(t)
       if (gid) setGistId(gid)
       if (last) setSyncMsg(`마지막 동기화: ${new Date(last).toLocaleString('ko-KR')}`)
@@ -57,7 +62,16 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
   const saveGoal = async (d: string) => {
     setGoalDate(d)
     await setSetting('goalDate', d)
+    await applySchedulerSettings() // 시험 모드 활성 판정이 목표일에 걸려 있음
     setMsg('목표일을 저장했습니다.')
+    onChanged()
+  }
+
+  const saveExamMode = async (on: boolean) => {
+    setExamModeState(on)
+    await setSetting('examMode', on)
+    await applySchedulerSettings()
+    setMsg(on ? '시험 모드를 켰습니다.' : '시험 모드를 껐습니다.')
     onChanged()
   }
 
@@ -174,6 +188,30 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           남은 기간은 복습만 합니다. 목표일 이후에는 FSRS가 알아서 복습 간격을 늘려 유지
           모드로 전환됩니다.
         </p>
+        <label className="muted small">시험 모드</label>
+        <div className="seg-row">
+          {(
+            [
+              [false, '끔'],
+              [true, '켬'],
+            ] as const
+          ).map(([v, label]) => (
+            <button
+              key={label}
+              className={`seg${examMode === v ? ' active' : ''}`}
+              onClick={() => void saveExamMode(v)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <p className="muted small">
+          시험 모드는 복습 간격 계산의 목표 기억률을{' '}
+          {Math.round(DEFAULT_RETENTION * 100)}%→{Math.round(EXAM_RETENTION * 100)}%로
+          올려 시험 전까지 간격을 짧게 잡습니다. 기억 모델과 복습 기록에는 영향이 없고,
+          시험일(목표일)이 지나면 자동으로 {Math.round(DEFAULT_RETENTION * 100)}% 체계로
+          복귀합니다.
+        </p>
       </section>
 
       <section className="panel">
@@ -247,7 +285,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           그리스도인의 생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의
           도(DEP242) 242구절 → 주제별 성경암송 시리즈 180구절.
           <br />
-          스케줄링: FSRS (ts-fsrs, 목표 기억율 90%).
+          스케줄링: FSRS (ts-fsrs, 목표 기억율 90% · 시험 모드 95%).
           <br />
           낭송 규칙: 주제 → 장절 → 말씀 → 장절.
         </p>

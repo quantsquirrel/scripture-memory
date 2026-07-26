@@ -3,6 +3,7 @@ import {
   computeGoal,
   computeReadiness,
   DEFAULT_REVIEW_BUFFER_DAYS,
+  examModeActive,
   GOAL_VERSE_COUNT,
   PACE_WINDOW_DAYS,
 } from '../src/lib/goal'
@@ -151,5 +152,25 @@ describe('computeReadiness', () => {
       ready: 0,
       total: GOAL_VERSE_COUNT,
     })
+  })
+})
+
+describe('examModeActive', () => {
+  const goalDate = '2026-08-26'
+
+  it('켜져 있고 시험일 전이면 활성', () => {
+    expect(examModeActive(true, goalDate, new Date('2026-07-26T12:00:00+09:00'))).toBe(true)
+  })
+
+  it('시험일 당일까지는 활성', () => {
+    expect(examModeActive(true, goalDate, new Date('2026-08-26T23:00:00+09:00'))).toBe(true)
+  })
+
+  it('꺼져 있으면 비활성', () => {
+    expect(examModeActive(false, goalDate, new Date('2026-07-26T12:00:00+09:00'))).toBe(false)
+  })
+
+  it('시험일이 지나면 설정과 무관하게 비활성 — 장기 체계 자동 복귀', () => {
+    expect(examModeActive(true, goalDate, new Date('2026-08-27T08:00:00+09:00'))).toBe(false)
   })
 })
