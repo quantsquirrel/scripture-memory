@@ -7,7 +7,8 @@ import {
   type ReviewMode,
   type StoredCard,
 } from './types'
-import { applyRating, newCard, State } from './fsrs'
+import { applyRating, DEFAULT_RETENTION, newCard, setRequestRetention, State } from './fsrs'
+import { DEFAULT_GOAL_DATE, EXAM_RETENTION, examModeActive } from './goal'
 
 interface TmsDB extends DBSchema {
   cards: { key: string; value: StoredCard }
@@ -190,6 +191,19 @@ export async function getSetting<T>(key: string): Promise<T | undefined> {
 
 export async function setSetting(key: string, value: unknown): Promise<void> {
   await (await db()).put('settings', { key, value })
+}
+
+/**
+ * 시험 모드 설정을 스케줄러 목표 기억률에 반영한다.
+ * 시험일(목표일)이 지나면 설정이 켜져 있어도 기본 체계로 자동 복귀한다.
+ */
+export async function applySchedulerSettings(now: Date = new Date()): Promise<void> {
+  const [examMode, goalDate] = await Promise.all([
+    getSetting<boolean>('examMode'),
+    getSetting<string>('goalDate'),
+  ])
+  const active = examModeActive(examMode ?? false, goalDate ?? DEFAULT_GOAL_DATE, now)
+  setRequestRetention(active ? EXAM_RETENTION : DEFAULT_RETENTION)
 }
 
 export async function resetAll(): Promise<void> {

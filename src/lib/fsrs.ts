@@ -9,9 +9,29 @@ import {
 } from 'ts-fsrs'
 import type { SerializedCard } from './types'
 
-export const scheduler = fsrs(
-  generatorParameters({ request_retention: 0.9, enable_fuzz: true }),
-)
+/** 장기 유지용 기본 목표 기억률 */
+export const DEFAULT_RETENTION = 0.9
+
+const makeScheduler = (retention: number) =>
+  fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true }))
+
+let requestRetention = DEFAULT_RETENTION
+let scheduler = makeScheduler(requestRetention)
+
+/**
+ * 스케줄러 목표 기억률 변경 (시험 모드).
+ * 간격 계산에만 쓰이고 기억 모델(stability/difficulty)이나 카드 영속 데이터에는
+ * 관여하지 않으므로, 되돌리면 다음 복습부터 즉시 원래 간격 체계로 복귀한다.
+ */
+export function setRequestRetention(r: number): void {
+  if (r === requestRetention) return
+  requestRetention = r
+  scheduler = makeScheduler(r)
+}
+
+export function getRequestRetention(): number {
+  return requestRetention
+}
 
 export function serializeCard(c: Card): SerializedCard {
   return {
