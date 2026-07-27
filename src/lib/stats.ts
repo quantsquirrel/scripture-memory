@@ -216,6 +216,21 @@ export function reviewHistory(
   return { counts, streak, avgPerDay: days === 0 ? 0 : sum / days }
 }
 
+/**
+ * 하루 단위 순환 선택 (로컬 자정 기준) — 같은 날에는 새로고침해도 같은
+ * 항목이 나오고, 날이 바뀌면 다음 항목으로 넘어간다. 무작위가 아니라서
+ * items 순서가 유지되는 한 모든 항목이 공평하게 돌아온다.
+ */
+export function dailyPick<T>(items: T[], now: Date = new Date()): T | null {
+  if (items.length === 0) return null
+  const midnight = new Date(now)
+  midnight.setHours(0, 0, 0, 0)
+  const localDay = Math.floor(
+    (midnight.getTime() - midnight.getTimezoneOffset() * 60_000) / 86400_000,
+  )
+  return items[localDay % items.length]
+}
+
 export interface WeakVerse {
   verseId: string
   /** 방향 카드들의 lapses 합계 */

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dailyPick,
   directionRetention,
   dueForecast,
   knowledgeNow,
@@ -307,5 +308,22 @@ describe('weakVerses', () => {
     )
     expect(w).toHaveLength(1)
     expect(w[0].verseId).toBe('AS1a')
+  })
+})
+
+describe('dailyPick', () => {
+  it('같은 날에는 같은 항목, 다음 날에는 다음 항목으로 순환한다', () => {
+    const items = ['a', 'b', 'c']
+    const d1a = dailyPick(items, new Date('2026-07-17T00:10:00+09:00'))
+    const d1b = dailyPick(items, new Date('2026-07-17T23:50:00+09:00'))
+    const d2 = dailyPick(items, new Date('2026-07-18T12:00:00+09:00'))
+    const d4 = dailyPick(items, new Date('2026-07-20T12:00:00+09:00'))
+    expect(d1a).toBe(d1b) // 하루 안에서는 고정
+    expect(items.indexOf(d2!)).toBe((items.indexOf(d1a!) + 1) % 3) // 다음 날 다음 항목
+    expect(d4).toBe(d1a) // 3개 항목은 3일 주기로 되돌아온다
+  })
+
+  it('빈 목록이면 null', () => {
+    expect(dailyPick([], new Date('2026-07-17T12:00:00+09:00'))).toBeNull()
   })
 })

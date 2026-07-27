@@ -195,8 +195,8 @@ export function Home({
           />
         </div>
         <p className="muted small">
-          전체 {graduated.size}/{VERSES.length} 구절 암송 중 — 기억률·페이스 등 자세한
-          분석은 통계 탭에서
+          전체 {graduated.size}/{VERSES.length} 구절 암송 중 — 묵상·마음 밭·훈련 지표는
+          돌아보기 탭에서
         </p>
         {progressRows.map((row) => {
           const done = row.verses.filter((v) => graduated.has(v.id))
