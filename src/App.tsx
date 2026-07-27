@@ -5,12 +5,14 @@ import { Home } from './views/Home'
 import { Learn } from './views/Learn'
 import { Review } from './views/Review'
 import { Settings } from './views/Settings'
+import { Stats } from './views/Stats'
 
 type View =
   | { name: 'home' }
   | { name: 'review' }
   | { name: 'learn'; verseId: string }
   | { name: 'browse' }
+  | { name: 'stats' }
   | { name: 'settings' }
 
 export default function App() {
@@ -54,6 +56,7 @@ export default function App() {
         {view.name === 'browse' && (
           <Browse onLearn={(verseId) => go({ name: 'learn', verseId })} />
         )}
+        {view.name === 'stats' && <Stats />}
         {view.name === 'settings' && <Settings onChanged={() => setEpoch((e) => e + 1)} />}
       </main>
 
@@ -62,6 +65,7 @@ export default function App() {
           [
             ['home', '홈'],
             ['review', '복습'],
+            ['stats', '통계'],
             ['browse', '목록'],
             ['settings', '설정'],
           ] as const
