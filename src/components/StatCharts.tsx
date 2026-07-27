@@ -38,6 +38,36 @@ export function ForecastBars({
   )
 }
 
+/** 지난 복습량 미니 막대 — counts 마지막 원소가 오늘 */
+export function HistoryBars({ counts, now = new Date() }: { counts: number[]; now?: Date }) {
+  const max = Math.max(...counts, 1)
+  return (
+    <div className="mini-bars">
+      {counts.map((c, i) => {
+        const d = new Date(now)
+        d.setDate(d.getDate() - (counts.length - 1 - i))
+        const label = i === counts.length - 1 ? '오늘' : DAY_NAMES[d.getDay()]
+        return (
+          <div
+            key={i}
+            className="mini-bar-col"
+            title={`${d.getMonth() + 1}/${d.getDate()} · ${c}회`}
+          >
+            <span className="mini-bar-val">{c > 0 ? c : ''}</span>
+            <div className="mini-bar-area">
+              <div
+                className={c > 0 ? 'mini-bar mini-bar-past' : 'mini-bar mini-bar-zero'}
+                style={{ height: c > 0 ? `${Math.max((c / max) * 100, 5)}%` : '2px' }}
+              />
+            </div>
+            <span className="mini-bar-label">{label}</span>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 /** 목표 눈금(선택)이 있는 진행 바 */
 export function BulletBar({ rate, target }: { rate: number; target?: number }) {
   return (

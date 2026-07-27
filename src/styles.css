@@ -640,6 +640,53 @@ h3 {
   background: var(--panel2);
 }
 
+/* 과거 복습량 막대 — 미래 부하(accent)와 색으로 구분 */
+.mini-bar-past {
+  background: var(--blue);
+}
+
+/* 구성비 스택 바 (카드 성숙도) */
+.stack-bar {
+  display: flex;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--panel2);
+  margin: 10px 0 6px;
+}
+
+.stack-seg-learning {
+  background: var(--warn);
+}
+
+.stack-seg-young {
+  background: var(--blue);
+}
+
+.stack-seg-mature {
+  background: var(--ok);
+}
+
+/* 통계 지표 행 (라벨 좌 · 값 우) */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.92rem;
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row .stat-val {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* 목표 눈금이 있는 진행 바 (bullet) */
 .bullet {
   position: relative;
