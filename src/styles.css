@@ -687,6 +687,64 @@ h3 {
   white-space: nowrap;
 }
 
+/* 클릭 대상이 아닌 진행률 행 (마음 밭) */
+.col-row-static {
+  cursor: default;
+}
+
+/* 다시 붙들 말씀 목록 */
+.weak-item {
+  border-bottom: 1px solid var(--line);
+  padding: 6px 0;
+}
+
+.weak-item:last-of-type {
+  border-bottom: none;
+}
+
+.weak-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.weak-snippet {
+  margin: 3px 0 4px;
+  line-height: 1.7;
+}
+
+/* 접이식 훈련 상세 지표 */
+.tech-details {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 4px 16px 8px;
+  margin-bottom: 14px;
+}
+
+.tech-details[open] {
+  padding-bottom: 16px;
+}
+
+.tech-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 12px 0;
+  color: var(--muted);
+}
+
+.tech-details[open] summary {
+  color: var(--text);
+}
+
+.tech-details h3 {
+  font-size: 0.92rem;
+  color: var(--blue);
+  margin: 20px 0 8px;
+}
+
 /* 목표 눈금이 있는 진행 바 (bullet) */
 .bullet {
   position: relative;

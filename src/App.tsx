@@ -65,7 +65,7 @@ export default function App() {
           [
             ['home', '홈'],
             ['review', '복습'],
-            ['stats', '통계'],
+            ['stats', '돌아보기'],
             ['browse', '목록'],
             ['settings', '설정'],
           ] as const
