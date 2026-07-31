@@ -8,3 +8,5 @@ dev-dist/
 !public/icons/*.png
 .claude/
 __pycache__/
+test-results/
+playwright-report/
