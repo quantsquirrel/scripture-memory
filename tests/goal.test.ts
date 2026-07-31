@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { collectionOf, COLLECTIONS, VERSES } from '../src/data/verses'
+import type { Direction, StoredCard } from '../src/domain/card'
 import {
   computeGoal,
   computeReadiness,
@@ -8,11 +9,11 @@ import {
   examModeActive,
   GOAL_VERSE_COUNT,
   PACE_WINDOW_DAYS,
-} from '../src/lib/goal'
-import { required } from '../src/lib/invariant'
-import type { Direction, LearnProgress, StoredCard } from '../src/lib/types'
+} from '../src/domain/goal'
+import { required } from '../src/domain/invariant'
+import type { LadderStep, LearnProgress } from '../src/domain/ladder'
 
-const lp = (verseId: string, step: number, updatedAt: string): LearnProgress => ({
+const lp = (verseId: string, step: LadderStep, updatedAt: string): LearnProgress => ({
   verseId,
   step,
   updatedAt,
@@ -46,16 +47,20 @@ describe('computeGoal', () => {
   })
 
   it('180구절 졸업은 목표 페이싱에 잡히지 않는다', () => {
-    const g = computeGoal('2026-08-20', [lp('T1-1a', 3, '2026-07-17T10:00:00+09:00')], now)
+    const g = computeGoal(
+      '2026-08-20',
+      [lp('T1-1a', 'graduated', '2026-07-17T10:00:00+09:00')],
+      now,
+    )
     expect(g.remaining).toBe(GOAL_VERSE_COUNT)
     expect(g.todayNew).toBe(0)
   })
 
   it('오늘 졸업분은 필요 페이스 분자에 포함된다', () => {
     const learning = [
-      lp('AS1a', 3, '2026-07-17T10:00:00+09:00'), // 오늘 졸업
-      lp('AS2a', 3, '2026-07-10T10:00:00+09:00'), // 이전 졸업
-      lp('AS3a', 1, '2026-07-17T11:00:00+09:00'), // 학습 중 (미졸업)
+      lp('AS1a', 'graduated', '2026-07-17T10:00:00+09:00'), // 오늘 졸업
+      lp('AS2a', 'graduated', '2026-07-10T10:00:00+09:00'), // 이전 졸업
+      lp('AS3a', 'firstLetter', '2026-07-17T11:00:00+09:00'), // 학습 중 (미졸업)
     ]
     const g = computeGoal('2026-08-20', learning, now)
     expect(g.remaining).toBe(GOAL_VERSE_COUNT - 2)
@@ -66,8 +71,8 @@ describe('computeGoal', () => {
 
   it('최근 페이스: 지난 7일 창 안의 졸업만 센다', () => {
     const learning = [
-      lp('AS1a', 3, '2026-07-17T10:00:00+09:00'), // 창 안
-      lp('AS2a', 3, '2026-07-10T10:00:00+09:00'), // 창 밖 (7일 전 정오 이전)
+      lp('AS1a', 'graduated', '2026-07-17T10:00:00+09:00'), // 창 안
+      lp('AS2a', 'graduated', '2026-07-10T10:00:00+09:00'), // 창 밖 (7일 전 정오 이전)
     ]
     const g = computeGoal('2026-08-20', learning, now)
     expect(g.recentPace).toBeCloseTo(1 / PACE_WINDOW_DAYS)
@@ -83,8 +88,8 @@ describe('computeGoal', () => {
   it('현재 페이스로 남은 구절을 나눠 예상 완료일과 여유 일수를 준다', () => {
     // 300구절은 오래전 졸업, 7구절은 최근 7일 안에 졸업 → 페이스 1구절/일, 남은 8구절
     const learning = [
-      ...GOAL_IDS.slice(0, 300).map((id) => lp(id, 3, '2026-06-01T10:00:00+09:00')),
-      ...GOAL_IDS.slice(300, 307).map((id) => lp(id, 3, '2026-07-15T10:00:00+09:00')),
+      ...GOAL_IDS.slice(0, 300).map((id) => lp(id, 'graduated', '2026-06-01T10:00:00+09:00')),
+      ...GOAL_IDS.slice(300, 307).map((id) => lp(id, 'graduated', '2026-07-15T10:00:00+09:00')),
     ]
     const g = computeGoal('2026-08-20', learning, now)
     expect(g.remaining).toBe(8)

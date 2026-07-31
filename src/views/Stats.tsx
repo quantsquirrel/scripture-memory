@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
 
+import {
+  dueCards,
+  getAllCards,
+  getAllLearning,
+  getExamMode,
+  getGoalBufferDays,
+  getGoalDate,
+  reviewsSince,
+} from '../app'
 import { BulletBar, ForecastBars, HistoryBars } from '../components/StatCharts'
 import {
   collectionOf,
@@ -9,16 +18,7 @@ import {
   VERSE_BY_ID,
   VERSES,
 } from '../data/verses'
-import {
-  dueCards,
-  getAllCards,
-  getAllLearning,
-  getExamMode,
-  getGoalBufferDays,
-  getGoalDate,
-  reviewsSince,
-} from '../lib/db'
-import { DEFAULT_RETENTION } from '../lib/fsrs'
+import { type Direction, DIRECTION_LABEL, type StoredCard } from '../domain/card'
 import {
   computeGoal,
   computeReadiness,
@@ -28,7 +28,9 @@ import {
   examModeActive,
   type ExamReadiness,
   type GoalInfo,
-} from '../lib/goal'
+} from '../domain/goal'
+import { isGraduated } from '../domain/ladder'
+import { DEFAULT_RETENTION } from '../domain/scheduler'
 import {
   type AccuracySummary,
   dailyPick,
@@ -50,8 +52,7 @@ import {
   trueRetention,
   type WeakVerse,
   weakVerses,
-} from '../lib/stats'
-import { type Direction, DIRECTION_LABEL, type StoredCard } from '../lib/types'
+} from '../domain/stats'
 
 interface StatsData {
   cards: StoredCard[]
@@ -118,7 +119,7 @@ export function Stats() {
       const today = month.filter((r) => r.ts >= midnight.toISOString())
       setData({
         cards,
-        graduatedIds: new Set(learning.filter((l) => l.step >= 3).map((l) => l.verseId)),
+        graduatedIds: new Set(learning.filter(isGraduated).map((l) => l.verseId)),
         knowledge: knowledgeNow(cards, now),
         readiness: computeReadiness(cards, gd, now),
         mat: maturity(cards),

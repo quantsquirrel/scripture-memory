@@ -1,7 +1,8 @@
 import { collectionOf, COLLECTIONS, VERSES } from '../data/verses'
-import { retrievabilityAt, State } from './fsrs'
+import { DIRECTIONS, type StoredCard } from './card'
 import { required } from './invariant'
-import { DIRECTIONS, type LearnProgress, type StoredCard } from './types'
+import { isGraduated, type LearnProgress } from './ladder'
+import { retrievabilityAt, State } from './scheduler'
 
 export const DEFAULT_GOAL_DATE = '2026-08-26'
 /** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
@@ -61,7 +62,7 @@ export function computeGoal(
   now: Date = new Date(),
   bufferDays: number = DEFAULT_REVIEW_BUFFER_DAYS,
 ): GoalInfo {
-  const graduated = learning.filter((l) => l.step >= 3 && GOAL_VERSE_IDS.has(l.verseId))
+  const graduated = learning.filter((l) => isGraduated(l) && GOAL_VERSE_IDS.has(l.verseId))
   const remaining = GOAL_VERSE_COUNT - graduated.length
   const midnight = new Date(now)
   midnight.setHours(0, 0, 0, 0)

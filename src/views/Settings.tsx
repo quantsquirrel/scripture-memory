@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { getTheme, setTheme, type Theme } from '../adapters/theme'
 import {
   applySchedulerSettings,
   exportAll,
@@ -19,11 +20,11 @@ import {
   setLastSyncAt as persistLastSyncAt,
   setSyncGistId as persistSyncGistId,
   setSyncToken as persistSyncToken,
-} from '../lib/db'
-import { DEFAULT_RETENTION } from '../lib/fsrs'
-import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS, EXAM_RETENTION } from '../lib/goal'
-import { syncNow } from '../lib/sync'
-import { getTheme, setTheme, type Theme } from '../lib/theme'
+  syncNow,
+} from '../app'
+import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS, EXAM_RETENTION } from '../domain/goal'
+import { isGraduated } from '../domain/ladder'
+import { DEFAULT_RETENTION } from '../domain/scheduler'
 
 const THEME_OPTIONS: [Theme, string][] = [
   ['auto', '자동'],
@@ -60,7 +61,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
       getSyncGistId(),
       getLastSyncAt(),
     ]).then(([r, l, g, buf, em, t, gid, last]) => {
-      setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length })
+      setStats({ reviews: r, graduated: l.filter(isGraduated).length })
       if (g) setGoalDate(g)
       if (buf !== undefined) setBufferDays(buf)
       if (em !== undefined) setExamModeState(em)

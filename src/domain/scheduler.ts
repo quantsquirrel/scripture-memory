@@ -4,11 +4,11 @@ import {
   fsrs,
   generatorParameters,
   type Grade,
-  Rating,
+  Rating as FsrsRating,
   State,
 } from 'ts-fsrs'
 
-import type { SerializedCard } from './types'
+import type { Rating, ReviewEntry, ReviewEvidence, SerializedCard, StoredCard } from './card'
 
 /** 장기 유지용 기본 목표 기억률 */
 export const DEFAULT_RETENTION = 0.9
@@ -42,7 +42,6 @@ export function serializeCard(c: Card): SerializedCard {
     // 예외: ts-fsrs가 elapsed_days를 6.0에서 제거 예정으로 표시했지만, 이 필드는
     // v1 사용자 데이터와 골든 fixture(tests/fixtures/export-v1.json)에 이미 들어
     // 있다. 읽고 다시 쓰지 않으면 기존 백업의 왕복이 손실된다 — 하드 경계 3.
-    // ts-fsrs가 실제로 제거하는 시점에 마이그레이션과 함께 정리한다.
     // eslint-disable-next-line @typescript-eslint/no-deprecated
     elapsed_days: c.elapsed_days,
     scheduled_days: c.scheduled_days,
@@ -52,7 +51,7 @@ export function serializeCard(c: Card): SerializedCard {
     state: c.state,
   }
   // exactOptionalPropertyTypes: last_review는 '없음'과 'undefined 값'이 다르다.
-  // 복습 전 카드는 키 자체를 두지 않는다 (v1 export와 바이트 단위로 같은 모양).
+  // 복습 전 카드는 키 자체를 두지 않는다 (v1 export와 같은 모양).
   return c.last_review === undefined
     ? base
     : { ...base, last_review: new Date(c.last_review).toISOString() }
@@ -96,29 +95,72 @@ export function newCard(now: Date = new Date()): SerializedCard {
 }
 
 /** 앱의 등급 숫자(1~4) → ts-fsrs Grade. 총 매핑이라 캐스팅이 필요 없다. */
-const GRADE: Record<1 | 2 | 3 | 4, Grade> = {
-  1: Rating.Again,
-  2: Rating.Hard,
-  3: Rating.Good,
-  4: Rating.Easy,
+const GRADE: Record<Rating, Grade> = {
+  1: FsrsRating.Again,
+  2: FsrsRating.Hard,
+  3: FsrsRating.Good,
+  4: FsrsRating.Easy,
 }
 
-export function applyRating(
-  s: SerializedCard,
-  rating: 1 | 2 | 3 | 4,
-  now: Date = new Date(),
-): SerializedCard {
+/**
+ * FSRS 상태 전이의 실제 계산. **이 모듈 밖으로 내보내지 않는다.**
+ *
+ * 하드 경계 1(증거 없는 등급 적용 금지)을 관례가 아니라 구조로 지키기 위한
+ * 장치다. 등급을 적용하려면 rateCard()를 불러야 하고, rateCard는 증거를 필수
+ * 인자로 받아 RatedCard를 만든다. RatedCard의 브랜드 심볼(RATED)은 export되지
+ * 않으므로 다른 모듈에서는 객체 리터럴로 위조할 수 없고, 저장소 포트는
+ * RatedCard만 받는다. 즉 "카드 상태 변경"과 "증거 레코드"는 타입으로 묶여 있다.
+ */
+function applyRating(s: SerializedCard, rating: Rating, now: Date): SerializedCard {
   const { card } = scheduler.next(reviveCard(s), now, GRADE[rating])
   return serializeCard(card)
 }
 
-/** 등급별 다음 복습 간격 미리보기 (버튼 라벨용) */
+const RATED = Symbol('domain/rated')
+
+/**
+ * 등급이 적용된 카드와 그 근거. 생성 경로는 rateCard() 하나뿐이다.
+ * 저장소는 이 타입만 커밋할 수 있으므로 증거 없는 상태 변경이 불가능하다.
+ */
+export interface RatedCard {
+  readonly [RATED]: true
+  /** 등급 적용 후의 카드 */
+  readonly card: StoredCard
+  /** 같은 트랜잭션에 기록될 증거 */
+  readonly entry: Omit<ReviewEntry, 'id'>
+}
+
+export function rateCard(
+  sc: StoredCard,
+  evidence: ReviewEvidence,
+  now: Date = new Date(),
+): RatedCard {
+  return {
+    [RATED]: true,
+    card: { ...sc, card: applyRating(sc.card, evidence.rating, now) },
+    entry: {
+      cardKey: sc.key,
+      verseId: sc.verseId,
+      direction: sc.direction,
+      mode: evidence.mode,
+      rating: evidence.rating,
+      accuracy: evidence.accuracy,
+      peeks: evidence.peeks,
+      ts: now.toISOString(),
+    },
+  }
+}
+
+/**
+ * 등급별 다음 복습 간격 미리보기 (버튼 라벨용).
+ * 상태를 반환하지 않고 문자열만 주므로 이 경로로는 등급이 적용되지 않는다.
+ */
 export function intervalPreview(
   s: SerializedCard,
   now: Date = new Date(),
-): Record<1 | 2 | 3 | 4, string> {
+): Record<Rating, string> {
   const revived = reviveCard(s)
-  const preview = (r: 1 | 2 | 3 | 4): string =>
+  const preview = (r: Rating): string =>
     formatInterval(scheduler.next(revived, now, GRADE[r]).card.due.getTime() - now.getTime())
   return { 1: preview(1), 2: preview(2), 3: preview(3), 4: preview(4) }
 }
@@ -140,4 +182,4 @@ export function formatInterval(ms: number): string {
   return `${(days / 365).toFixed(1)}년`
 }
 
-export { Rating, State }
+export { State }

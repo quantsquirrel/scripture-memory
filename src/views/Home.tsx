@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import {
   dueCards,
   getAllLearning,
@@ -10,8 +9,8 @@ import {
   nextDueAt,
   reviewsSince,
   upcomingLearningCards,
-} from '../lib/db'
-import { formatInterval } from '../lib/fsrs'
+} from '../app'
+import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
@@ -19,9 +18,10 @@ import {
   EXAM_RETENTION,
   examModeActive,
   type GoalInfo,
-} from '../lib/goal'
-import { LEARN_AHEAD_MS } from '../lib/policy'
-import type { LearnProgress } from '../lib/types'
+} from '../domain/goal'
+import { isGraduated, isInProgress, type LearnProgress, stepOrdinal } from '../domain/ladder'
+import { LEARN_AHEAD_MS } from '../domain/policy'
+import { formatInterval } from '../domain/scheduler'
 
 interface HomeData {
   /** 이 스냅샷을 읽은 시각 — 렌더 중 Date.now()를 부르지 않기 위해 함께 보관한다 */
@@ -79,12 +79,14 @@ export function Home({
 
   if (!data) return <p className="muted">불러오는 중…</p>
 
-  const graduated = new Set(data.learning.filter((l) => l.step >= 3).map((l) => l.verseId))
-  const inProgress = data.learning.find((l) => l.step > 0 && l.step < 3)
+  const graduated = new Set(data.learning.filter(isGraduated).map((l) => l.verseId))
+  const inProgress = data.learning.find(isInProgress)
   const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
   const nextNew = VERSES.find((v) => !graduated.has(v.id) && v.id !== inProgress?.verseId)
   const weekAgo = new Date(data.now - 7 * 86400_000).toISOString()
-  const newThisWeek = data.learning.filter((l) => l.step >= 3 && l.updatedAt >= weekAgo).length
+  const newThisWeek = data.learning.filter(
+    (l) => isGraduated(l) && l.updatedAt >= weekAgo,
+  ).length
   const learnEnd = new Date(
     new Date(`${data.goal.goalDate}T12:00:00`).getTime() - data.goal.bufferDays * 86400_000,
   )
@@ -180,7 +182,8 @@ export function Home({
               onLearn(inProgressVerse.id)
             }}
           >
-            이어서: {inProgressVerse.refAbbr} (단계 {inProgress.step + 1}/4)
+            이어서: {inProgressVerse.refAbbr} (단계 {stepOrdinal(inProgress.step).nth}/
+            {stepOrdinal(inProgress.step).total})
           </button>
         )}
         {nextNew ? (

@@ -1,5 +1,7 @@
-import { exportAll, type ExportBundle, importAll } from './db'
-import type { LearnProgress, ReviewEntry, StoredCard } from './types'
+import type { ReviewEntry, StoredCard } from '../domain/card'
+import { type LearnProgress, stepToLegacy } from '../domain/ladder'
+import { type ExportBundle, SCHEMA_VERSION, type Store } from '../ports/repositories'
+import { decodeBundle } from './bundle'
 
 export interface SyncConfig {
   token: string
@@ -20,7 +22,7 @@ function headers(token: string): Record<string, string> {
 function emptyBundle(): ExportBundle {
   return {
     app: 'scripture-memory',
-    version: 1,
+    version: SCHEMA_VERSION,
     exportedAt: new Date(0).toISOString(),
     cards: [],
     reviews: [],
@@ -49,13 +51,18 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const learning = new Map<string, LearnProgress>()
   for (const l of [...a.learning, ...b.learning]) {
     const prev = learning.get(l.verseId)
-    if (!prev || l.step > prev.step || (l.step === prev.step && l.updatedAt > prev.updatedAt)) {
+    // 사다리 단계는 문자열이므로 순서 비교는 사다리 순번으로 한다
+    if (
+      !prev ||
+      stepToLegacy(l.step) > stepToLegacy(prev.step) ||
+      (l.step === prev.step && l.updatedAt > prev.updatedAt)
+    ) {
       learning.set(l.verseId, l)
     }
   }
   return {
     app: 'scripture-memory',
-    version: 1,
+    version: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     cards: [...cards.values()],
     reviews: [...reviews.values()].sort((x, y) => (x.ts < y.ts ? -1 : 1)),
@@ -68,7 +75,7 @@ async function fetchRemote(cfg: SyncConfig): Promise<ExportBundle> {
   if (res.status === 404) throw new Error('Gist를 찾을 수 없습니다 (ID 확인)')
   if (!res.ok) throw new Error(`Gist 읽기 실패: HTTP ${res.status}`)
   const gist = (await res.json()) as {
-    files: Record<string, { content: string; truncated: boolean; raw_url: string }>
+    files: Record<string, { content: string; truncated: boolean; raw_url: string } | undefined>
   }
   const file = gist.files[FILE]
   if (!file) return emptyBundle()
@@ -78,11 +85,14 @@ async function fetchRemote(cfg: SyncConfig): Promise<ExportBundle> {
     if (!raw.ok) throw new Error(`Gist raw 읽기 실패: HTTP ${raw.status}`)
     content = await raw.text()
   }
+  let parsed: unknown
   try {
-    return JSON.parse(content) as ExportBundle
+    parsed = JSON.parse(content)
   } catch {
     throw new Error('원격 데이터 파싱 실패 — Gist 내용을 확인하세요')
   }
+  // 원격도 v1일 수 있다 (다른 기기가 아직 업데이트되지 않은 경우)
+  return decodeBundle(parsed)
 }
 
 async function pushRemote(cfg: SyncConfig, bundle: ExportBundle): Promise<void> {
@@ -91,7 +101,9 @@ async function pushRemote(cfg: SyncConfig, bundle: ExportBundle): Promise<void> 
     headers: headers(cfg.token),
     body: JSON.stringify({ files: { [FILE]: { content: JSON.stringify(bundle) } } }),
   })
-  if (!res.ok) throw new Error(`Gist 쓰기 실패: HTTP ${res.status} (토큰의 gist 권한 확인)`)
+  if (!res.ok) {
+    throw new Error(`Gist 쓰기 실패: HTTP ${res.status} (토큰의 gist 권한 확인)`)
+  }
 }
 
 export interface SyncResult {
@@ -101,10 +113,10 @@ export interface SyncResult {
 }
 
 /** 원격을 읽어 로컬과 병합 → 로컬 저장 + 원격 갱신 */
-export async function syncNow(cfg: SyncConfig): Promise<SyncResult> {
-  const [local, remote] = [await exportAll(), await fetchRemote(cfg)]
+export async function syncNow(store: Store, cfg: SyncConfig): Promise<SyncResult> {
+  const [local, remote] = [await store.exportAll(), await fetchRemote(cfg)]
   const merged = mergeBundles(local, remote)
-  await importAll(merged)
+  await store.importAll(merged)
   await pushRemote(cfg, merged)
   return {
     reviews: merged.reviews.length,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { VERSE_BY_ID } from '../src/data/verses'
-import { required } from '../src/lib/invariant'
-import { gradeRef, parseRef } from '../src/lib/refInput'
+import { required } from '../src/domain/invariant'
+import { gradeRef, parseRef } from '../src/domain/ref'
 
 const verse = (id: string) => required(VERSE_BY_ID[id], `구절 ${id}`)
 

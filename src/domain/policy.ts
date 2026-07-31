@@ -1,5 +1,5 @@
+import type { Direction, ReviewMode, StoredCard } from './card'
 import { required } from './invariant'
-import type { Direction, ReviewMode, StoredCard } from './types'
 
 /**
  * learn-ahead 창: 몇 분 안에 due가 오는 학습·재학습 단계 카드를 당겨

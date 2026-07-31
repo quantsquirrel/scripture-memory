@@ -1,6 +1,6 @@
 import { Fragment } from 'react'
 
-import { type TypingGrade, wordBoundaries } from '../lib/diff'
+import { type TypingGrade, wordBoundaries } from '../domain/grading'
 
 export function DiffView({ grade, target }: { grade: TypingGrade; target: string }) {
   const boundaries = wordBoundaries(target)

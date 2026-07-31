@@ -1,4 +1,4 @@
-import { required } from '../lib/invariant'
+import { required } from '../domain/invariant'
 import raw from './verses.json'
 
 export interface VerseEntry {
