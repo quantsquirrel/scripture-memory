@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "bench": "vite-node scripts/bench-store.ts",
     "e2e": "playwright test",
-    "coverage": "TZ=Asia/Seoul vitest run --coverage"
+    "coverage": "TZ=Asia/Seoul vitest run --coverage",
+    "verify:data": "python3 scripts/data/verify_verses.py"
   },
   "dependencies": {
     "idb": "^8.0.3",
