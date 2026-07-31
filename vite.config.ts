@@ -1,9 +1,14 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   base: '/scripture-memory/',
+  // vitest는 tests/만 본다 — e2e/는 Playwright 러너 몫이고 *.spec.ts 기본 패턴에
+  // 걸려 vitest가 집어 가면 실패한다.
+  test: {
+    include: ['tests/**/*.test.ts'],
+  },
   plugins: [
     react(),
     VitePWA({

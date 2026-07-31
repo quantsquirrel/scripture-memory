@@ -1,34 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import { applySchedulerSettings } from '../app'
 import { Browse } from './Browse'
 import { Home } from './Home'
+import { useRevision } from './hooks'
 import { Learn } from './Learn'
 import { Review } from './Review'
+import { type Route, TABS, toHash, useRoute } from './router'
 import { Settings } from './Settings'
 import { Stats } from './Stats'
 
-type View =
-  | { name: 'home' }
-  | { name: 'review' }
-  | { name: 'learn'; verseId: string }
-  | { name: 'browse' }
-  | { name: 'stats' }
-  | { name: 'settings' }
-
 export default function App() {
-  const [view, setView] = useState<View>({ name: 'home' })
-  const [epoch, setEpoch] = useState(0)
+  const { route, navigate } = useRoute()
+  const revision = useRevision()
 
-  // 시험 모드 설정 → 스케줄러 목표 기억률. 설정 변경(epoch 증가) 시 재적용
+  // 시험 모드 설정 → 스케줄러 목표 기억률. 설정이 바뀌면 리비전이 올라 재적용된다.
   useEffect(() => {
     void applySchedulerSettings()
-  }, [epoch])
-
-  const go = (v: View) => {
-    setView(v)
-    setEpoch((e) => e + 1) // 뷰 재마운트로 데이터 갱신
-  }
+  }, [revision])
 
   return (
     <div className="app">
@@ -37,79 +26,84 @@ export default function App() {
         <span className="muted small">주제별 성경암송 · 개역한글</span>
       </header>
 
-      <main key={epoch}>
-        {view.name === 'home' && (
-          <Home
-            onReview={() => {
-              go({ name: 'review' })
-            }}
-            onLearn={(verseId) => {
-              go({ name: 'learn', verseId })
-            }}
-            onBrowse={() => {
-              go({ name: 'browse' })
-            }}
-          />
-        )}
-        {view.name === 'review' && (
-          <Review
-            onExit={() => {
-              go({ name: 'home' })
-            }}
-          />
-        )}
-        {view.name === 'learn' && (
-          <Learn
-            verseId={view.verseId}
-            onExit={() => {
-              go({ name: 'home' })
-            }}
-            onReview={() => {
-              go({ name: 'review' })
-            }}
-            onLearn={(verseId) => {
-              go({ name: 'learn', verseId })
-            }}
-          />
-        )}
-        {view.name === 'browse' && (
-          <Browse
-            onLearn={(verseId) => {
-              go({ name: 'learn', verseId })
-            }}
-          />
-        )}
-        {view.name === 'stats' && <Stats />}
-        {view.name === 'settings' && (
-          <Settings
-            onChanged={() => {
-              setEpoch((e) => e + 1)
-            }}
-          />
-        )}
+      {/*
+        이전에는 <main key={epoch}>로 뷰 전체를 강제 리마운트해 데이터를 갱신했다.
+        이제 저장소 리비전을 구독하는 훅이 데이터만 다시 읽으므로, 스크롤 위치와
+        입력 중인 텍스트가 유지된다.
+      */}
+      <main>
+        <ViewFor route={route} navigate={navigate} />
       </main>
 
-      <nav className="bottom-nav">
-        {(
-          [
-            ['home', '홈'],
-            ['review', '복습'],
-            ['stats', '돌아보기'],
-            ['browse', '목록'],
-            ['settings', '설정'],
-          ] as const
-        ).map(([name, label]) => (
-          <button
-            key={name}
-            className={view.name === name ? 'active' : ''}
-            onClick={() => {
-              go({ name })
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <nav className="bottom-nav" aria-label="주요 화면">
+        {TABS.map((tab) => {
+          const current = route.name === tab.name
+          return (
+            <a
+              key={tab.name}
+              href={toHash({ name: tab.name } as Route)}
+              className={current ? 'active' : ''}
+              aria-current={current ? 'page' : undefined}
+            >
+              {tab.label}
+            </a>
+          )
+        })}
       </nav>
     </div>
   )
+}
+
+function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) => void }) {
+  switch (route.name) {
+    case 'home':
+      return (
+        <Home
+          onReview={() => {
+            navigate({ name: 'review' })
+          }}
+          onLearn={(verseId) => {
+            navigate({ name: 'learn', verseId })
+          }}
+          onBrowse={() => {
+            navigate({ name: 'browse' })
+          }}
+        />
+      )
+    case 'review':
+      return (
+        <Review
+          onExit={() => {
+            navigate({ name: 'home' })
+          }}
+        />
+      )
+    case 'learn':
+      return (
+        <Learn
+          verseId={route.verseId}
+          onExit={() => {
+            navigate({ name: 'home' })
+          }}
+          onReview={() => {
+            navigate({ name: 'review' })
+          }}
+          onLearn={(verseId) => {
+            navigate({ name: 'learn', verseId })
+          }}
+        />
+      )
+    case 'browse':
+      return (
+        <Browse
+          onLearn={(verseId) => {
+            navigate({ name: 'learn', verseId })
+          }}
+        />
+      )
+    case 'stats':
+      return <Stats />
+    case 'settings':
+      return <Settings />
+  }
 }

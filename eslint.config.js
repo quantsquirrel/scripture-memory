@@ -55,15 +55,27 @@ export default defineConfig(
     ...importSort,
   },
 
-  // React 뷰
+  // React 훅 규칙은 커스텀 훅이 있는 .ts에도 적용한다
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    extends: [reactHooks.configs.flat['recommended-latest']],
+  },
+
+  // JSX 접근성은 JSX가 있는 파일만
   {
     files: ['src/**/*.tsx'],
-    extends: [reactHooks.configs.flat['recommended-latest'], jsxA11y.flatConfigs.strict],
+    extends: [jsxA11y.flatConfigs.strict],
   },
 
   // 테스트·빌드 설정 (노드 전역)
   {
-    files: ['tests/**/*.ts', 'vite.config.ts'],
+    files: [
+      'tests/**/*.ts',
+      'e2e/**/*.ts',
+      'scripts/**/*.ts',
+      'vite.config.ts',
+      'playwright.config.ts',
+    ],
     languageOptions: { globals: globals.node },
     ...importSort,
   },

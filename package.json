@@ -13,7 +13,8 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "bench": "vite-node scripts/bench-store.ts"
+    "bench": "vite-node scripts/bench-store.ts",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "idb": "^8.0.3",
