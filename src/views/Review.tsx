@@ -1,73 +1,43 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
-import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../app'
-import { DiffView } from '../components/DiffView'
-import { FirstLetterBoard } from '../components/FirstLetterBoard'
-import { RatingBar } from '../components/RatingBar'
-import { crumbOf, topicOf, topicOrdinalOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
-import type { ReviewMode, StoredCard } from '../domain/card'
-import {
-  gradeTyping,
-  ratingFromAccuracy,
-  ratingFromPeeks,
-  type TypingGrade,
-} from '../domain/grading'
+import { nextDueAt, submitReview } from '../app'
+import { VERSE_BY_ID } from '../data/verses'
+import type { Rating, ReviewMode, StoredCard } from '../domain/card'
 import { required } from '../domain/invariant'
-import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../domain/policy'
-import { gradeRef } from '../domain/ref'
+import { reviewMode } from '../domain/policy'
 import { formatInterval } from '../domain/scheduler'
-
-/**
- * 본문을 찾을 수 없는 카드는 큐에서 뺀다. 다른 버전에서 만든 백업을 가져오면
- * 이 앱에 없는 구절 id를 가진 카드가 섞일 수 있고, 그 카드는 출제할 수 없다.
- */
-const reviewable = (cards: StoredCard[]): StoredCard[] =>
-  cards.filter((c) => VERSE_BY_ID[c.verseId] !== undefined)
+import { useDueCards } from './hooks'
+import { CardFace } from './review/CardFace'
 
 export function Review({ onExit }: { onExit: () => void }) {
-  const [queue, setQueue] = useState<StoredCard[] | null>(null)
+  const { queue, refill } = useDueCards()
   const [idx, setIdx] = useState(0)
   const [done, setDone] = useState(0)
   // 다음 복습까지 남은 시간은 '읽은 순간' 기준 라벨로 굳혀 둔다 (렌더는 순수하게)
   const [nextDueLabel, setNextDueLabel] = useState<string | null>(null)
 
-  useEffect(() => {
-    // 홈에서 learn-ahead 카드로 진입한 경우 due 큐가 비어 있을 수 있다
-    void dueCards().then(async (cards) => {
-      if (cards.length === 0) cards = await upcomingLearningCards(LEARN_AHEAD_MS)
-      setQueue(orderQueue(reviewable(cards)))
-    })
-  }, [])
-
-  const current = queue && idx < queue.length ? queue[idx] : null
+  const current: StoredCard | null = queue && idx < queue.length ? (queue[idx] ?? null) : null
 
   const rate = useCallback(
-    async (
-      r: 1 | 2 | 3 | 4,
-      mode: ReviewMode,
-      accuracy: number | null,
-      peeks: number | null,
-    ) => {
+    async (r: Rating, mode: ReviewMode, accuracy: number | null, peeks: number | null) => {
       if (!current) return
       await submitReview(current, { mode, rating: r, accuracy, peeks })
       setDone((d) => d + 1)
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)
-      } else {
-        let more = reviewable(await dueCards())
-        if (more.length === 0) more = reviewable(await upcomingLearningCards(LEARN_AHEAD_MS))
-        if (more.length > 0) {
-          setQueue(orderQueue(more))
-          setIdx(0)
-        } else {
-          setQueue([])
-          setIdx(0)
-          const at = await nextDueAt()
-          setNextDueLabel(at ? formatInterval(new Date(at).getTime() - Date.now()) : null)
-        }
+        return
+      }
+      // 큐를 소진했다 — 다시 채워 보고 비어 있으면 세션을 마친다
+      const more = await refill()
+      setIdx(0)
+      if (more.length === 0) {
+        const at = await nextDueAt()
+        setNextDueLabel(
+          at === null ? null : formatInterval(new Date(at).getTime() - Date.now()),
+        )
       }
     },
-    [current, queue, idx],
+    [current, queue, idx, refill],
   )
 
   if (queue === null) return <p className="muted">불러오는 중…</p>
@@ -77,7 +47,7 @@ export function Review({ onExit }: { onExit: () => void }) {
       <div className="panel center">
         <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
         {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
-        {nextDueLabel && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
+        {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
         {queue.length === 0 && done === 0 && (
           <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
         )}
@@ -88,10 +58,8 @@ export function Review({ onExit }: { onExit: () => void }) {
     )
   }
 
-  // reviewable()이 걸러낸 뒤이므로 본문은 반드시 존재한다
+  // useDueCards가 본문 없는 카드를 걸러낸 뒤이므로 반드시 존재한다
   const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
-  const mode = reviewMode(current.direction, current.card.reps)
-  const remaining = queue.length - idx
 
   return (
     <div>
@@ -99,255 +67,17 @@ export function Review({ onExit }: { onExit: () => void }) {
         <button className="btn-ghost" onClick={onExit}>
           ← 종료
         </button>
-        <span className="muted">남은 카드 {remaining}</span>
+        <span className="muted">남은 카드 {queue.length - idx}</span>
       </div>
       <CardFace
         key={`${current.key}:${current.card.reps}`}
         sc={current}
         verse={verse}
-        mode={mode}
+        mode={reviewMode(current.direction, current.card.reps)}
         onRate={(r, m, accuracy, peeks) => {
           void rate(r, m, accuracy, peeks)
         }}
       />
-    </div>
-  )
-}
-
-function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
-  if (sc.direction === 'topic') {
-    const { nth, total } = topicOrdinalOf(verse)
-    return (
-      <div className="prompt">
-        <span className="chip">{crumbOf(verse).join(' · ')}</span>
-        <h2 className="prompt-main">
-          {topicOf(verse).title}
-          {total > 1 && (
-            <span className="prompt-ord">
-              {nth}/{total}
-            </span>
-          )}
-        </h2>
-        <p className="muted">
-          {total > 1
-            ? `이 주제 ${total}구절 중 ${ordinalKo(nth)} 구절의 장절과 말씀을 낭송하세요`
-            : '이 주제의 장절과 말씀을 낭송하세요'}
-        </p>
-      </div>
-    )
-  }
-  if (sc.direction === 'ref') {
-    return (
-      <div className="prompt">
-        <h2 className="prompt-main">{verse.ref}</h2>
-        <p className="muted">이 장절의 제목과 말씀을 낭송하세요</p>
-      </div>
-    )
-  }
-  return (
-    <div className="prompt">
-      <p className="verse">{verse.text}</p>
-      <p className="muted">이 말씀의 장절은?</p>
-    </div>
-  )
-}
-
-function ordinalKo(n: number): string {
-  return ['첫째', '둘째', '셋째', '넷째'][n - 1] ?? `${n}번째`
-}
-
-function Answer({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
-  if (sc.direction === 'text') {
-    return (
-      <div className="answer">
-        <h3>{verse.ref}</h3>
-        <p className="muted">
-          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
-        </p>
-      </div>
-    )
-  }
-  return (
-    <div className="answer">
-      {sc.direction === 'ref' && (
-        <p className="muted">
-          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
-        </p>
-      )}
-      <p className="answer-ref">{verse.ref}</p>
-      <p className="verse">{verse.text}</p>
-      <p className="answer-ref">{verse.ref}</p>
-    </div>
-  )
-}
-
-function CardFace({
-  sc,
-  verse,
-  mode,
-  onRate,
-}: {
-  sc: StoredCard
-  verse: VerseEntry
-  mode: ReviewMode
-  onRate: (
-    r: 1 | 2 | 3 | 4,
-    mode: ReviewMode,
-    accuracy: number | null,
-    peeks: number | null,
-  ) => void
-}) {
-  const [revealed, setRevealed] = useState(false)
-  const [peeks, setPeeks] = useState(0)
-  const [attempt, setAttempt] = useState('')
-  const [grade, setGrade] = useState<TypingGrade | null>(null)
-  const [refOk, setRefOk] = useState<boolean | null>(null)
-
-  const modeLabel: Record<ReviewMode, string> = {
-    recite: '소리 내어 낭송',
-    firstLetter: '첫글자 힌트',
-    typing: '타이핑 감사',
-    refInput: '장절 입력',
-  }
-
-  return (
-    <div className="panel">
-      <div className="mode-tag">{modeLabel[mode]}</div>
-      <Prompt sc={sc} verse={verse} />
-
-      {mode === 'recite' && !revealed && (
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setRevealed(true)
-          }}
-        >
-          정답 보기
-        </button>
-      )}
-      {mode === 'recite' && revealed && (
-        <>
-          <Answer sc={sc} verse={verse} />
-          <RatingBar
-            card={sc.card}
-            onRate={(r) => {
-              onRate(r, mode, null, null)
-            }}
-          />
-        </>
-      )}
-
-      {mode === 'firstLetter' && !revealed && (
-        <>
-          <FirstLetterBoard
-            text={verse.text}
-            onPeek={() => {
-              setPeeks((p) => p + 1)
-            }}
-          />
-          <p className="muted small">막히는 어절만 탭하세요 · 엿보기 {peeks}회</p>
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              setRevealed(true)
-            }}
-          >
-            낭송 완료 — 확인
-          </button>
-        </>
-      )}
-      {mode === 'firstLetter' && revealed && (
-        <>
-          <Answer sc={sc} verse={verse} />
-          <p className="muted small">엿보기 {peeks}회 → 제안 등급이 강조됩니다</p>
-          <RatingBar
-            card={sc.card}
-            suggested={ratingFromPeeks(peeks)}
-            onRate={(r) => {
-              onRate(r, mode, null, peeks)
-            }}
-          />
-        </>
-      )}
-
-      {mode === 'typing' && !grade && (
-        <>
-          <textarea
-            className="typing-input"
-            value={attempt}
-            onChange={(e) => {
-              setAttempt(e.target.value)
-            }}
-            placeholder="말씀을 입력하세요 (구두점 무시)"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            rows={5}
-          />
-          <button
-            className="btn btn-primary"
-            disabled={attempt.trim() === ''}
-            onClick={() => {
-              setGrade(gradeTyping(verse.text, attempt))
-            }}
-          >
-            채점
-          </button>
-        </>
-      )}
-      {mode === 'typing' && grade && (
-        <>
-          <DiffView grade={grade} target={verse.text} />
-          <Answer sc={sc} verse={verse} />
-          <RatingBar
-            card={sc.card}
-            suggested={ratingFromAccuracy(grade)}
-            onRate={(r) => {
-              onRate(r, mode, grade.accuracy, null)
-            }}
-          />
-        </>
-      )}
-
-      {mode === 'refInput' && refOk === null && (
-        <>
-          <input
-            className="ref-input"
-            value={attempt}
-            onChange={(e) => {
-              setAttempt(e.target.value)
-            }}
-            placeholder="예: 고후 5:17 / 빌립보서 4:6-7"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-          />
-          <button
-            className="btn btn-primary"
-            disabled={attempt.trim() === ''}
-            onClick={() => {
-              setRefOk(gradeRef(verse, attempt))
-            }}
-          >
-            확인
-          </button>
-        </>
-      )}
-      {mode === 'refInput' && refOk !== null && (
-        <>
-          <div className={`diff-score ${refOk ? 'good' : 'bad'}`}>
-            {refOk ? '정답!' : `오답 — 입력: ${attempt}`}
-          </div>
-          <Answer sc={sc} verse={verse} />
-          <RatingBar
-            card={sc.card}
-            suggested={refOk ? 3 : 1}
-            onRate={(r) => {
-              onRate(r, mode, refOk ? 1 : 0, null)
-            }}
-          />
-        </>
-      )}
     </div>
   )
 }

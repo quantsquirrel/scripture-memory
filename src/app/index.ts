@@ -4,6 +4,7 @@ import type { ReviewEntry, ReviewEvidence, StoredCard } from '../domain/card'
 import type { LadderCommand, LadderOutcome, LadderStep, LearnProgress } from '../domain/ladder'
 import type { ExportBundle, SettingsStore, Store } from '../ports/repositories'
 import * as review from './review'
+import { notifying } from './revision'
 import * as settingsUseCase from './settings'
 
 /**
@@ -43,42 +44,42 @@ export const getAllLearning = (): Promise<LearnProgress[]> => store.learning.all
 
 export const exportAll = (): Promise<ExportBundle> => store.exportAll()
 
-export const importAll = (input: unknown): Promise<void> => store.importAll(input)
+export const importAll = notifying((input: unknown): Promise<void> => store.importAll(input))
 
-export const resetAll = (): Promise<void> => store.reset()
+export const resetAll = notifying((): Promise<void> => store.reset())
 
 /** 등급 적용의 유일한 경로 — 증거 없이는 호출할 수 없다 */
-export const submitReview = (
-  card: StoredCard,
-  evidence: ReviewEvidence,
-  now?: Date,
-): Promise<StoredCard> => review.submitReview(store, card, evidence, now)
+export const submitReview = notifying(
+  (card: StoredCard, evidence: ReviewEvidence, now?: Date): Promise<StoredCard> =>
+    review.submitReview(store, card, evidence, now),
+)
 
 export const openLadder = (verseId: string): Promise<LadderStep> =>
   review.openLadder(store, verseId)
 
-export const runLadder = (
-  verseId: string,
-  cmd: LadderCommand,
-  now?: Date,
-): Promise<LadderOutcome> => review.runLadder(store, verseId, cmd, now)
+export const runLadder = notifying(
+  (verseId: string, cmd: LadderCommand, now?: Date): Promise<LadderOutcome> =>
+    review.runLadder(store, verseId, cmd, now),
+)
 
 export const applySchedulerSettings = (now?: Date): Promise<void> =>
   settingsUseCase.applySchedulerSettings(store, now)
 
 // 설정 접근자 — 포트의 메서드를 뷰가 쓰는 이름으로 얇게 묶어 둔다
 export const getGoalDate = (): Promise<string | undefined> => settings.goalDate()
-export const setGoalDate = (v: string): Promise<void> => settings.setGoalDate(v)
+export const setGoalDate = notifying((v: string): Promise<void> => settings.setGoalDate(v))
 export const getGoalBufferDays = (): Promise<number | undefined> => settings.goalBufferDays()
-export const setGoalBufferDays = (v: number): Promise<void> => settings.setGoalBufferDays(v)
+export const setGoalBufferDays = notifying((v: number): Promise<void> =>
+  settings.setGoalBufferDays(v),
+)
 export const getExamMode = (): Promise<boolean | undefined> => settings.examMode()
-export const setExamMode = (v: boolean): Promise<void> => settings.setExamMode(v)
+export const setExamMode = notifying((v: boolean): Promise<void> => settings.setExamMode(v))
 export const getSyncToken = (): Promise<string | undefined> => settings.syncToken()
-export const setSyncToken = (v: string): Promise<void> => settings.setSyncToken(v)
+export const setSyncToken = notifying((v: string): Promise<void> => settings.setSyncToken(v))
 export const getSyncGistId = (): Promise<string | undefined> => settings.syncGistId()
-export const setSyncGistId = (v: string): Promise<void> => settings.setSyncGistId(v)
+export const setSyncGistId = notifying((v: string): Promise<void> => settings.setSyncGistId(v))
 export const getLastSyncAt = (): Promise<string | undefined> => settings.lastSyncAt()
-export const setLastSyncAt = (v: string): Promise<void> => settings.setLastSyncAt(v)
+export const setLastSyncAt = notifying((v: string): Promise<void> => settings.setLastSyncAt(v))
 
 /** Gist 동기화 (선택 기능) — 기본 저장소에 묶어 둔 바인딩 */
-export const syncNow = (cfg: SyncConfig): Promise<SyncResult> => gistSync(store, cfg)
+export const syncNow = notifying((cfg: SyncConfig): Promise<SyncResult> => gistSync(store, cfg))

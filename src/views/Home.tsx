@@ -1,42 +1,10 @@
-import { useEffect, useState } from 'react'
+import { PROGRESS_ROWS } from '../app/queries'
+import { collectionOf, VERSE_BY_ID, VERSES } from '../data/verses'
+import { stepOrdinal } from '../domain/ladder'
+import { type LearnTarget, NewVersePanel, ProgressPanel, TodayReviewPanel } from './home/panels'
+import { useHomeData } from './hooks'
 
-import {
-  dueCards,
-  getAllLearning,
-  getExamMode,
-  getGoalBufferDays,
-  getGoalDate,
-  nextDueAt,
-  reviewsSince,
-  upcomingLearningCards,
-} from '../app'
-import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import {
-  computeGoal,
-  DEFAULT_GOAL_DATE,
-  DEFAULT_REVIEW_BUFFER_DAYS,
-  EXAM_RETENTION,
-  examModeActive,
-  type GoalInfo,
-} from '../domain/goal'
-import { isGraduated, isInProgress, type LearnProgress, stepOrdinal } from '../domain/ladder'
-import { LEARN_AHEAD_MS } from '../domain/policy'
-import { formatInterval } from '../domain/scheduler'
-
-interface HomeData {
-  /** 이 스냅샷을 읽은 시각 — 렌더 중 Date.now()를 부르지 않기 위해 함께 보관한다 */
-  now: number
-  due: number
-  dueVerses: number
-  upcoming: number
-  overdue: number
-  todayReviews: number
-  learning: LearnProgress[]
-  nextDue: string | null
-  goal: GoalInfo
-  examActive: boolean
-}
-
+/** 컨테이너: 데이터를 훅에서 받아 프레젠테이션 컴포넌트가 쓸 모양으로만 다듬는다 */
 export function Home({
   onReview,
   onLearn,
@@ -46,194 +14,59 @@ export function Home({
   onLearn: (verseId: string) => void
   onBrowse: () => void
 }) {
-  const [data, setData] = useState<HomeData | null>(null)
-
-  useEffect(() => {
-    const midnight = new Date()
-    midnight.setHours(0, 0, 0, 0)
-    void Promise.all([
-      dueCards(),
-      upcomingLearningCards(LEARN_AHEAD_MS),
-      reviewsSince(midnight.toISOString()),
-      getAllLearning(),
-      nextDueAt(),
-      getGoalDate(),
-      getGoalBufferDays(),
-      getExamMode(),
-    ]).then(([due, upcoming, today, learning, next, goalDate, buffer, examMode]) => {
-      const gd = goalDate ?? DEFAULT_GOAL_DATE
-      setData({
-        now: Date.now(),
-        due: due.length,
-        dueVerses: new Set(due.map((c) => c.verseId)).size,
-        upcoming: upcoming.length,
-        overdue: due.filter((c) => c.card.due < midnight.toISOString()).length,
-        todayReviews: today.length,
-        learning,
-        nextDue: next,
-        goal: computeGoal(gd, learning, new Date(), buffer ?? DEFAULT_REVIEW_BUFFER_DAYS),
-        examActive: examModeActive(examMode ?? false, gd),
-      })
-    })
-  }, [])
-
+  const data = useHomeData()
   if (!data) return <p className="muted">불러오는 중…</p>
 
-  const graduated = new Set(data.learning.filter(isGraduated).map((l) => l.verseId))
-  const inProgress = data.learning.find(isInProgress)
+  const { graduatedIds, inProgress, goal } = data
   const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
-  const nextNew = VERSES.find((v) => !graduated.has(v.id) && v.id !== inProgress?.verseId)
-  const weekAgo = new Date(data.now - 7 * 86400_000).toISOString()
-  const newThisWeek = data.learning.filter(
-    (l) => isGraduated(l) && l.updatedAt >= weekAgo,
-  ).length
-  const learnEnd = new Date(
-    new Date(`${data.goal.goalDate}T12:00:00`).getTime() - data.goal.bufferDays * 86400_000,
-  )
-  const learnEndLabel = `${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`
+  const resume: LearnTarget | null =
+    inProgress && inProgressVerse
+      ? {
+          id: inProgressVerse.id,
+          label: `${inProgressVerse.refAbbr} (단계 ${stepOrdinal(inProgress.step).nth}/${stepOrdinal(inProgress.step).total})`,
+        }
+      : null
 
-  // 진행률 행: 기초 3과정(5확신+8동행+60구절)은 한 묶음, DEP는 섹션별, 180구절은 통째
-  const coreKeys = new Set(['AS', 'LV', 'TMS60'])
-  const progressRows = [
-    {
-      key: 'core',
-      label: '5확신·8동행·60구절',
-      verses: VERSES.filter((v) => coreKeys.has(collectionOf(v).key)),
-    },
-    ...sectionsOf('DEP').map((s, i) => ({
-      key: s.key,
-      label: `${i + 1}. ${s.title}`,
-      verses: VERSES.filter((v) => sectionOf(v).key === s.key),
-    })),
-    {
-      key: 'TMS180',
-      label: '180구절',
-      verses: VERSES.filter((v) => collectionOf(v).key === 'TMS180'),
-    },
-  ]
+  const nextNew = VERSES.find((v) => !graduatedIds.has(v.id) && v.id !== inProgress?.verseId)
+  const next: LearnTarget | null = nextNew
+    ? { id: nextNew.id, label: `${collectionOf(nextNew).short} · ${nextNew.refAbbr}` }
+    : null
+
+  const learnEnd = new Date(
+    new Date(`${goal.goalDate}T12:00:00`).getTime() - goal.bufferDays * 86400_000,
+  )
 
   return (
     <div>
-      <section className="panel">
-        <h2>오늘의 복습</h2>
-        {data.due > 0 ? (
-          <>
-            <p>
-              <strong className="big-number">{data.dueVerses}</strong>구절 · 카드 {data.due}장이
-              기다리고 있습니다
-              {data.overdue > 0 && <span className="muted"> · 밀린 카드 {data.overdue}장</span>}
-              {data.todayReviews > 0 && (
-                <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
-              )}
-            </p>
-            <button className="btn btn-primary" onClick={onReview}>
-              복습 시작
-            </button>
-          </>
-        ) : data.upcoming > 0 ? (
-          <>
-            <p>
-              다시 도전할 카드 <strong>{data.upcoming}</strong>장이 잠시 후 돌아옵니다
-              {data.nextDue &&
-                ` (${formatInterval(new Date(data.nextDue).getTime() - data.now)} 후)`}
-              {data.todayReviews > 0 && (
-                <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
-              )}
-            </p>
-            <button className="btn btn-primary" onClick={onReview}>
-              지금 이어서 복습
-            </button>
-          </>
-        ) : (
-          <p className="muted">
-            {data.todayReviews > 0 ? `오늘 ${data.todayReviews}회 복습 완료! ` : ''}
-            대기 중인 카드가 없습니다.
-            {data.nextDue &&
-              ` 다음 복습: ${formatInterval(new Date(data.nextDue).getTime() - data.now)} 후`}
-          </p>
-        )}
-        {data.examActive && (
-          <p className="muted small">
-            시험 모드 — 목표 기억률 {Math.round(EXAM_RETENTION * 100)}% 기준으로 복습 간격을
-            짧게 잡는 중
-          </p>
-        )}
-      </section>
-
-      <section className="panel">
-        <h2>새 구절 학습</h2>
-        {!data.goal.past && data.goal.remaining > 0 && (
-          <p>
-            <strong className="big-number">D-{data.goal.daysLeft}</strong>{' '}
-            <span className="muted">
-              {data.goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은{' '}
-              {data.goal.remaining}구절 · 하루 {data.goal.requiredPace.toFixed(1)}구절 필요
-              {data.goal.todayNew > 0 && ` · 오늘 ${data.goal.todayNew}구절`}
-            </span>
-          </p>
-        )}
-        {data.goal.past && data.goal.remaining > 0 && (
-          <p className="muted small">목표일이 지났습니다 — 설정에서 목표일을 조정하세요.</p>
-        )}
-        {inProgress && inProgressVerse && (
-          <button
-            className="btn"
-            onClick={() => {
-              onLearn(inProgressVerse.id)
-            }}
-          >
-            이어서: {inProgressVerse.refAbbr} (단계 {stepOrdinal(inProgress.step).nth}/
-            {stepOrdinal(inProgress.step).total})
-          </button>
-        )}
-        {nextNew ? (
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              onLearn(nextNew.id)
-            }}
-          >
-            다음 구절: {collectionOf(nextNew).short} · {nextNew.refAbbr}
-          </button>
-        ) : (
-          !inProgress && <p>모든 구절을 학습했습니다! 🎉 이제 유지 복습만 하면 됩니다.</p>
-        )}
-        <p className="muted small">
-          이번 주 새 구절 {newThisWeek}개 · 새 구절은 {learnEndLabel}까지, 마지막{' '}
-          {data.goal.bufferDays}일은 복습으로 굳히기
-        </p>
-      </section>
-
-      <section className="panel">
-        <h2>진행률</h2>
-        <div className="progress">
-          <div
-            className="progress-fill"
-            style={{ width: `${(graduated.size / VERSES.length) * 100}%` }}
-          />
-        </div>
-        <p className="muted small">
-          전체 {graduated.size}/{VERSES.length} 구절 암송 중 — 묵상·마음 밭·훈련 지표는 돌아보기
-          탭에서
-        </p>
-        {progressRows.map((row) => {
-          const done = row.verses.filter((v) => graduated.has(v.id))
-          return (
-            <button key={row.key} className="col-row" onClick={onBrowse}>
-              <span className="col-label">{row.label}</span>
-              <span className="progress col-bar">
-                <span
-                  className="progress-fill"
-                  style={{ width: `${(done.length / row.verses.length) * 100}%` }}
-                />
-              </span>
-              <span className="muted small">
-                {done.length}/{row.verses.length}
-              </span>
-            </button>
-          )
-        })}
-      </section>
+      <TodayReviewPanel
+        due={data.due}
+        dueVerses={data.dueVerses}
+        overdue={data.overdue}
+        upcoming={data.upcoming}
+        todayReviews={data.todayReviews}
+        nextDue={data.nextDue}
+        now={data.now}
+        examActive={data.examActive}
+        onReview={onReview}
+      />
+      <NewVersePanel
+        goal={goal}
+        learnEndLabel={`${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`}
+        newThisWeek={data.newThisWeek}
+        resume={resume}
+        next={next}
+        onLearn={onLearn}
+      />
+      <ProgressPanel
+        overall={{ done: graduatedIds.size, total: VERSES.length }}
+        rows={PROGRESS_ROWS.map((row) => ({
+          key: row.key,
+          label: row.label,
+          done: row.verseIds.filter((id) => graduatedIds.has(id)).length,
+          total: row.verseIds.length,
+        }))}
+        onOpen={onBrowse}
+      />
     </div>
   )
 }
