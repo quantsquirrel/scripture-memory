@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest'
 import { orderQueue, reviewMode } from '../src/lib/policy'
 import { DIRECTIONS, type Direction, type StoredCard } from '../src/lib/types'
+import { required } from '../src/lib/invariant'
 
 describe('reviewMode 정책', () => {
   it('말씀→장절 방향은 언제나 장절 입력(객관 채점)', () => {
@@ -83,7 +84,9 @@ describe('orderQueue 정책', () => {
     for (let seed = 0; seed < 100; seed++) {
       const out = orderQueue(fullDeck(['v1', 'v2', 'v3', 'v4', 'v5']), seeded(seed))
       for (let i = 1; i < out.length; i++) {
-        expect(out[i].verseId, `seed ${seed} 위치 ${i}`).not.toBe(out[i - 1].verseId)
+        expect(required(out[i]).verseId, `seed ${seed} 위치 ${i}`).not.toBe(
+          required(out[i - 1]).verseId,
+        )
       }
     }
   })
@@ -104,7 +107,10 @@ describe('orderQueue 정책', () => {
     const inputOrder = deck.map((c) => c.key)
     // 시드 몇 개 중 하나라도 입력 순서와 다르면 셔플이 동작하는 것
     const anyShuffled = [1, 2, 3].some(
-      (s) => orderQueue(deck, seeded(s)).map((c) => c.key).join() !== inputOrder.join(),
+      (s) =>
+        orderQueue(deck, seeded(s))
+          .map((c) => c.key)
+          .join() !== inputOrder.join(),
     )
     expect(anyShuffled).toBe(true)
   })

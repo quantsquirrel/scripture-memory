@@ -6,24 +6,29 @@ export interface ParsedRef {
   verses: number[]
 }
 
+const REF_RE = /^([가-힣]+)\s*(\d+)\s*[:장]\s*(.+?)\s*$/
+const RANGE_RE = /^(\d+)\s*[-~]\s*(\d+)$/
+
 /** "빌립보서 4:6-7", "빌4:6,7", "빌립보서 4장 6절" 등을 정규화 */
 export function parseRef(input: string): ParsedRef | null {
-  const m = input
-    .normalize('NFC')
-    .trim()
-    .match(/^([가-힣]+)\s*(\d+)\s*[:장]\s*(.+?)\s*$/)
+  const m = REF_RE.exec(input.normalize('NFC').trim())
   if (!m) return null
-  const bookAbbr = BOOK_ALIASES[m[1]]
+  const [, bookRaw, chapterRaw, versesRaw] = m
+  // 세 그룹 모두 패턴상 필수지만 타입은 optional — 못 읽으면 파싱 실패로 처리한다
+  if (bookRaw === undefined || chapterRaw === undefined || versesRaw === undefined) return null
+  const bookAbbr = BOOK_ALIASES[bookRaw]
   if (!bookAbbr) return null
-  const chapter = parseInt(m[2], 10)
+  const chapter = parseInt(chapterRaw, 10)
   const verses: number[] = []
-  for (const part of m[3].replace(/절/g, '').split(/[,、]/)) {
+  for (const part of versesRaw.replace(/절/g, '').split(/[,、]/)) {
     const p = part.trim()
     if (!p) continue
-    const range = p.match(/^(\d+)\s*[-~]\s*(\d+)$/)
+    const range = RANGE_RE.exec(p)
     if (range) {
-      const a = parseInt(range[1], 10)
-      const b = parseInt(range[2], 10)
+      const [, aRaw, bRaw] = range
+      if (aRaw === undefined || bRaw === undefined) return null
+      const a = parseInt(aRaw, 10)
+      const b = parseInt(bRaw, 10)
       if (b < a || b - a > 20) return null
       for (let v = a; v <= b; v++) verses.push(v)
     } else if (/^\d+$/.test(p)) {

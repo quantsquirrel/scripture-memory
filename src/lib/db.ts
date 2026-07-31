@@ -53,8 +53,9 @@ export async function dueCards(now: Date = new Date()): Promise<StoredCard[]> {
 
 export async function nextDueAt(): Promise<string | null> {
   const all = await getAllCards()
-  if (all.length === 0) return null
-  return all.reduce((min, c) => (c.card.due < min ? c.card.due : min), all[0].card.due)
+  const first = all[0]
+  if (!first) return null
+  return all.reduce((min, c) => (c.card.due < min ? c.card.due : min), first.card.due)
 }
 
 /**
@@ -184,24 +185,68 @@ export async function importAll(bundle: ExportBundle): Promise<void> {
   await tx.done
 }
 
-export async function getSetting<T>(key: string): Promise<T | undefined> {
-  const row = await (await db()).get('settings', key)
-  return row?.value as T | undefined
+/**
+ * 설정 읽기는 스키마 검증을 통과해야 한다. 저장된 값은 export/import와 Gist
+ * 동기화로 기기 사이를 오가는 JSON이라 타입 보장이 없다 — 형태가 어긋나면
+ * undefined로 취급해 호출 쪽 기본값 경로를 타게 한다.
+ * (이전 구현은 `getSetting<T>`가 unknown을 T로 맹목 캐스팅했다.)
+ */
+type Guard<T> = (v: unknown) => v is T
+
+function isString(v: unknown): v is string {
+  return typeof v === 'string'
 }
 
-export async function setSetting(key: string, value: unknown): Promise<void> {
+function isBoolean(v: unknown): v is boolean {
+  return typeof v === 'boolean'
+}
+
+function isFiniteNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v)
+}
+
+/** 'YYYY-MM-DD' — 목표일은 Date 파싱과 문자열 비교 양쪽에 쓰이므로 형식을 고정한다 */
+function isIsoDate(v: unknown): v is string {
+  return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))
+}
+
+async function readSetting<T>(key: string, guard: Guard<T>): Promise<T | undefined> {
+  const row = await (await db()).get('settings', key)
+  if (row === undefined || !guard(row.value)) return undefined
+  return row.value
+}
+
+async function writeSetting(key: string, value: string | number | boolean): Promise<void> {
   await (await db()).put('settings', { key, value })
 }
+
+export const getGoalDate = (): Promise<string | undefined> => readSetting('goalDate', isIsoDate)
+export const setGoalDate = (v: string): Promise<void> => writeSetting('goalDate', v)
+
+export const getGoalBufferDays = (): Promise<number | undefined> =>
+  readSetting('goalBufferDays', isFiniteNumber)
+export const setGoalBufferDays = (v: number): Promise<void> => writeSetting('goalBufferDays', v)
+
+export const getExamMode = (): Promise<boolean | undefined> => readSetting('examMode', isBoolean)
+export const setExamMode = (v: boolean): Promise<void> => writeSetting('examMode', v)
+
+export const getSyncToken = (): Promise<string | undefined> => readSetting('syncToken', isString)
+export const setSyncToken = (v: string): Promise<void> => writeSetting('syncToken', v)
+
+export const getSyncGistId = (): Promise<string | undefined> =>
+  readSetting('syncGistId', isString)
+export const setSyncGistId = (v: string): Promise<void> => writeSetting('syncGistId', v)
+
+export const getLastSyncAt = (): Promise<string | undefined> =>
+  readSetting('lastSyncAt', isString)
+export const setLastSyncAt = (v: string): Promise<void> => writeSetting('lastSyncAt', v)
 
 /**
  * 시험 모드 설정을 스케줄러 목표 기억률에 반영한다.
  * 시험일(목표일)이 지나면 설정이 켜져 있어도 기본 체계로 자동 복귀한다.
  */
 export async function applySchedulerSettings(now: Date = new Date()): Promise<void> {
-  const [examMode, goalDate] = await Promise.all([
-    getSetting<boolean>('examMode'),
-    getSetting<string>('goalDate'),
-  ])
+  const [examMode, goalDate] = await Promise.all([getExamMode(), getGoalDate()])
   const active = examModeActive(examMode ?? false, goalDate ?? DEFAULT_GOAL_DATE, now)
   setRequestRetention(active ? EXAM_RETENTION : DEFAULT_RETENTION)
 }

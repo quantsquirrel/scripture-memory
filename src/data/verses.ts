@@ -1,3 +1,5 @@
+import { required } from '../lib/invariant'
+
 import raw from './verses.json'
 
 export interface VerseEntry {
@@ -62,15 +64,17 @@ const COLLECTION_BY_KEY: Record<string, CollectionInfo> = Object.fromEntries(
 )
 
 export function topicOf(v: VerseEntry): TopicInfo {
-  return TOPIC_BY_KEY[v.topicKey]
+  return required(TOPIC_BY_KEY[v.topicKey], `주제 ${v.topicKey} (구절 ${v.id})`)
 }
 
 export function sectionOf(v: VerseEntry): SectionInfo {
-  return SECTION_BY_KEY[topicOf(v).section]
+  const t = topicOf(v)
+  return required(SECTION_BY_KEY[t.section], `섹션 ${t.section} (구절 ${v.id})`)
 }
 
 export function collectionOf(v: VerseEntry): CollectionInfo {
-  return COLLECTION_BY_KEY[sectionOf(v).collection]
+  const s = sectionOf(v)
+  return required(COLLECTION_BY_KEY[s.collection], `컬렉션 ${s.collection} (구절 ${v.id})`)
 }
 
 /** 프롬프트/칩 표기용 경로: [컬렉션, 섹션?, 그룹?] (주제 제외) */
@@ -106,13 +110,14 @@ export function refKeyOf(v: VerseEntry): string {
 
 /** refKey → 해당 장절을 공유하는 구절 id 목록 (2개 이상만) */
 export const DUPLICATES: Record<string, string[]> = (() => {
-  const m: Record<string, string[]> = {}
+  const m = new Map<string, string[]>()
   for (const v of VERSES) {
     const k = refKeyOf(v)
-    ;(m[k] ??= []).push(v.id)
+    const ids = m.get(k)
+    if (ids) ids.push(v.id)
+    else m.set(k, [v.id])
   }
-  for (const k of Object.keys(m)) if (m[k].length < 2) delete m[k]
-  return m
+  return Object.fromEntries([...m].filter(([, ids]) => ids.length >= 2))
 })()
 
 /** 책 이름/약칭 → 약칭 (장절 입력 채점용) */

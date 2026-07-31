@@ -49,11 +49,7 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const learning = new Map<string, LearnProgress>()
   for (const l of [...a.learning, ...b.learning]) {
     const prev = learning.get(l.verseId)
-    if (
-      !prev ||
-      l.step > prev.step ||
-      (l.step === prev.step && l.updatedAt > prev.updatedAt)
-    ) {
+    if (!prev || l.step > prev.step || (l.step === prev.step && l.updatedAt > prev.updatedAt)) {
       learning.set(l.verseId, l)
     }
   }

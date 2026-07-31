@@ -9,14 +9,18 @@ import {
   type VerseEntry,
 } from '../data/verses'
 import { getAllCards, getAllLearning } from '../lib/db'
+import { required } from '../lib/invariant'
 import { formatInterval } from '../lib/fsrs'
 import type { LearnProgress, StoredCard } from '../lib/types'
+
+/** 첫 탭의 기본 선택 — 컬렉션 목록이 비면 데이터 무결성 오류다 */
+const FIRST_COLLECTION_KEY = required(COLLECTIONS[0], '컬렉션 목록').key
 
 export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
   const [learning, setLearning] = useState<Map<string, LearnProgress>>(new Map())
   const [cards, setCards] = useState<Map<string, StoredCard[]>>(new Map())
   const [open, setOpen] = useState<string | null>(null)
-  const [col, setCol] = useState(COLLECTIONS[0].key)
+  const [col, setCol] = useState(FIRST_COLLECTION_KEY)
   const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
@@ -44,9 +48,12 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
       (min, c) => (min === null || c.card.due < min ? c.card.due : min),
       null,
     )
-    if (minDue && minDue <= new Date().toISOString()) return { label: '복습 대기', cls: 'st-due' }
+    if (minDue && minDue <= new Date().toISOString())
+      return { label: '복습 대기', cls: 'st-due' }
     return {
-      label: minDue ? `${formatInterval(new Date(minDue).getTime() - Date.now())} 후` : '암송 중',
+      label: minDue
+        ? `${formatInterval(new Date(minDue).getTime() - Date.now())} 후`
+        : '암송 중',
       cls: 'st-done',
     }
   }
@@ -81,7 +88,7 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
             {s.title} {s.subtitle && <span className="muted small">{s.subtitle}</span>}
           </h2>
           {topicsOf(s.key).map((t, i, arr) => {
-            const showGroup = t.group && (i === 0 || arr[i - 1].group !== t.group)
+            const showGroup = t.group && (i === 0 || arr[i - 1]?.group !== t.group)
             return (
               <div key={t.key}>
                 {showGroup && <h3 className="group-title">{t.group}</h3>}

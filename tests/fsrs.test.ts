@@ -8,6 +8,7 @@ import {
   serializeCard,
   setRequestRetention,
 } from '../src/lib/fsrs'
+import { required } from '../src/lib/invariant'
 
 describe('fsrs 래퍼', () => {
   it('직렬화 라운드트립이 유지된다', () => {
@@ -37,7 +38,7 @@ describe('fsrs 래퍼', () => {
       prev = reviewAt
     }
     expect(new Date(s.due).getTime()).toBeGreaterThan(prev.getTime())
-    expect(intervals[3]).toBeGreaterThan(intervals[0])
+    expect(required(intervals[3])).toBeGreaterThan(required(intervals[0]))
   })
 
   it('Again은 lapse를 기록한다 (Review 상태 이후)', () => {

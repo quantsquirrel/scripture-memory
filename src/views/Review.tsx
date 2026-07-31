@@ -7,8 +7,16 @@ import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } fr
 import { gradeRef } from '../lib/refInput'
 import { formatInterval } from '../lib/fsrs'
 import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../lib/db'
+import { required } from '../lib/invariant'
 import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../lib/policy'
 import type { ReviewMode, StoredCard } from '../lib/types'
+
+/**
+ * 본문을 찾을 수 없는 카드는 큐에서 뺀다. 다른 버전에서 만든 백업을 가져오면
+ * 이 앱에 없는 구절 id를 가진 카드가 섞일 수 있고, 그 카드는 출제할 수 없다.
+ */
+const reviewable = (cards: StoredCard[]): StoredCard[] =>
+  cards.filter((c) => VERSE_BY_ID[c.verseId] !== undefined)
 
 export function Review({ onExit }: { onExit: () => void }) {
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
@@ -20,7 +28,7 @@ export function Review({ onExit }: { onExit: () => void }) {
     // 홈에서 learn-ahead 카드로 진입한 경우 due 큐가 비어 있을 수 있다
     void dueCards().then(async (cards) => {
       if (cards.length === 0) cards = await upcomingLearningCards(LEARN_AHEAD_MS)
-      setQueue(orderQueue(cards))
+      setQueue(orderQueue(reviewable(cards)))
     })
   }, [])
 
@@ -39,8 +47,8 @@ export function Review({ onExit }: { onExit: () => void }) {
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)
       } else {
-        let more = await dueCards()
-        if (more.length === 0) more = await upcomingLearningCards(LEARN_AHEAD_MS)
+        let more = reviewable(await dueCards())
+        if (more.length === 0) more = reviewable(await upcomingLearningCards(LEARN_AHEAD_MS))
         if (more.length > 0) {
           setQueue(orderQueue(more))
           setIdx(0)
@@ -76,7 +84,8 @@ export function Review({ onExit }: { onExit: () => void }) {
     )
   }
 
-  const verse = VERSE_BY_ID[current.verseId]
+  // reviewable()이 걸러낸 뒤이므로 본문은 반드시 존재한다
+  const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
   const mode = reviewMode(current.direction, current.card.reps)
   const remaining = queue.length - idx
 
@@ -88,7 +97,13 @@ export function Review({ onExit }: { onExit: () => void }) {
         </button>
         <span className="muted">남은 카드 {remaining}</span>
       </div>
-      <CardFace key={current.key + ':' + current.card.reps} sc={current} verse={verse} mode={mode} onRate={rate} />
+      <CardFace
+        key={current.key + ':' + current.card.reps}
+        sc={current}
+        verse={verse}
+        mode={mode}
+        onRate={rate}
+      />
     </div>
   )
 }
@@ -101,7 +116,11 @@ function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
         <span className="chip">{crumbOf(verse).join(' · ')}</span>
         <h2 className="prompt-main">
           {topicOf(verse).title}
-          {total > 1 && <span className="prompt-ord">{nth}/{total}</span>}
+          {total > 1 && (
+            <span className="prompt-ord">
+              {nth}/{total}
+            </span>
+          )}
         </h2>
         <p className="muted">
           {total > 1
@@ -165,7 +184,12 @@ function CardFace({
   sc: StoredCard
   verse: VerseEntry
   mode: ReviewMode
-  onRate: (r: 1 | 2 | 3 | 4, mode: ReviewMode, accuracy: number | null, peeks: number | null) => void
+  onRate: (
+    r: 1 | 2 | 3 | 4,
+    mode: ReviewMode,
+    accuracy: number | null,
+    peeks: number | null,
+  ) => void
 }) {
   const [revealed, setRevealed] = useState(false)
   const [peeks, setPeeks] = useState(0)

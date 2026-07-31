@@ -73,7 +73,13 @@ describe('졸업 → 3방향 카드 생성', () => {
   it('재졸업해도 기존 카드의 FSRS 상태를 덮어쓰지 않는다', async () => {
     await graduateVerse('AS1a', NOW)
     const before = (await getAllCards()).find((c) => c.key === 'AS1a:ref')!
-    const progressed = await submitReview(before, 3, 'recite', { accuracy: null, peeks: null }, NOW)
+    const progressed = await submitReview(
+      before,
+      3,
+      'recite',
+      { accuracy: null, peeks: null },
+      NOW,
+    )
     await graduateVerse('AS1a', new Date(NOW.getTime() + 1000))
     const after = (await getAllCards()).find((c) => c.key === 'AS1a:ref')!
     expect(after.card).toStrictEqual(progressed.card)

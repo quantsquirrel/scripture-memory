@@ -3,11 +3,21 @@ import {
   applySchedulerSettings,
   exportAll,
   getAllLearning,
-  getSetting,
+  getExamMode,
+  getGoalBufferDays,
+  getGoalDate,
+  getLastSyncAt,
+  getSyncGistId,
+  getSyncToken,
   importAll,
   resetAll,
   reviewCount,
-  setSetting,
+  setExamMode as persistExamMode,
+  setGoalBufferDays as persistGoalBufferDays,
+  setGoalDate as persistGoalDate,
+  setLastSyncAt as persistLastSyncAt,
+  setSyncGistId as persistSyncGistId,
+  setSyncToken as persistSyncToken,
 } from '../lib/db'
 import { DEFAULT_RETENTION } from '../lib/fsrs'
 import { DEFAULT_GOAL_DATE, DEFAULT_REVIEW_BUFFER_DAYS, EXAM_RETENTION } from '../lib/goal'
@@ -42,12 +52,12 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
     void Promise.all([
       reviewCount(),
       getAllLearning(),
-      getSetting<string>('goalDate'),
-      getSetting<number>('goalBufferDays'),
-      getSetting<boolean>('examMode'),
-      getSetting<string>('syncToken'),
-      getSetting<string>('syncGistId'),
-      getSetting<string>('lastSyncAt'),
+      getGoalDate(),
+      getGoalBufferDays(),
+      getExamMode(),
+      getSyncToken(),
+      getSyncGistId(),
+      getLastSyncAt(),
     ]).then(([r, l, g, buf, em, t, gid, last]) => {
       setStats({ reviews: r, graduated: l.filter((x) => x.step >= 3).length })
       if (g) setGoalDate(g)
@@ -61,7 +71,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
 
   const saveGoal = async (d: string) => {
     setGoalDate(d)
-    await setSetting('goalDate', d)
+    await persistGoalDate(d)
     await applySchedulerSettings() // 시험 모드 활성 판정이 목표일에 걸려 있음
     setMsg('목표일을 저장했습니다.')
     onChanged()
@@ -69,7 +79,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
 
   const saveExamMode = async (on: boolean) => {
     setExamModeState(on)
-    await setSetting('examMode', on)
+    await persistExamMode(on)
     await applySchedulerSettings()
     setMsg(on ? '시험 모드를 켰습니다.' : '시험 모드를 껐습니다.')
     onChanged()
@@ -78,7 +88,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
   const saveBuffer = async (n: number) => {
     const v = Math.min(30, Math.max(0, Math.floor(n)))
     setBufferDays(v)
-    await setSetting('goalBufferDays', v)
+    await persistGoalBufferDays(v)
     setMsg('복습 정착 기간을 저장했습니다.')
     onChanged()
   }
@@ -87,14 +97,12 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
     setSyncing(true)
     setSyncMsg('동기화 중…')
     try {
-      await setSetting('syncToken', token.trim())
-      await setSetting('syncGistId', gistId.trim())
+      await persistSyncToken(token.trim())
+      await persistSyncGistId(gistId.trim())
       const r = await syncNow({ token: token.trim(), gistId: gistId.trim() })
       const now = new Date().toISOString()
-      await setSetting('lastSyncAt', now)
-      setSyncMsg(
-        `동기화 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`,
-      )
+      await persistLastSyncAt(now)
+      setSyncMsg(`동기화 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`)
       onChanged()
     } catch (e) {
       setSyncMsg(`실패: ${e instanceof Error ? e.message : String(e)}`)
@@ -157,8 +165,8 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           ))}
         </div>
         <p className="muted small">
-          '자동'은 기기(OS)의 다크/라이트 설정을 따릅니다. 라이트나 다크를 고르면 OS
-          설정과 무관하게 이 기기에서 항상 유지됩니다.
+          '자동'은 기기(OS)의 다크/라이트 설정을 따릅니다. 라이트나 다크를 고르면 OS 설정과
+          무관하게 이 기기에서 항상 유지됩니다.
         </p>
       </section>
 
@@ -183,10 +191,9 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           onChange={(e) => void saveBuffer(Number(e.target.value))}
         />
         <p className="muted small">
-          시험(목표일)에 암송할 수 있으려면 외운 뒤 복습으로 굳힐 시간이 필요합니다. 새
-          구절 학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를 계산하고,
-          남은 기간은 복습만 합니다. 목표일 이후에는 FSRS가 알아서 복습 간격을 늘려 유지
-          모드로 전환됩니다.
+          시험(목표일)에 암송할 수 있으려면 외운 뒤 복습으로 굳힐 시간이 필요합니다. 새 구절
+          학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를 계산하고, 남은 기간은
+          복습만 합니다. 목표일 이후에는 FSRS가 알아서 복습 간격을 늘려 유지 모드로 전환됩니다.
         </p>
         <label className="muted small">시험 모드</label>
         <div className="seg-row">
@@ -206,11 +213,10 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           ))}
         </div>
         <p className="muted small">
-          시험 모드는 복습 간격 계산의 목표 기억률을{' '}
-          {Math.round(DEFAULT_RETENTION * 100)}%→{Math.round(EXAM_RETENTION * 100)}%로
-          올려 시험 전까지 간격을 짧게 잡습니다. 기억 모델과 복습 기록에는 영향이 없고,
-          시험일(목표일)이 지나면 자동으로 {Math.round(DEFAULT_RETENTION * 100)}% 체계로
-          복귀합니다.
+          시험 모드는 복습 간격 계산의 목표 기억률을 {Math.round(DEFAULT_RETENTION * 100)}%→
+          {Math.round(EXAM_RETENTION * 100)}%로 올려 시험 전까지 간격을 짧게 잡습니다. 기억
+          모델과 복습 기록에는 영향이 없고, 시험일(목표일)이 지나면 자동으로{' '}
+          {Math.round(DEFAULT_RETENTION * 100)}% 체계로 복귀합니다.
         </p>
       </section>
 
@@ -243,8 +249,8 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
         </button>
         {syncMsg && <p className="muted small">{syncMsg}</p>}
         <p className="muted small">
-          복습 기록은 합집합으로, 카드·학습 상태는 더 진행된 쪽으로 병합됩니다. 토큰은
-          이 기기(IndexedDB)에만 저장됩니다. 공부 시작 전과 후에 한 번씩 눌러 주세요.
+          복습 기록은 합집합으로, 카드·학습 상태는 더 진행된 쪽으로 병합됩니다. 토큰은 이
+          기기(IndexedDB)에만 저장됩니다. 공부 시작 전과 후에 한 번씩 눌러 주세요.
         </p>
       </section>
 
@@ -278,12 +284,12 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
       <section className="panel">
         <h2>정보</h2>
         <p className="muted small">
-          본문: 성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로
-          퍼블릭 도메인이며, 대한성서공회 온라인 본문에서 추출·검증했습니다.
+          본문: 성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로 퍼블릭
+          도메인이며, 대한성서공회 온라인 본문에서 추출·검증했습니다.
           <br />
-          구성: 네비게이토 암송 과정 495구절 — 그리스도인의 확신(5확신) 5구절 →
-          그리스도인의 생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의
-          도(DEP242) 242구절 → 주제별 성경암송 시리즈 180구절.
+          구성: 네비게이토 암송 과정 495구절 — 그리스도인의 확신(5확신) 5구절 → 그리스도인의
+          생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
+          성경암송 시리즈 180구절.
           <br />
           스케줄링: FSRS (ts-fsrs, 목표 기억율 90% · 시험 모드 95%).
           <br />

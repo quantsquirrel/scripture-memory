@@ -138,7 +138,11 @@ describe('computeReadiness', () => {
   })
 
   it('한 방향이라도 안정도가 낮으면 미준비', () => {
-    const cards = [card('AS1a', 'topic', 500), card('AS1a', 'ref', 500), card('AS1a', 'text', 1)]
+    const cards = [
+      card('AS1a', 'topic', 500),
+      card('AS1a', 'ref', 500),
+      card('AS1a', 'text', 1),
+    ]
     expect(computeReadiness(cards, '2026-08-20', now).ready).toBe(0)
   })
 

@@ -34,7 +34,7 @@ export function getRequestRetention(): number {
 }
 
 export function serializeCard(c: Card): SerializedCard {
-  return {
+  const base: SerializedCard = {
     due: c.due.toISOString(),
     stability: c.stability,
     difficulty: c.difficulty,
@@ -44,20 +44,47 @@ export function serializeCard(c: Card): SerializedCard {
     lapses: c.lapses,
     learning_steps: c.learning_steps,
     state: c.state,
-    last_review: c.last_review ? new Date(c.last_review).toISOString() : undefined,
   }
+  // exactOptionalPropertyTypes: last_review는 '없음'과 'undefined 값'이 다르다.
+  // 복습 전 카드는 키 자체를 두지 않는다 (v1 export와 바이트 단위로 같은 모양).
+  return c.last_review === undefined
+    ? base
+    : { ...base, last_review: new Date(c.last_review).toISOString() }
+}
+
+/** 영속된 state 숫자를 FSRS State로 확인 — 손상된 저장 데이터를 조용히 통과시키지 않는다 */
+function toState(n: number): State {
+  if (n === State.New || n === State.Learning || n === State.Review || n === State.Relearning) {
+    return n
+  }
+  throw new Error(`알 수 없는 카드 상태입니다: ${String(n)}`)
 }
 
 export function reviveCard(s: SerializedCard): Card {
-  return {
-    ...s,
+  const base: Card = {
     due: new Date(s.due),
-    last_review: s.last_review ? new Date(s.last_review) : undefined,
-  } as Card
+    stability: s.stability,
+    difficulty: s.difficulty,
+    elapsed_days: s.elapsed_days,
+    scheduled_days: s.scheduled_days,
+    reps: s.reps,
+    lapses: s.lapses,
+    learning_steps: s.learning_steps,
+    state: toState(s.state),
+  }
+  return s.last_review === undefined ? base : { ...base, last_review: new Date(s.last_review) }
 }
 
 export function newCard(now: Date = new Date()): SerializedCard {
   return serializeCard(createEmptyCard(now))
+}
+
+/** 앱의 등급 숫자(1~4) → ts-fsrs Grade. 총 매핑이라 캐스팅이 필요 없다. */
+const GRADE: Record<1 | 2 | 3 | 4, Grade> = {
+  1: Rating.Again,
+  2: Rating.Hard,
+  3: Rating.Good,
+  4: Rating.Easy,
 }
 
 export function applyRating(
@@ -65,7 +92,7 @@ export function applyRating(
   rating: 1 | 2 | 3 | 4,
   now: Date = new Date(),
 ): SerializedCard {
-  const { card } = scheduler.next(reviveCard(s), now, rating as Grade)
+  const { card } = scheduler.next(reviveCard(s), now, GRADE[rating])
   return serializeCard(card)
 }
 
@@ -74,12 +101,10 @@ export function intervalPreview(
   s: SerializedCard,
   now: Date = new Date(),
 ): Record<1 | 2 | 3 | 4, string> {
-  const out = {} as Record<1 | 2 | 3 | 4, string>
-  for (const r of [1, 2, 3, 4] as const) {
-    const { card } = scheduler.next(reviveCard(s), now, r as Grade)
-    out[r] = formatInterval(card.due.getTime() - now.getTime())
-  }
-  return out
+  const revived = reviveCard(s)
+  const preview = (r: 1 | 2 | 3 | 4): string =>
+    formatInterval(scheduler.next(revived, now, GRADE[r]).card.due.getTime() - now.getTime())
+  return { 1: preview(1), 2: preview(2), 3: preview(3), 4: preview(4) }
 }
 
 /** when 시점까지 추가 복습이 없다고 가정한 예측 기억률 (0~1) */
