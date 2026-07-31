@@ -339,18 +339,37 @@ for v in verses:
         if re.search(pat, v["text"]):
             certain.append(f"[{v['id']}] {v['refAbbr']} 본문에 {why}: {v['text'][:60]}")
 
-# 개역개정에서 바뀐 대표 어휘 — 개역한글에도 드물게 나오므로 판단 필요로 분류
-MODERN_HINTS = {"그들": "개역한글은 대개 '저희'", "따라": "개역한글은 대개 '좇아'"}
-hint_hits: dict[str, list[str]] = defaultdict(list)
+# 개역개정에서만 쓰는 형태 — 개역한글 본문에 있으면 혼입이다.
+#
+# '그들'·'따라'는 여기 넣지 않는다. 처음에는 개역개정 표지로 의심했지만
+# 확인 결과 개역한글도 쓰는 말이었다:
+#   롬 8:14  개역한글 "인도함을 받는 그들은"  ↔ 개역개정 "인도함을 받는 사람은"
+#   마 4:19  개역한글 "나를 따라 오너라"      (KRV 원문 대조 확인)
+#   빌 1:20  개역한글 "소망을 따라"           (KRV 원문 대조 확인)
+# 즉 '그들/따라'의 유무로는 역본을 가릴 수 없다. 아래는 실제로 갈리는 것만 남겼다.
+REVISED_ONLY = {
+    r"거스르는": "개역한글은 '거스리는'",
+    r"두세 사람": "개역한글은 '두 세 사람'",
+    r"할지어다": "개역한글은 '할찌어다'",
+    r"할지니라": "개역한글은 '할찌니라'",
+    r"알지니(?![가-힣])": "개역한글은 '알찌니'",
+    r"자랄지라": "개역한글은 '자랄찌라'",
+}
 for v in verses:
-    for word, why in MODERN_HINTS.items():
-        if re.search(rf"\b{word}", v["text"]):
-            hint_hits[word].append(v["id"])
-for word, hits in hint_hits.items():
-    review.append(
-        f"현대어 의심 '{word}' {len(hits)}구절 ({MODERN_HINTS[word]}) — "
-        f"예: {hits[:8]}{' …' if len(hits) > 8 else ''}"
-    )
+    for pat, why in REVISED_ONLY.items():
+        if re.search(pat, v["text"]):
+            certain.append(f"[{v['id']}] {v['refAbbr']} 개역개정 표기 혼입 — {why}: {v['text'][:50]}")
+
+# 개역한글 표지가 하나도 없는 구절은 역본 판정 근거가 약하다는 표시만 남긴다
+HAN_MARKERS = [
+    "저희", "저가", "저를", "좇아", "케 ", "치 아니", "느니라", "이니라",
+    "인하여", "거스리", "삯군", "두 세", "찌", "리로다", "하시니라",
+]
+without = [v["id"] for v in verses if not any(m in v["text"] for m in HAN_MARKERS)]
+notes.append(
+    f"개역한글 특유 표기가 확인되는 구절 {len(verses) - len(without)}/{len(verses)} "
+    f"(나머지 {len(without)}구절은 짧거나 해당 어형이 없는 절 — 표기만으로 판정 불가)"
+)
 
 # 본문 길이 이상치
 for v in verses:
