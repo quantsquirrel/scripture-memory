@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 
-import { applySchedulerSettings } from './lib/db'
-import { Browse } from './views/Browse'
-import { Home } from './views/Home'
-import { Learn } from './views/Learn'
-import { Review } from './views/Review'
-import { Settings } from './views/Settings'
-import { Stats } from './views/Stats'
+import { applySchedulerSettings } from '../app'
+import { Browse } from './Browse'
+import { Home } from './Home'
+import { Learn } from './Learn'
+import { Review } from './Review'
+import { Settings } from './Settings'
+import { Stats } from './Stats'
 
 type View =
   | { name: 'home' }

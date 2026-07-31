@@ -4,9 +4,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
 
-import App from './App'
-import { required } from './lib/invariant'
-import { applyTheme, getTheme } from './lib/theme'
+import { applyTheme, getTheme } from './adapters/theme'
+import { required } from './domain/invariant'
+import App from './views/App'
 
 applyTheme(getTheme())
 registerSW({ immediate: true })

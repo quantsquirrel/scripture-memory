@@ -11,7 +11,7 @@ import {
   VERSE_BY_ID,
   VERSES,
 } from '../src/data/verses'
-import { required } from '../src/lib/invariant'
+import { required } from '../src/domain/invariant'
 
 /** 테스트에서 쓰는 구절 조회 — 없는 id는 즉시 실패 (silent undefined 금지) */
 const verse = (id: string) => required(VERSE_BY_ID[id], `구절 ${id}`)

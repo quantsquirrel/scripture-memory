@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 
+import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../app'
 import { DiffView } from '../components/DiffView'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { RatingBar } from '../components/RatingBar'
 import { crumbOf, topicOf, topicOrdinalOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
-import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../lib/db'
-import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } from '../lib/diff'
-import { formatInterval } from '../lib/fsrs'
-import { required } from '../lib/invariant'
-import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../lib/policy'
-import { gradeRef } from '../lib/refInput'
-import type { ReviewMode, StoredCard } from '../lib/types'
+import type { ReviewMode, StoredCard } from '../domain/card'
+import {
+  gradeTyping,
+  ratingFromAccuracy,
+  ratingFromPeeks,
+  type TypingGrade,
+} from '../domain/grading'
+import { required } from '../domain/invariant'
+import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../domain/policy'
+import { gradeRef } from '../domain/ref'
+import { formatInterval } from '../domain/scheduler'
 
 /**
  * 본문을 찾을 수 없는 카드는 큐에서 뺀다. 다른 버전에서 만든 백업을 가져오면
@@ -44,7 +49,7 @@ export function Review({ onExit }: { onExit: () => void }) {
       peeks: number | null,
     ) => {
       if (!current) return
-      await submitReview(current, r, mode, { accuracy, peeks })
+      await submitReview(current, { mode, rating: r, accuracy, peeks })
       setDone((d) => d + 1)
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)

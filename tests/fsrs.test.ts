@@ -1,15 +1,29 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
+import type { Rating, SerializedCard, StoredCard } from '../src/domain/card'
 import {
-  applyRating,
   DEFAULT_RETENTION,
   getRequestRetention,
   newCard,
+  rateCard,
   reviveCard,
   serializeCard,
   setRequestRetention,
-} from '../src/lib/fsrs'
-import { required } from '../src/lib/invariant'
+} from '../src/domain/scheduler'
+
+// applyRating은 domain/scheduler.ts 밖으로 나가지 않는다 — 등급을 적용하는 유일한
+// 방법은 증거를 필수로 받는 rateCard()다. 이 헬퍼가 그 경로를 감싸며, 증거 인자를
+// 빼면 컴파일되지 않는다.
+const asStored = (card: SerializedCard): StoredCard => ({
+  key: 'v1:ref',
+  verseId: 'v1',
+  direction: 'ref',
+  card,
+})
+
+const applyRating = (s: SerializedCard, rating: Rating, now: Date): SerializedCard =>
+  rateCard(asStored(s), { mode: 'typing', rating, accuracy: 1, peeks: null }, now).card.card
+import { required } from '../src/domain/invariant'
 
 describe('fsrs 래퍼', () => {
   it('직렬화 라운드트립이 유지된다', () => {

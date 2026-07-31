@@ -1,4 +1,4 @@
-import type { DueForecast } from '../lib/stats'
+import type { DueForecast } from '../domain/stats'
 
 const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토']
 

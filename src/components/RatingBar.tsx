@@ -1,5 +1,5 @@
-import { intervalPreview } from '../lib/fsrs'
-import type { SerializedCard } from '../lib/types'
+import type { SerializedCard } from '../domain/card'
+import { intervalPreview } from '../domain/scheduler'
 
 const LABELS: Record<1 | 2 | 3 | 4, string> = {
   1: '다시',

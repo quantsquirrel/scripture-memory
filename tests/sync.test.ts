@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ExportBundle } from '../src/lib/db'
-import { required } from '../src/lib/invariant'
-import { mergeBundles } from '../src/lib/sync'
-import type { ReviewEntry, StoredCard } from '../src/lib/types'
+import { mergeBundles } from '../src/adapters/gist'
+import type { ReviewEntry, StoredCard } from '../src/domain/card'
+import { required } from '../src/domain/invariant'
+import { type ExportBundle, SCHEMA_VERSION } from '../src/ports/repositories'
 
 const card = (key: string, reps: number, due: string): StoredCard => ({
   key,
@@ -35,7 +35,7 @@ const review = (cardKey: string, ts: string): ReviewEntry => ({
 
 const bundle = (over: Partial<ExportBundle>): ExportBundle => ({
   app: 'scripture-memory',
-  version: 1,
+  version: SCHEMA_VERSION,
   exportedAt: '2026-07-17T00:00:00Z',
   cards: [],
   reviews: [],
@@ -64,19 +64,19 @@ describe('mergeBundles', () => {
 
   it('학습 상태는 step이 높은 쪽이 이긴다', () => {
     const a = bundle({
-      learning: [{ verseId: 'AS1a', step: 3, updatedAt: '2026-07-16T00:00:00Z' }],
+      learning: [{ verseId: 'AS1a', step: 'graduated', updatedAt: '2026-07-16T00:00:00Z' }],
     })
     const b = bundle({
-      learning: [{ verseId: 'AS1a', step: 1, updatedAt: '2026-07-17T00:00:00Z' }],
+      learning: [{ verseId: 'AS1a', step: 'firstLetter', updatedAt: '2026-07-17T00:00:00Z' }],
     })
-    expect(required(mergeBundles(a, b).learning[0]).step).toBe(3)
+    expect(required(mergeBundles(a, b).learning[0]).step).toBe('graduated')
   })
 
   it('한쪽이 비어 있으면 다른 쪽 그대로', () => {
     const a = bundle({
       cards: [card('A1a:ref', 1, '2026-07-18T00:00:00Z')],
       reviews: [review('A1a:ref', '2026-07-17T01:00:00Z')],
-      learning: [{ verseId: 'A1a', step: 3, updatedAt: '2026-07-17T00:00:00Z' }],
+      learning: [{ verseId: 'A1a', step: 'graduated', updatedAt: '2026-07-17T00:00:00Z' }],
     })
     const m = mergeBundles(a, bundle({}))
     expect(m.cards).toHaveLength(1)

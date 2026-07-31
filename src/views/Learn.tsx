@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { getAllLearning, openLadder, runLadder } from '../app'
 import { DiffView } from '../components/DiffView'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import {
@@ -12,10 +13,14 @@ import {
   type VerseEntry,
   VERSES,
 } from '../data/verses'
-import { getAllLearning, getLearning, graduateVerse, putLearning } from '../lib/db'
-import { gradeTyping, type TypingGrade } from '../lib/diff'
-
-const STEP_TITLES = ['본문 익히기', '첫글자 복원', '타이핑 검증', '졸업']
+import { gradeTyping, type TypingGrade } from '../domain/grading'
+import {
+  isGraduated,
+  type LadderCommand,
+  type LadderStep,
+  STEP_TITLE,
+  stepOrdinal,
+} from '../domain/ladder'
 
 export function Learn({
   verseId,
@@ -29,7 +34,7 @@ export function Learn({
   onLearn: (verseId: string) => void
 }) {
   const verse = VERSE_BY_ID[verseId]
-  const [step, setStep] = useState<number | null>(null)
+  const [step, setStep] = useState<LadderStep | null>(null)
   const [peeks, setPeeks] = useState(0)
   const [flTry, setFlTry] = useState(0)
   const [flResult, setFlResult] = useState<number | null>(null)
@@ -39,23 +44,21 @@ export function Learn({
   const [nextVerse, setNextVerse] = useState<VerseEntry | null>(null)
 
   useEffect(() => {
-    void getLearning(verseId).then((p) => {
-      setStep(p ? Math.min(p.step, 2) : 0)
-    })
+    void openLadder(verseId).then(setStep)
     const v = VERSE_BY_ID[verseId]
     if (!v) return
     const dups = (DUPLICATES[refKeyOf(v)] ?? []).filter((id) => id !== verseId)
     if (dups.length === 0) return
     void getAllLearning().then((ls) => {
-      const done = ls.find((l) => l.step >= 3 && dups.includes(l.verseId))
+      const done = ls.find((l) => isGraduated(l) && dups.includes(l.verseId))
       setDupDone(done ? (VERSE_BY_ID[done.verseId] ?? null) : null)
     })
   }, [verseId])
 
   useEffect(() => {
-    if (step !== 3) return
+    if (step !== 'graduated') return
     void getAllLearning().then((ls) => {
-      const grad = new Set(ls.filter((l) => l.step >= 3).map((l) => l.verseId))
+      const grad = new Set(ls.filter(isGraduated).map((l) => l.verseId))
       const nxt = VERSES.find((v) => !grad.has(v.id))
       setNextVerse(nxt ?? null)
     })
@@ -64,13 +67,18 @@ export function Learn({
   if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
   if (step === null) return <p className="muted">불러오는 중…</p>
 
-  const advance = async (next: number) => {
-    if (next >= 3) {
-      await graduateVerse(verseId)
+  /**
+   * 사다리에 명령을 보낸다. 다음 단계와 졸업(3방향 카드 생성) 판단은 전부
+   * domain/ladder.ts의 advance()가 하고, 여기서는 결과를 화면에 반영만 한다.
+   */
+  const send = async (cmd: LadderCommand) => {
+    const outcome = await runLadder(verseId, cmd)
+    if (outcome.kind === 'stay') {
+      if (outcome.reason === 'peeksExceeded') setFlResult(peeks)
     } else {
-      await putLearning({ verseId, step: next, updatedAt: new Date().toISOString() })
+      setStep(outcome.step)
     }
-    setStep(next)
+    return outcome
   }
 
   return (
@@ -80,7 +88,7 @@ export function Learn({
           ← 나가기
         </button>
         <span className="muted">
-          {step + 1}/4 · {STEP_TITLES[step]}
+          {stepOrdinal(step).nth}/{stepOrdinal(step).total} · {STEP_TITLE[step]}
         </span>
       </div>
 
@@ -89,7 +97,7 @@ export function Learn({
           {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
         </span>
 
-        {step === 0 && (
+        {step === 'intro' && (
           <>
             <h2 className="prompt-main">{verse.ref}</h2>
             <p className="verse">{verse.text}</p>
@@ -106,18 +114,24 @@ export function Learn({
               <div className="callout">
                 이미 <strong>{dupDone.refAbbr}</strong> ({collectionOf(dupDone).short} ·{' '}
                 {topicOf(dupDone).title})로 암송한 구절입니다.
-                <button className="btn" onClick={() => void advance(2)}>
+                <button
+                  className="btn"
+                  onClick={() => void send({ step: 'intro', event: 'skipToTyping' })}
+                >
                   타이핑 검증으로 건너뛰기
                 </button>
               </div>
             )}
-            <button className="btn btn-primary" onClick={() => void advance(1)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => void send({ step: 'intro', event: 'recited' })}
+            >
               낭송했어요 — 다음
             </button>
           </>
         )}
 
-        {step === 1 && (
+        {step === 'firstLetter' && (
           <>
             <h2 className="prompt-main">{verse.ref}</h2>
             <FirstLetterBoard
@@ -148,10 +162,7 @@ export function Learn({
               </button>
               <button
                 className="btn btn-primary"
-                onClick={() => {
-                  if (peeks <= 2) void advance(2)
-                  else setFlResult(peeks)
-                }}
+                onClick={() => void send({ step: 'firstLetter', event: 'attempted', peeks })}
               >
                 낭송 완료
               </button>
@@ -159,14 +170,19 @@ export function Learn({
           </>
         )}
 
-        {step === 2 && (
+        {step === 'typing' && (
           <>
             <h2 className="prompt-main">{verse.ref}</h2>
             {grade ? (
               <>
                 <DiffView grade={grade} target={verse.text} />
                 {grade.perfect ? (
-                  <button className="btn btn-primary" onClick={() => void advance(3)}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() =>
+                      void send({ step: 'typing', event: 'graded', perfect: true })
+                    }
+                  >
                     졸업 — 복습 큐에 추가
                   </button>
                 ) : (
@@ -214,7 +230,7 @@ export function Learn({
           </>
         )}
 
-        {step === 3 && (
+        {step === 'graduated' && (
           <div className="center">
             <h2>🎉 {verse.refAbbr} 졸업!</h2>
             <p className="muted">

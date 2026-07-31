@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 
+import { getAllCards, getAllLearning } from '../app'
 import {
   collectionOf,
   COLLECTIONS,
@@ -9,10 +10,10 @@ import {
   VERSES,
   versesOfTopic,
 } from '../data/verses'
-import { getAllCards, getAllLearning } from '../lib/db'
-import { formatInterval } from '../lib/fsrs'
-import { required } from '../lib/invariant'
-import type { LearnProgress, StoredCard } from '../lib/types'
+import type { StoredCard } from '../domain/card'
+import { required } from '../domain/invariant'
+import { isGraduated, type LearnProgress, stepOrdinal } from '../domain/ladder'
+import { formatInterval } from '../domain/scheduler'
 
 /** 첫 탭의 기본 선택 — 컬렉션 목록이 비면 데이터 무결성 오류다 */
 const FIRST_COLLECTION_KEY = required(COLLECTIONS[0], '컬렉션 목록').key
@@ -43,8 +44,11 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
 
   const status = (v: VerseEntry): { label: string; cls: string } => {
     const l = learning.get(v.id)
-    if (!l || l.step === 0) return { label: '미학습', cls: 'st-new' }
-    if (l.step < 3) return { label: `학습 ${l.step + 1}/4`, cls: 'st-learning' }
+    if (!l || l.step === 'intro') return { label: '미학습', cls: 'st-new' }
+    if (!isGraduated(l)) {
+      const { nth, total } = stepOrdinal(l.step)
+      return { label: `학습 ${nth}/${total}`, cls: 'st-learning' }
+    }
     const vc = cards.get(v.id) ?? []
     const minDue = vc.reduce<string | null>(
       (min, c) => (min === null || c.card.due < min ? c.card.due : min),
@@ -59,8 +63,10 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
   }
 
   const graduatedCount = (ck: string) =>
-    VERSES.filter((v) => collectionOf(v).key === ck && (learning.get(v.id)?.step ?? 0) >= 3)
-      .length
+    VERSES.filter((v) => {
+      const l = learning.get(v.id)
+      return collectionOf(v).key === ck && l !== undefined && isGraduated(l)
+    }).length
 
   return (
     <div>

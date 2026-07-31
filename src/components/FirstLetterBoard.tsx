@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { firstLetterWords } from '../lib/firstLetter'
+import { firstLetterWords } from '../domain/firstLetter'
 
 /** 어절 첫 글자만 보여주고, 탭하면 공개(엿보기 1회 카운트). */
 export function FirstLetterBoard({ text, onPeek }: { text: string; onPeek: () => void }) {

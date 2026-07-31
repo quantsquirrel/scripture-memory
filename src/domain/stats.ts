@@ -1,5 +1,5 @@
-import { retrievabilityAt, State } from './fsrs'
-import { type Direction, DIRECTIONS, type ReviewEntry, type StoredCard } from './types'
+import { type Direction, DIRECTIONS, type ReviewEntry, type StoredCard } from './card'
+import { retrievabilityAt, State } from './scheduler'
 
 /** 로컬(Asia/Seoul) 달력일 키 — 하루 경계는 UTC가 아니라 사용자 시간대 기준 */
 function dayKey(iso: string): string {

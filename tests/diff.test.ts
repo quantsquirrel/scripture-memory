@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, tokenize } from '../src/lib/diff'
+import {
+  gradeTyping,
+  ratingFromAccuracy,
+  ratingFromPeeks,
+  tokenize,
+} from '../src/domain/grading'
 
 const TARGET =
   '그런즉 누구든지 그리스도 안에 있으면 새로운 피조물이라 이전 것은 지나갔으니 보라 새것이 되었도다'

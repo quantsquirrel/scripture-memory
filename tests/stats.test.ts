@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { required } from '../src/lib/invariant'
+import type { Direction, ReviewEntry, SerializedCard, StoredCard } from '../src/domain/card'
+import { required } from '../src/domain/invariant'
 import {
   dailyPick,
   directionRetention,
@@ -13,8 +14,7 @@ import {
   selfGradeCalibration,
   trueRetention,
   weakVerses,
-} from '../src/lib/stats'
-import type { Direction, ReviewEntry, SerializedCard, StoredCard } from '../src/lib/types'
+} from '../src/domain/stats'
 
 const entry = (cardKey: string, rating: 1 | 2 | 3 | 4, ts: string): ReviewEntry => ({
   cardKey,
