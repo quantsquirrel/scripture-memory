@@ -1,0 +1,54 @@
+/* 버튼 */
+.btn {
+  display: block;
+  width: 100%;
+  padding: 13px var(--space-8);
+  margin-top: var(--space-5);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-alt);
+  color: var(--color-text);
+  font-size: var(--text-base);
+  cursor: pointer;
+  text-align: center;
+}
+
+.btn:active {
+  transform: scale(0.985);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 700;
+}
+
+.btn-danger {
+  color: var(--color-bad);
+  border-color: var(--color-bad);
+  background: transparent;
+}
+
+.btn-ghost {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: var(--text-base);
+  padding: var(--space-3) var(--space-2);
+  cursor: pointer;
+}
+
+.btn-row {
+  display: flex;
+  gap: var(--space-5);
+}
+
+.btn-row .btn {
+  flex: 1;
+}

@@ -1,0 +1,72 @@
+/* 복습 화면 */
+.review-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.mode-tag {
+  display: inline-block;
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--color-info);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.prompt-main {
+  font-size: var(--text-2xl);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.prompt-ord {
+  margin-left: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-accent);
+  vertical-align: 2px;
+}
+
+.answer {
+  border-top: 1px dashed var(--color-line);
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+}
+
+.answer-ref {
+  color: var(--color-info);
+  font-weight: 600;
+  margin: var(--space-3) 0;
+}
+
+/* 첫글자 보드 */
+.fl-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px var(--space-3);
+  margin: var(--space-7) 0;
+}
+
+.fl-word {
+  font: inherit;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-alt);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  padding: 3px var(--space-4);
+  cursor: pointer;
+  line-height: 1.6;
+}
+
+.fl-dots {
+  color: var(--color-muted);
+}
+
+.fl-revealed {
+  border: 1px solid transparent;
+  padding: 3px var(--space-1);
+  color: var(--color-accent);
+}

@@ -1,0 +1,24 @@
+/*
+ * 스타일 진입점.
+ *
+ * 이전에는 770줄 단일 전역 파일이었다. 레이어를 나눈 순서가 곧 우선순위이며,
+ * a11y.css를 마지막에 두어 접근성 보정이 컴포넌트 스타일을 덮도록 한다.
+ *
+ * tokens.css  색·간격·타이포·반경·그림자 (팔레트는 여기 한 곳에만)
+ * base.css    문서·레이아웃·타이포 기본
+ * 그 외        컴포넌트별 스타일
+ * a11y.css    포커스·터치 타깃·움직임·고대비 보정 (마지막에 적용)
+ */
+@import './tokens.css';
+@import './base.css';
+@import './buttons.css';
+@import './nav.css';
+@import './review.css';
+@import './inputs.css';
+@import './diff.css';
+@import './controls.css';
+@import './progress.css';
+@import './list.css';
+@import './charts.css';
+@import './stats.css';
+@import './a11y.css';

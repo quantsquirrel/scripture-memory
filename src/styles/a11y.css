@@ -1,0 +1,131 @@
+/*
+ * 접근성 보정 레이어.
+ *
+ * 여기 있는 규칙은 "보기 좋게"가 아니라 "쓸 수 있게"를 위한 것이다.
+ * 각 항목은 scripts/audit_contrast.py 또는 e2e/a11y.spec.ts가 검증한다.
+ */
+
+/* ── 포커스 표시 ─────────────────────────────────────────────
+ * 이전에는 입력 필드에만 outline이 있었고 버튼·링크·요약에는 없었다.
+ * 브라우저 기본 표시를 지운 곳이 있으므로 전 요소에 명시적으로 복원한다.
+ * :focus-visible을 쓰면 마우스 클릭에는 링이 뜨지 않고 키보드 이동에만 뜬다.
+ */
+:where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* 포커스 링이 배경에 묻히지 않도록 안쪽 그림자를 함께 준다 */
+:where(button, a, summary):focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
+/* ── 터치 타깃 ───────────────────────────────────────────────
+ * 손가락으로 누르는 대상은 최소 44×44px. 시각적 크기를 키우지 않고
+ * 누를 수 있는 영역만 넓혀야 하는 곳은 ::after 확장을 쓴다.
+ */
+.bottom-nav a,
+.seg,
+.rate,
+.col-tab,
+.verse-row,
+.col-row,
+.tech-details summary,
+.btn {
+  min-height: var(--touch-min);
+}
+
+/* 진행률 행은 누를 수 있는 대상이므로 높이를 확보한다 (마음 밭의 정적 행은 제외) */
+.col-row:not(.col-row-static) {
+  min-height: var(--touch-min);
+}
+
+/* 첫글자 보드의 어절 버튼은 본문 흐름을 유지해야 해서 시각 크기를 키울 수 없다.
+ * 대신 누를 수 있는 영역을 투명하게 넓힌다. */
+.fl-word {
+  position: relative;
+}
+
+.fl-word::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 0 0;
+  transform: translateY(-50%);
+  height: var(--touch-min);
+  min-width: var(--touch-min);
+  left: 50%;
+  translate: -50% 0;
+}
+
+/* 나가기·종료 같은 텍스트 버튼도 44px 확보 */
+.btn-ghost {
+  min-height: var(--touch-min);
+  min-width: var(--touch-min);
+}
+
+/* 상세 지표 접기/펴기 */
+.tech-details summary {
+  min-height: var(--touch-min);
+  display: flex;
+  align-items: center;
+}
+
+/* ── 컨트롤 경계 ─────────────────────────────────────────────
+ * 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳은 3:1 이상인
+ * --color-border를 쓴다 (--color-line은 장식용 헤어라인).
+ */
+.btn,
+.seg,
+.rate,
+.col-tab,
+.typing-input,
+.ref-input,
+.fl-word {
+  border-color: var(--color-border);
+}
+
+/* ── 움직임 최소화 선호 ─────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .btn:active {
+    transform: none;
+  }
+}
+
+/* ── 스크린리더 전용 텍스트 ───────────────────────────────────
+ * 시각 표현에 의존하는 컴포넌트(첫글자 보드, diff 뷰)의 텍스트 대안.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── 고대비 모드 ─────────────────────────────────────────────
+ * 사용자가 OS에서 고대비를 켜면 경계를 더 분명하게.
+ */
+@media (prefers-contrast: more) {
+  .panel,
+  .tech-details {
+    border-color: var(--color-border);
+  }
+
+  .muted {
+    color: var(--color-text);
+  }
+}
