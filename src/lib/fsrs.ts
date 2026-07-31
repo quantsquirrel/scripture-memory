@@ -1,12 +1,13 @@
 import {
+  type Card,
   createEmptyCard,
   fsrs,
   generatorParameters,
+  type Grade,
   Rating,
   State,
-  type Card,
-  type Grade,
 } from 'ts-fsrs'
+
 import type { SerializedCard } from './types'
 
 /** 장기 유지용 기본 목표 기억률 */
@@ -38,6 +39,11 @@ export function serializeCard(c: Card): SerializedCard {
     due: c.due.toISOString(),
     stability: c.stability,
     difficulty: c.difficulty,
+    // 예외: ts-fsrs가 elapsed_days를 6.0에서 제거 예정으로 표시했지만, 이 필드는
+    // v1 사용자 데이터와 골든 fixture(tests/fixtures/export-v1.json)에 이미 들어
+    // 있다. 읽고 다시 쓰지 않으면 기존 백업의 왕복이 손실된다 — 하드 경계 3.
+    // ts-fsrs가 실제로 제거하는 시점에 마이그레이션과 함께 정리한다.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     elapsed_days: c.elapsed_days,
     scheduled_days: c.scheduled_days,
     reps: c.reps,
@@ -52,12 +58,22 @@ export function serializeCard(c: Card): SerializedCard {
     : { ...base, last_review: new Date(c.last_review).toISOString() }
 }
 
-/** 영속된 state 숫자를 FSRS State로 확인 — 손상된 저장 데이터를 조용히 통과시키지 않는다 */
-function toState(n: number): State {
-  if (n === State.New || n === State.Learning || n === State.Review || n === State.Relearning) {
-    return n
-  }
-  throw new Error(`알 수 없는 카드 상태입니다: ${String(n)}`)
+/**
+ * 영속된 state 숫자를 FSRS State로 확인 — 손상된 저장 데이터나 다른 버전의
+ * 백업을 조용히 통과시키지 않는다. 조회 표로 만들어 raw number와 열거형을
+ * 직접 비교하지 않는다.
+ */
+const STATE_BY_VALUE = new Map<number, State>([
+  [State.New, State.New],
+  [State.Learning, State.Learning],
+  [State.Review, State.Review],
+  [State.Relearning, State.Relearning],
+])
+
+export function toState(n: number): State {
+  const s = STATE_BY_VALUE.get(n)
+  if (s === undefined) throw new Error(`알 수 없는 카드 상태입니다: ${String(n)}`)
+  return s
 }
 
 export function reviveCard(s: SerializedCard): Card {

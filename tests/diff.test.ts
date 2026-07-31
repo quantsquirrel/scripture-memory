@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, tokenize } from '../src/lib/diff'
 
 const TARGET =

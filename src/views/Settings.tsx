@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+
 import {
   applySchedulerSettings,
   exportAll,
@@ -124,7 +125,7 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
 
   const doImport = async (file: File) => {
     try {
-      await importAll(JSON.parse(await file.text()))
+      await importAll(JSON.parse(await file.text()) as unknown)
       setMsg('가져오기 완료.')
       onChanged()
     } catch (e) {
@@ -158,7 +159,9 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
             <button
               key={v}
               className={`seg${theme === v ? ' active' : ''}`}
-              onClick={() => chooseTheme(v)}
+              onClick={() => {
+                chooseTheme(v)
+              }}
             >
               {label}
             </button>
@@ -195,8 +198,10 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를 계산하고, 남은 기간은
           복습만 합니다. 목표일 이후에는 FSRS가 알아서 복습 간격을 늘려 유지 모드로 전환됩니다.
         </p>
-        <label className="muted small">시험 모드</label>
-        <div className="seg-row">
+        <span className="muted small" id="exam-mode-label">
+          시험 모드
+        </span>
+        <div className="seg-row" role="group" aria-labelledby="exam-mode-label">
           {(
             [
               [false, '끔'],
@@ -227,7 +232,9 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           type="password"
           placeholder="GitHub 토큰 (gist 권한만)"
           value={token}
-          onChange={(e) => setToken(e.target.value)}
+          onChange={(e) => {
+            setToken(e.target.value)
+          }}
           autoCapitalize="off"
           autoCorrect="off"
         />
@@ -235,7 +242,9 @@ export function Settings({ onChanged }: { onChanged: () => void }) {
           className="ref-input"
           placeholder="Gist ID"
           value={gistId}
-          onChange={(e) => setGistId(e.target.value)}
+          onChange={(e) => {
+            setGistId(e.target.value)
+          }}
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}

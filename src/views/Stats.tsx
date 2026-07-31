@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+
 import { BulletBar, ForecastBars, HistoryBars } from '../components/StatCharts'
 import {
   collectionOf,
@@ -7,7 +8,6 @@ import {
   topicOf,
   VERSE_BY_ID,
   VERSES,
-  type VerseEntry,
 } from '../data/verses'
 import {
   dueCards,
@@ -30,28 +30,28 @@ import {
   type GoalInfo,
 } from '../lib/goal'
 import {
+  type AccuracySummary,
   dailyPick,
   directionRetention,
+  type DueForecast,
   dueForecast,
+  type KnowledgeNow,
   knowledgeNow,
+  type Maturity,
   maturity,
   objectiveAccuracy,
-  queueProgress,
-  reviewHistory,
-  selfGradeCalibration,
-  trueRetention,
-  weakVerses,
-  type AccuracySummary,
-  type DueForecast,
-  type KnowledgeNow,
-  type Maturity,
   type QueueProgress,
+  queueProgress,
   type ReviewHistory,
+  reviewHistory,
   type SelfGradeCalibration,
+  selfGradeCalibration,
   type TrueRetention,
+  trueRetention,
   type WeakVerse,
+  weakVerses,
 } from '../lib/stats'
-import { DIRECTION_LABEL, type Direction, type StoredCard } from '../lib/types'
+import { type Direction, DIRECTION_LABEL, type StoredCard } from '../lib/types'
 
 interface StatsData {
   cards: StoredCard[]
@@ -176,9 +176,12 @@ export function Stats() {
     return { ...row, depth, done }
   })
 
-  const weakEntries = data.weak
-    .map((w) => ({ ...w, verse: VERSE_BY_ID[w.verseId] as VerseEntry | undefined }))
-    .filter((w) => w.verse)
+  // 본문이 없는 구절(다른 버전 백업에서 온 id)은 목록에서 빼고, 남은 항목은
+  // verse가 반드시 있는 형태로 좁혀 둔다 — `!` 없이 렌더할 수 있게.
+  const weakEntries = data.weak.flatMap((w) => {
+    const verse = VERSE_BY_ID[w.verseId]
+    return verse ? [{ ...w, verse }] : []
+  })
 
   return (
     <div>
@@ -232,13 +235,13 @@ export function Stats() {
             <div key={w.verseId} className="weak-item">
               <div className="weak-head">
                 <span>
-                  {w.verse!.refAbbr}{' '}
-                  <span className="muted small">{topicOf(w.verse!).title}</span>
+                  {w.verse.refAbbr}{' '}
+                  <span className="muted small">{topicOf(w.verse).title}</span>
                 </span>
                 <span className="muted small">{w.lapses}번 다시 붙듦</span>
               </div>
               <p className="weak-snippet muted small">
-                {w.verse!.text.length > 40 ? `${w.verse!.text.slice(0, 40)}…` : w.verse!.text}
+                {w.verse.text.length > 40 ? `${w.verse.text.slice(0, 40)}…` : w.verse.text}
               </p>
             </div>
           ))}
@@ -371,7 +374,7 @@ export function Stats() {
               <span className="stat-val">
                 {data.dirRetention[d].rate !== null ? (
                   <>
-                    {pct(data.dirRetention[d].rate!)}{' '}
+                    {pct(data.dirRetention[d].rate)}{' '}
                     <span className="muted small">({data.dirRetention[d].total}회)</span>
                   </>
                 ) : (

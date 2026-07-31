@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import {
   collectionOf,
   COLLECTIONS,
@@ -18,7 +19,7 @@ const verse = (id: string) => required(VERSE_BY_ID[id], `구절 ${id}`)
 describe('verses.json v2 무결성', () => {
   it('컬렉션 5개가 학습 순서대로 정렬된다', () => {
     expect(COLLECTIONS.map((c) => c.key)).toEqual(['AS', 'LV', 'TMS60', 'DEP', 'TMS180'])
-    expect(COLLECTIONS.find((c) => c.key === 'DEP')!.short).toBe('DEP242')
+    expect(required(COLLECTIONS.find((c) => c.key === 'DEP')).short).toBe('DEP242')
   })
 
   it('총 495구절 (5+8+60+242+180)', () => {
@@ -99,14 +100,11 @@ describe('verses.json v2 무결성', () => {
   it('crumbOf가 컬렉션·섹션·그룹 경로를 만든다', () => {
     expect(crumbOf(verse('A1a'))).toEqual(['60구절', '새로운 삶'])
     expect(crumbOf(verse('AS1a'))).toEqual(['5확신'])
-    const depBridge = VERSES.find(
-      (v) => collectionOf(v).key === 'DEP' && topicOf(v).group === '다리예화',
-    )!
+    const depBridge = required(
+      VERSES.find((v) => collectionOf(v).key === 'DEP' && topicOf(v).group === '다리예화'),
+      'DEP 다리예화 구절',
+    )
     expect(crumbOf(depBridge)).toEqual(['DEP242', '증거', '다리예화'])
-    expect(crumbOf(verse('T1-1a'))).toEqual([
-      '180구절',
-      '하나님을 알아감',
-      '예수 그리스도',
-    ])
+    expect(crumbOf(verse('T1-1a'))).toEqual(['180구절', '하나님을 알아감', '예수 그리스도'])
   })
 })

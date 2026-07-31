@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+
 import {
   applyRating,
   DEFAULT_RETENTION,
@@ -54,7 +55,9 @@ describe('fsrs 래퍼', () => {
 })
 
 describe('시험 모드 목표 기억률', () => {
-  afterEach(() => setRequestRetention(DEFAULT_RETENTION))
+  afterEach(() => {
+    setRequestRetention(DEFAULT_RETENTION)
+  })
 
   /** Review 상태의 성숙 카드 하나와 다음 복습 시점을 만든다 */
   const matureCard = () => {

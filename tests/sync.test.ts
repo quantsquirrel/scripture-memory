@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { mergeBundles } from '../src/lib/sync'
+
 import type { ExportBundle } from '../src/lib/db'
-import type { ReviewEntry, SerializedCard, StoredCard } from '../src/lib/types'
 import { required } from '../src/lib/invariant'
+import { mergeBundles } from '../src/lib/sync'
+import type { ReviewEntry, StoredCard } from '../src/lib/types'
 
 const card = (key: string, reps: number, due: string): StoredCard => ({
   key,
@@ -18,7 +19,7 @@ const card = (key: string, reps: number, due: string): StoredCard => ({
     lapses: 0,
     learning_steps: 0,
     state: 2,
-  } as SerializedCard,
+  },
 })
 
 const review = (cardKey: string, ts: string): ReviewEntry => ({

@@ -1,3 +1,5 @@
+import type { State } from 'ts-fsrs'
+
 export type Direction = 'topic' | 'ref' | 'text'
 
 export const DIRECTIONS: Direction[] = ['topic', 'ref', 'text']
@@ -17,7 +19,8 @@ export interface SerializedCard {
   reps: number
   lapses: number
   learning_steps: number
-  state: number
+  /** FSRS 카드 상태. 영속 형태는 숫자지만 값 집합은 State로 고정된다 */
+  state: State
   last_review?: string
 }
 

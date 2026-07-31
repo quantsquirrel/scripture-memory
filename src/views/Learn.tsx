@@ -1,4 +1,7 @@
 import { useEffect, useState } from 'react'
+
+import { DiffView } from '../components/DiffView'
+import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import {
   collectionOf,
   crumbOf,
@@ -6,13 +9,11 @@ import {
   refKeyOf,
   topicOf,
   VERSE_BY_ID,
-  VERSES,
   type VerseEntry,
+  VERSES,
 } from '../data/verses'
-import { FirstLetterBoard } from '../components/FirstLetterBoard'
-import { DiffView } from '../components/DiffView'
-import { gradeTyping, type TypingGrade } from '../lib/diff'
 import { getAllLearning, getLearning, graduateVerse, putLearning } from '../lib/db'
+import { gradeTyping, type TypingGrade } from '../lib/diff'
 
 const STEP_TITLES = ['본문 익히기', '첫글자 복원', '타이핑 검증', '졸업']
 
@@ -38,7 +39,9 @@ export function Learn({
   const [nextVerse, setNextVerse] = useState<VerseEntry | null>(null)
 
   useEffect(() => {
-    void getLearning(verseId).then((p) => setStep(p ? Math.min(p.step, 2) : 0))
+    void getLearning(verseId).then((p) => {
+      setStep(p ? Math.min(p.step, 2) : 0)
+    })
     const v = VERSE_BY_ID[verseId]
     if (!v) return
     const dups = (DUPLICATES[refKeyOf(v)] ?? []).filter((id) => id !== verseId)
@@ -120,7 +123,9 @@ export function Learn({
             <FirstLetterBoard
               key={flTry}
               text={verse.text}
-              onPeek={() => setPeeks((p) => p + 1)}
+              onPeek={() => {
+                setPeeks((p) => p + 1)
+              }}
             />
             <p className="muted small">
               첫 글자만 보고 낭송하세요. 막힌 어절만 탭 · 엿보기 {peeks}회
@@ -186,7 +191,9 @@ export function Learn({
                 <textarea
                   className="typing-input"
                   value={attempt}
-                  onChange={(e) => setAttempt(e.target.value)}
+                  onChange={(e) => {
+                    setAttempt(e.target.value)
+                  }}
                   placeholder="기억만으로 말씀 전체를 입력하세요"
                   autoCapitalize="off"
                   autoCorrect="off"
@@ -196,7 +203,9 @@ export function Learn({
                 <button
                   className="btn btn-primary"
                   disabled={attempt.trim() === ''}
-                  onClick={() => setGrade(gradeTyping(verse.text, attempt))}
+                  onClick={() => {
+                    setGrade(gradeTyping(verse.text, attempt))
+                  }}
                 >
                   채점 (word-perfect 통과)
                 </button>
@@ -214,7 +223,12 @@ export function Learn({
               FSRS 스케줄에 편입되었습니다.
             </p>
             {nextVerse && (
-              <button className="btn btn-primary" onClick={() => onLearn(nextVerse.id)}>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  onLearn(nextVerse.id)
+                }}
+              >
                 다음 구절: {nextVerse.refAbbr}
               </button>
             )}

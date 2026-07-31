@@ -1,14 +1,23 @@
-import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
+import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
+
 import {
-  DIRECTIONS,
+  applyRating,
+  DEFAULT_RETENTION,
+  newCard,
+  setRequestRetention,
+  State,
+  toState,
+} from './fsrs'
+import { DEFAULT_GOAL_DATE, EXAM_RETENTION, examModeActive } from './goal'
+import {
   type Direction,
+  DIRECTIONS,
   type LearnProgress,
   type ReviewEntry,
   type ReviewMode,
+  type SerializedCard,
   type StoredCard,
 } from './types'
-import { applyRating, DEFAULT_RETENTION, newCard, setRequestRetention, State } from './fsrs'
-import { DEFAULT_GOAL_DATE, EXAM_RETENTION, examModeActive } from './goal'
 
 interface TmsDB extends DBSchema {
   cards: { key: string; value: StoredCard }
@@ -20,16 +29,14 @@ interface TmsDB extends DBSchema {
 let dbPromise: Promise<IDBPDatabase<TmsDB>> | null = null
 
 export function db(): Promise<IDBPDatabase<TmsDB>> {
-  if (!dbPromise) {
-    dbPromise = openDB<TmsDB>('tms-krv', 1, {
-      upgrade(d) {
-        d.createObjectStore('cards', { keyPath: 'key' })
-        d.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true })
-        d.createObjectStore('learning', { keyPath: 'verseId' })
-        d.createObjectStore('settings', { keyPath: 'key' })
-      },
-    })
-  }
+  dbPromise ??= openDB<TmsDB>('tms-krv', 1, {
+    upgrade(d) {
+      d.createObjectStore('cards', { keyPath: 'key' })
+      d.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true })
+      d.createObjectStore('learning', { keyPath: 'verseId' })
+      d.createObjectStore('settings', { keyPath: 'key' })
+    },
+  })
   return dbPromise
 }
 
@@ -167,10 +174,123 @@ export async function exportAll(): Promise<ExportBundle> {
   }
 }
 
-export async function importAll(bundle: ExportBundle): Promise<void> {
-  if (bundle.app !== 'scripture-memory' || bundle.version !== 1) {
+/**
+ * 백업 번들 검증. importAll의 입력은 사용자가 고른 파일이나 Gist 응답이라
+ * 런타임에 무엇이든 올 수 있다 — 선언 타입을 믿으면 "형식 확인"이 컴파일러에게는
+ * 항상 참인 조건이 되어 실제로는 검사가 없는 것과 같다(파싱 결과를 그대로
+ * 넘기던 이전 구현의 문제). 형태가 맞지 않으면 저장소를 비우기 전에 거부한다.
+ */
+function asExportBundle(input: unknown): ExportBundle {
+  if (typeof input !== 'object' || input === null) throw new Error('알 수 없는 백업 형식입니다')
+  const b: Record<string, unknown> = { ...input }
+  if (b['app'] !== 'scripture-memory' || b['version'] !== 1) {
     throw new Error('알 수 없는 백업 형식입니다')
   }
+  if (
+    !Array.isArray(b['cards']) ||
+    !Array.isArray(b['reviews']) ||
+    !Array.isArray(b['learning'])
+  ) {
+    throw new Error('백업 파일이 손상되었습니다 (cards/reviews/learning 누락)')
+  }
+  return {
+    app: 'scripture-memory',
+    version: 1,
+    exportedAt:
+      typeof b['exportedAt'] === 'string' ? b['exportedAt'] : new Date(0).toISOString(),
+    cards: b['cards'].map(asStoredCard),
+    reviews: b['reviews'].map(asReviewEntry),
+    learning: b['learning'].map(asLearnProgress),
+  }
+}
+
+function asRecord(v: unknown, what: string): Record<string, unknown> {
+  if (typeof v !== 'object' || v === null)
+    throw new Error(`백업의 ${what} 형식이 올바르지 않습니다`)
+  return { ...v }
+}
+
+function str(v: unknown, what: string): string {
+  if (typeof v !== 'string') throw new Error(`백업의 ${what}이(가) 문자열이 아닙니다`)
+  return v
+}
+
+function num(v: unknown, what: string): number {
+  if (typeof v !== 'number' || !Number.isFinite(v)) {
+    throw new Error(`백업의 ${what}이(가) 숫자가 아닙니다`)
+  }
+  return v
+}
+
+function asDirection(v: unknown): Direction {
+  const found = DIRECTIONS.find((d) => d === v)
+  if (!found) throw new Error(`백업에 알 수 없는 방향이 있습니다: ${String(v)}`)
+  return found
+}
+
+function asRating(v: unknown): 1 | 2 | 3 | 4 {
+  if (v === 1 || v === 2 || v === 3 || v === 4) return v
+  throw new Error(`백업에 알 수 없는 등급이 있습니다: ${String(v)}`)
+}
+
+function asStoredCard(v: unknown): StoredCard {
+  const c = asRecord(v, 'card')
+  const card = asRecord(c['card'], 'card.card')
+  const base: SerializedCard = {
+    due: str(card['due'], 'card.due'),
+    stability: num(card['stability'], 'card.stability'),
+    difficulty: num(card['difficulty'], 'card.difficulty'),
+    elapsed_days: num(card['elapsed_days'], 'card.elapsed_days'),
+    scheduled_days: num(card['scheduled_days'], 'card.scheduled_days'),
+    reps: num(card['reps'], 'card.reps'),
+    lapses: num(card['lapses'], 'card.lapses'),
+    learning_steps: num(card['learning_steps'], 'card.learning_steps'),
+    state: toState(num(card['state'], 'card.state')),
+  }
+  return {
+    key: str(c['key'], 'card.key'),
+    verseId: str(c['verseId'], 'card.verseId'),
+    direction: asDirection(c['direction']),
+    card:
+      card['last_review'] === undefined
+        ? base
+        : { ...base, last_review: str(card['last_review'], 'card.last_review') },
+  }
+}
+
+function asReviewEntry(v: unknown): ReviewEntry {
+  const r = asRecord(v, 'review')
+  return {
+    cardKey: str(r['cardKey'], 'review.cardKey'),
+    verseId: str(r['verseId'], 'review.verseId'),
+    direction: asDirection(r['direction']),
+    mode: asReviewMode(r['mode']),
+    rating: asRating(r['rating']),
+    accuracy: r['accuracy'] === null ? null : num(r['accuracy'], 'review.accuracy'),
+    peeks: r['peeks'] === null ? null : num(r['peeks'], 'review.peeks'),
+    ts: str(r['ts'], 'review.ts'),
+  }
+}
+
+const REVIEW_MODES: readonly ReviewMode[] = ['firstLetter', 'recite', 'typing', 'refInput']
+
+function asReviewMode(v: unknown): ReviewMode {
+  const found = REVIEW_MODES.find((m) => m === v)
+  if (!found) throw new Error(`백업에 알 수 없는 복습 모드가 있습니다: ${String(v)}`)
+  return found
+}
+
+function asLearnProgress(v: unknown): LearnProgress {
+  const l = asRecord(v, 'learning')
+  return {
+    verseId: str(l['verseId'], 'learning.verseId'),
+    step: num(l['step'], 'learning.step'),
+    updatedAt: str(l['updatedAt'], 'learning.updatedAt'),
+  }
+}
+
+export async function importAll(input: unknown): Promise<void> {
+  const bundle = asExportBundle(input)
   const d = await db()
   const tx = d.transaction(['cards', 'reviews', 'learning'], 'readwrite')
   await tx.objectStore('cards').clear()
@@ -179,7 +299,7 @@ export async function importAll(bundle: ExportBundle): Promise<void> {
   for (const c of bundle.cards) await tx.objectStore('cards').put(c)
   for (const r of bundle.reviews) {
     const { id: _id, ...rest } = r
-    await tx.objectStore('reviews').add(rest as ReviewEntry)
+    await tx.objectStore('reviews').add(rest)
   }
   for (const l of bundle.learning) await tx.objectStore('learning').put(l)
   await tx.done
@@ -227,10 +347,12 @@ export const getGoalBufferDays = (): Promise<number | undefined> =>
   readSetting('goalBufferDays', isFiniteNumber)
 export const setGoalBufferDays = (v: number): Promise<void> => writeSetting('goalBufferDays', v)
 
-export const getExamMode = (): Promise<boolean | undefined> => readSetting('examMode', isBoolean)
+export const getExamMode = (): Promise<boolean | undefined> =>
+  readSetting('examMode', isBoolean)
 export const setExamMode = (v: boolean): Promise<void> => writeSetting('examMode', v)
 
-export const getSyncToken = (): Promise<string | undefined> => readSetting('syncToken', isString)
+export const getSyncToken = (): Promise<string | undefined> =>
+  readSetting('syncToken', isString)
 export const setSyncToken = (v: string): Promise<void> => writeSetting('syncToken', v)
 
 export const getSyncGistId = (): Promise<string | undefined> =>

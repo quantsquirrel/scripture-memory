@@ -3,7 +3,11 @@
 import { required } from './invariant'
 
 // word: 표시 단위(글자). ti: 정답 글자 인덱스(ok/miss만 존재, extra는 없음).
-export type DiffOp = { type: 'ok' | 'miss' | 'extra'; word: string; ti?: number }
+export interface DiffOp {
+  type: 'ok' | 'miss' | 'extra'
+  word: string
+  ti?: number
+}
 
 /** 어절 배열 (구두점 제거, 공백으로 분리) */
 export function tokenize(text: string): string[] {
@@ -55,7 +59,9 @@ export function diffWords(
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
       dp[i * width + j] =
-        target[i] === attempt[j] ? lcs(i + 1, j + 1) + 1 : Math.max(lcs(i + 1, j), lcs(i, j + 1))
+        target[i] === attempt[j]
+          ? lcs(i + 1, j + 1) + 1
+          : Math.max(lcs(i + 1, j), lcs(i, j + 1))
     }
   }
   const ops: DiffOp[] = []

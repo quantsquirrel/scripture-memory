@@ -2,7 +2,9 @@
 // 몇 분 뒤 스케줄을 같은 세션에서 보여줄 뿐이다. 며칠 간격의 복습(Review) 카드를
 // 앞당겨 보여주면 안 된다(간격 반복 붕괴).
 import 'fake-indexeddb/auto'
+
 import { beforeEach, describe, expect, it } from 'vitest'
+
 import {
   dueCards,
   graduateVerse,

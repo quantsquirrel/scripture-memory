@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react'
+
 import {
-  COLLECTIONS,
   collectionOf,
+  COLLECTIONS,
   sectionsOf,
   topicsOf,
+  type VerseEntry,
   VERSES,
   versesOfTopic,
-  type VerseEntry,
 } from '../data/verses'
 import { getAllCards, getAllLearning } from '../lib/db'
-import { required } from '../lib/invariant'
 import { formatInterval } from '../lib/fsrs'
+import { required } from '../lib/invariant'
 import type { LearnProgress, StoredCard } from '../lib/types'
 
 /** 첫 탭의 기본 선택 — 컬렉션 목록이 비면 데이터 무결성 오류다 */
@@ -21,7 +22,8 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
   const [cards, setCards] = useState<Map<string, StoredCard[]>>(new Map())
   const [open, setOpen] = useState<string | null>(null)
   const [col, setCol] = useState(FIRST_COLLECTION_KEY)
-  const [loaded, setLoaded] = useState(false)
+  /** 로드 시각 스냅샷 — 0이면 아직 안 불러온 상태. 렌더 중 Date.now()를 부르지 않는다 */
+  const [loadedAt, setLoadedAt] = useState(0)
 
   useEffect(() => {
     void Promise.all([getAllLearning(), getAllCards()]).then(([ls, cs]) => {
@@ -33,11 +35,11 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
         m.set(c.verseId, arr)
       }
       setCards(m)
-      setLoaded(true)
+      setLoadedAt(Date.now())
     })
   }, [])
 
-  if (!loaded) return <p className="muted">불러오는 중…</p>
+  if (loadedAt === 0) return <p className="muted">불러오는 중…</p>
 
   const status = (v: VerseEntry): { label: string; cls: string } => {
     const l = learning.get(v.id)
@@ -48,12 +50,10 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
       (min, c) => (min === null || c.card.due < min ? c.card.due : min),
       null,
     )
-    if (minDue && minDue <= new Date().toISOString())
+    if (minDue && minDue <= new Date(loadedAt).toISOString())
       return { label: '복습 대기', cls: 'st-due' }
     return {
-      label: minDue
-        ? `${formatInterval(new Date(minDue).getTime() - Date.now())} 후`
-        : '암송 중',
+      label: minDue ? `${formatInterval(new Date(minDue).getTime() - loadedAt)} 후` : '암송 중',
       cls: 'st-done',
     }
   }
@@ -71,7 +71,9 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
             <button
               key={c.key}
               className={`col-tab${col === c.key ? ' active' : ''}`}
-              onClick={() => setCol(c.key)}
+              onClick={() => {
+                setCol(c.key)
+              }}
             >
               <span>{c.short}</span>
               <span className="muted small">
@@ -99,7 +101,9 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
                     <div key={v.id}>
                       <button
                         className="verse-row"
-                        onClick={() => setOpen(open === v.id ? null : v.id)}
+                        onClick={() => {
+                          setOpen(open === v.id ? null : v.id)
+                        }}
                       >
                         <span>{v.refAbbr}</span>
                         <span className={`status ${st.cls}`}>{st.label}</span>
@@ -107,7 +111,12 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
                       {open === v.id && (
                         <div className="verse-detail">
                           <p className="verse">{v.text}</p>
-                          <button className="btn" onClick={() => onLearn(v.id)}>
+                          <button
+                            className="btn"
+                            onClick={() => {
+                              onLearn(v.id)
+                            }}
+                          >
                             {st.cls === 'st-new'
                               ? '학습 시작'
                               : st.cls === 'st-learning'

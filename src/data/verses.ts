@@ -1,5 +1,4 @@
 import { required } from '../lib/invariant'
-
 import raw from './verses.json'
 
 export interface VerseEntry {
@@ -35,12 +34,7 @@ export interface TopicInfo {
   title: string
 }
 
-const data = raw as {
-  collections: CollectionInfo[]
-  sections: SectionInfo[]
-  topics: TopicInfo[]
-  verses: VerseEntry[]
-}
+const data = raw
 
 export const COLLECTIONS: CollectionInfo[] = [...data.collections].sort(
   (a, b) => a.order - b.order,
