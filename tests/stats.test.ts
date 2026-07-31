@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { required } from '../src/lib/invariant'
 import {
   dailyPick,
   directionRetention,
@@ -16,8 +18,8 @@ import type { Direction, ReviewEntry, SerializedCard, StoredCard } from '../src/
 
 const entry = (cardKey: string, rating: 1 | 2 | 3 | 4, ts: string): ReviewEntry => ({
   cardKey,
-  verseId: cardKey.split(':')[0],
-  direction: cardKey.split(':')[1] as Direction,
+  verseId: required(cardKey.split(':')[0], 'verseId'),
+  direction: required(cardKey.split(':')[1], 'direction') as Direction,
   mode: 'typing',
   rating,
   accuracy: null,
@@ -29,8 +31,8 @@ const cardDue = (key: string, due: string): StoredCard => {
   const [verseId, direction] = key.split(':')
   return {
     key,
-    verseId,
-    direction: direction as Direction,
+    verseId: required(verseId, 'verseId'),
+    direction: required(direction, 'direction') as Direction,
     card: {
       due,
       stability: 10,
@@ -129,8 +131,8 @@ const cardWith = (key: string, over: Partial<SerializedCard>): StoredCard => {
   const [verseId, direction] = key.split(':')
   return {
     key,
-    verseId,
-    direction: direction as Direction,
+    verseId: required(verseId, 'verseId'),
+    direction: required(direction, 'direction') as Direction,
     card: {
       due: '2026-07-20T09:00:00+09:00',
       stability: 10,
@@ -155,7 +157,7 @@ describe('knowledgeNow', () => {
     const k = knowledgeNow([fresh, brandNew], now)
     expect(k.graded).toBe(1)
     expect(k.avgRetrievability).not.toBeNull()
-    expect(k.avgRetrievability!).toBeGreaterThan(0.99)
+    expect(required(k.avgRetrievability)).toBeGreaterThan(0.99)
     expect(k.estKnown).toBe(1)
   })
 
@@ -165,8 +167,8 @@ describe('knowledgeNow', () => {
     const decayed = cardWith('AS1a:ref', { stability: 1, last_review: old })
     const k = knowledgeNow([fresh, decayed], now)
     expect(k.graded).toBe(2)
-    expect(k.avgRetrievability!).toBeLessThan(0.99)
-    expect(k.avgRetrievability!).toBeGreaterThan(0)
+    expect(required(k.avgRetrievability)).toBeLessThan(0.99)
+    expect(required(k.avgRetrievability)).toBeGreaterThan(0)
   })
 
   it('궤도에 오른 카드가 없으면 평균은 null', () => {
@@ -307,7 +309,7 @@ describe('weakVerses', () => {
       1,
     )
     expect(w).toHaveLength(1)
-    expect(w[0].verseId).toBe('AS1a')
+    expect(required(w[0]).verseId).toBe('AS1a')
   })
 })
 
@@ -319,7 +321,7 @@ describe('dailyPick', () => {
     const d2 = dailyPick(items, new Date('2026-07-18T12:00:00+09:00'))
     const d4 = dailyPick(items, new Date('2026-07-20T12:00:00+09:00'))
     expect(d1a).toBe(d1b) // 하루 안에서는 고정
-    expect(items.indexOf(d2!)).toBe((items.indexOf(d1a!) + 1) % 3) // 다음 날 다음 항목
+    expect(items.indexOf(required(d2))).toBe((items.indexOf(required(d1a)) + 1) % 3) // 다음 날 다음 항목
     expect(d4).toBe(d1a) // 3개 항목은 3일 주기로 되돌아온다
   })
 

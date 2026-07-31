@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { mergeBundles } from '../src/lib/sync'
+
 import type { ExportBundle } from '../src/lib/db'
-import type { ReviewEntry, SerializedCard, StoredCard } from '../src/lib/types'
+import { required } from '../src/lib/invariant'
+import { mergeBundles } from '../src/lib/sync'
+import type { ReviewEntry, StoredCard } from '../src/lib/types'
 
 const card = (key: string, reps: number, due: string): StoredCard => ({
   key,
-  verseId: key.split(':')[0],
+  verseId: required(key.split(':')[0], 'verseId'),
   direction: 'ref',
   card: {
     due,
@@ -17,12 +19,12 @@ const card = (key: string, reps: number, due: string): StoredCard => ({
     lapses: 0,
     learning_steps: 0,
     state: 2,
-  } as SerializedCard,
+  },
 })
 
 const review = (cardKey: string, ts: string): ReviewEntry => ({
   cardKey,
-  verseId: cardKey.split(':')[0],
+  verseId: required(cardKey.split(':')[0], 'verseId'),
   direction: 'ref',
   mode: 'recite',
   rating: 3,
@@ -53,17 +55,21 @@ describe('mergeBundles', () => {
   it('카드는 reps가 많은 쪽이 이긴다 (동률이면 due가 늦은 쪽)', () => {
     const a = bundle({ cards: [card('A1a:ref', 5, '2026-07-20T00:00:00Z')] })
     const b = bundle({ cards: [card('A1a:ref', 3, '2026-09-01T00:00:00Z')] })
-    expect(mergeBundles(a, b).cards[0].card.reps).toBe(5)
+    expect(required(mergeBundles(a, b).cards[0]).card.reps).toBe(5)
 
     const c = bundle({ cards: [card('A1a:ref', 5, '2026-07-20T00:00:00Z')] })
     const d = bundle({ cards: [card('A1a:ref', 5, '2026-08-01T00:00:00Z')] })
-    expect(mergeBundles(c, d).cards[0].card.due).toBe('2026-08-01T00:00:00Z')
+    expect(required(mergeBundles(c, d).cards[0]).card.due).toBe('2026-08-01T00:00:00Z')
   })
 
   it('학습 상태는 step이 높은 쪽이 이긴다', () => {
-    const a = bundle({ learning: [{ verseId: 'AS1a', step: 3, updatedAt: '2026-07-16T00:00:00Z' }] })
-    const b = bundle({ learning: [{ verseId: 'AS1a', step: 1, updatedAt: '2026-07-17T00:00:00Z' }] })
-    expect(mergeBundles(a, b).learning[0].step).toBe(3)
+    const a = bundle({
+      learning: [{ verseId: 'AS1a', step: 3, updatedAt: '2026-07-16T00:00:00Z' }],
+    })
+    const b = bundle({
+      learning: [{ verseId: 'AS1a', step: 1, updatedAt: '2026-07-17T00:00:00Z' }],
+    })
+    expect(required(mergeBundles(a, b).learning[0]).step).toBe(3)
   })
 
   it('한쪽이 비어 있으면 다른 쪽 그대로', () => {

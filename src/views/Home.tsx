@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
+
 import { collectionOf, sectionOf, sectionsOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import {
   dueCards,
   getAllLearning,
-  getSetting,
+  getExamMode,
+  getGoalBufferDays,
+  getGoalDate,
   nextDueAt,
   reviewsSince,
   upcomingLearningCards,
 } from '../lib/db'
 import { formatInterval } from '../lib/fsrs'
-import { LEARN_AHEAD_MS } from '../lib/policy'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
@@ -18,9 +20,12 @@ import {
   examModeActive,
   type GoalInfo,
 } from '../lib/goal'
+import { LEARN_AHEAD_MS } from '../lib/policy'
 import type { LearnProgress } from '../lib/types'
 
 interface HomeData {
+  /** 이 스냅샷을 읽은 시각 — 렌더 중 Date.now()를 부르지 않기 위해 함께 보관한다 */
+  now: number
   due: number
   dueVerses: number
   upcoming: number
@@ -52,12 +57,13 @@ export function Home({
       reviewsSince(midnight.toISOString()),
       getAllLearning(),
       nextDueAt(),
-      getSetting<string>('goalDate'),
-      getSetting<number>('goalBufferDays'),
-      getSetting<boolean>('examMode'),
+      getGoalDate(),
+      getGoalBufferDays(),
+      getExamMode(),
     ]).then(([due, upcoming, today, learning, next, goalDate, buffer, examMode]) => {
       const gd = goalDate ?? DEFAULT_GOAL_DATE
       setData({
+        now: Date.now(),
         due: due.length,
         dueVerses: new Set(due.map((c) => c.verseId)).size,
         upcoming: upcoming.length,
@@ -75,8 +81,9 @@ export function Home({
 
   const graduated = new Set(data.learning.filter((l) => l.step >= 3).map((l) => l.verseId))
   const inProgress = data.learning.find((l) => l.step > 0 && l.step < 3)
+  const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
   const nextNew = VERSES.find((v) => !graduated.has(v.id) && v.id !== inProgress?.verseId)
-  const weekAgo = new Date(Date.now() - 7 * 86400_000).toISOString()
+  const weekAgo = new Date(data.now - 7 * 86400_000).toISOString()
   const newThisWeek = data.learning.filter((l) => l.step >= 3 && l.updatedAt >= weekAgo).length
   const learnEnd = new Date(
     new Date(`${data.goal.goalDate}T12:00:00`).getTime() - data.goal.bufferDays * 86400_000,
@@ -112,9 +119,7 @@ export function Home({
             <p>
               <strong className="big-number">{data.dueVerses}</strong>구절 · 카드 {data.due}장이
               기다리고 있습니다
-              {data.overdue > 0 && (
-                <span className="muted"> · 밀린 카드 {data.overdue}장</span>
-              )}
+              {data.overdue > 0 && <span className="muted"> · 밀린 카드 {data.overdue}장</span>}
               {data.todayReviews > 0 && (
                 <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
               )}
@@ -128,7 +133,7 @@ export function Home({
             <p>
               다시 도전할 카드 <strong>{data.upcoming}</strong>장이 잠시 후 돌아옵니다
               {data.nextDue &&
-                ` (${formatInterval(new Date(data.nextDue).getTime() - Date.now())} 후)`}
+                ` (${formatInterval(new Date(data.nextDue).getTime() - data.now)} 후)`}
               {data.todayReviews > 0 && (
                 <span className="muted"> · 오늘 {data.todayReviews}회 복습</span>
               )}
@@ -142,13 +147,13 @@ export function Home({
             {data.todayReviews > 0 ? `오늘 ${data.todayReviews}회 복습 완료! ` : ''}
             대기 중인 카드가 없습니다.
             {data.nextDue &&
-              ` 다음 복습: ${formatInterval(new Date(data.nextDue).getTime() - Date.now())} 후`}
+              ` 다음 복습: ${formatInterval(new Date(data.nextDue).getTime() - data.now)} 후`}
           </p>
         )}
         {data.examActive && (
           <p className="muted small">
-            시험 모드 — 목표 기억률 {Math.round(EXAM_RETENTION * 100)}% 기준으로 복습
-            간격을 짧게 잡는 중
+            시험 모드 — 목표 기억률 {Math.round(EXAM_RETENTION * 100)}% 기준으로 복습 간격을
+            짧게 잡는 중
           </p>
         )}
       </section>
@@ -168,13 +173,23 @@ export function Home({
         {data.goal.past && data.goal.remaining > 0 && (
           <p className="muted small">목표일이 지났습니다 — 설정에서 목표일을 조정하세요.</p>
         )}
-        {inProgress && (
-          <button className="btn" onClick={() => onLearn(inProgress.verseId)}>
-            이어서: {VERSE_BY_ID[inProgress.verseId].refAbbr} (단계 {inProgress.step + 1}/4)
+        {inProgress && inProgressVerse && (
+          <button
+            className="btn"
+            onClick={() => {
+              onLearn(inProgressVerse.id)
+            }}
+          >
+            이어서: {inProgressVerse.refAbbr} (단계 {inProgress.step + 1}/4)
           </button>
         )}
         {nextNew ? (
-          <button className="btn btn-primary" onClick={() => onLearn(nextNew.id)}>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              onLearn(nextNew.id)
+            }}
+          >
             다음 구절: {collectionOf(nextNew).short} · {nextNew.refAbbr}
           </button>
         ) : (
@@ -195,8 +210,8 @@ export function Home({
           />
         </div>
         <p className="muted small">
-          전체 {graduated.size}/{VERSES.length} 구절 암송 중 — 묵상·마음 밭·훈련 지표는
-          돌아보기 탭에서
+          전체 {graduated.size}/{VERSES.length} 구절 암송 중 — 묵상·마음 밭·훈련 지표는 돌아보기
+          탭에서
         </p>
         {progressRows.map((row) => {
           const done = row.verses.filter((v) => graduated.has(v.id))

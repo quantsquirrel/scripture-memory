@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+
 import { applySchedulerSettings } from './lib/db'
 import { Browse } from './views/Browse'
 import { Home } from './views/Home'
@@ -39,25 +40,53 @@ export default function App() {
       <main key={epoch}>
         {view.name === 'home' && (
           <Home
-            onReview={() => go({ name: 'review' })}
-            onLearn={(verseId) => go({ name: 'learn', verseId })}
-            onBrowse={() => go({ name: 'browse' })}
+            onReview={() => {
+              go({ name: 'review' })
+            }}
+            onLearn={(verseId) => {
+              go({ name: 'learn', verseId })
+            }}
+            onBrowse={() => {
+              go({ name: 'browse' })
+            }}
           />
         )}
-        {view.name === 'review' && <Review onExit={() => go({ name: 'home' })} />}
+        {view.name === 'review' && (
+          <Review
+            onExit={() => {
+              go({ name: 'home' })
+            }}
+          />
+        )}
         {view.name === 'learn' && (
           <Learn
             verseId={view.verseId}
-            onExit={() => go({ name: 'home' })}
-            onReview={() => go({ name: 'review' })}
-            onLearn={(verseId) => go({ name: 'learn', verseId })}
+            onExit={() => {
+              go({ name: 'home' })
+            }}
+            onReview={() => {
+              go({ name: 'review' })
+            }}
+            onLearn={(verseId) => {
+              go({ name: 'learn', verseId })
+            }}
           />
         )}
         {view.name === 'browse' && (
-          <Browse onLearn={(verseId) => go({ name: 'learn', verseId })} />
+          <Browse
+            onLearn={(verseId) => {
+              go({ name: 'learn', verseId })
+            }}
+          />
         )}
         {view.name === 'stats' && <Stats />}
-        {view.name === 'settings' && <Settings onChanged={() => setEpoch((e) => e + 1)} />}
+        {view.name === 'settings' && (
+          <Settings
+            onChanged={() => {
+              setEpoch((e) => e + 1)
+            }}
+          />
+        )}
       </main>
 
       <nav className="bottom-nav">
@@ -73,7 +102,9 @@ export default function App() {
           <button
             key={name}
             className={view.name === name ? 'active' : ''}
-            onClick={() => go({ name } as View)}
+            onClick={() => {
+              go({ name })
+            }}
           >
             {label}
           </button>

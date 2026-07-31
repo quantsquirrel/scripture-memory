@@ -1,5 +1,5 @@
 import { retrievabilityAt, State } from './fsrs'
-import { DIRECTIONS, type Direction, type ReviewEntry, type StoredCard } from './types'
+import { type Direction, DIRECTIONS, type ReviewEntry, type StoredCard } from './types'
 
 /** 로컬(Asia/Seoul) 달력일 키 — 하루 경계는 UTC가 아니라 사용자 시간대 기준 */
 function dayKey(iso: string): string {
@@ -75,7 +75,7 @@ export function dueForecast(
   const counts = new Array<number>(days).fill(0)
   for (const c of cards) {
     const idx = Math.floor((new Date(c.card.due).getTime() - base) / 86400_000)
-    if (idx >= 0 && idx < days) counts[idx]++
+    if (idx >= 0 && idx < days) counts[idx] = (counts[idx] ?? 0) + 1
   }
   const sum = counts.reduce((a, b) => a + b, 0)
   return { counts, tomorrow: counts[0] ?? 0, avgPerDay: days === 0 ? 0 : sum / days }
@@ -228,7 +228,7 @@ export function dailyPick<T>(items: T[], now: Date = new Date()): T | null {
   const localDay = Math.floor(
     (midnight.getTime() - midnight.getTimezoneOffset() * 60_000) / 86400_000,
   )
-  return items[localDay % items.length]
+  return items[localDay % items.length] ?? null
 }
 
 export interface WeakVerse {

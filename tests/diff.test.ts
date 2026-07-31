@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, tokenize } from '../src/lib/diff'
 
 const TARGET =
@@ -19,7 +20,10 @@ describe('gradeTyping', () => {
   })
 
   it('구두점 차이는 무시한다', () => {
-    const g = gradeTyping(TARGET, '그런즉 누구든지 그리스도 안에 있으면, 새로운 피조물이라 이전 것은 지나갔으니 보라! 새것이 되었도다.')
+    const g = gradeTyping(
+      TARGET,
+      '그런즉 누구든지 그리스도 안에 있으면, 새로운 피조물이라 이전 것은 지나갔으니 보라! 새것이 되었도다.',
+    )
     expect(g.perfect).toBe(true)
   })
 
@@ -34,7 +38,7 @@ describe('gradeTyping', () => {
     expect(gradeTyping(TARGET, TARGET.replace(/\s+/g, '')).perfect).toBe(true)
   })
 
-  it("글자가 틀리면(허락지→허락치) 오답으로 잡는다", () => {
+  it('글자가 틀리면(허락지→허락치) 오답으로 잡는다', () => {
     const g = gradeTyping('허락지 아니하시고', '허락치 아니하시고')
     expect(g.perfect).toBe(false)
     expect(g.ops.some((o) => o.type === 'miss' && o.word === '지')).toBe(true)
@@ -44,7 +48,10 @@ describe('gradeTyping', () => {
   it('한 어절 누락 → perfect 아님, 해당 글자 miss', () => {
     const g = gradeTyping(TARGET, TARGET.replace(' 보라', ''))
     expect(g.perfect).toBe(false)
-    const missed = g.ops.filter((o) => o.type === 'miss').map((o) => o.word).join('')
+    const missed = g.ops
+      .filter((o) => o.type === 'miss')
+      .map((o) => o.word)
+      .join('')
     expect(missed).toBe('보라')
     expect(g.accuracy).toBeCloseTo(40 / 42, 5)
     expect(ratingFromAccuracy(g)).toBe(2) // >=0.9 → Hard

@@ -1,7 +1,13 @@
 /** 글자(음절) 단위 diff 채점. 구두점과 띄어쓰기는 비교에서 제외한다. */
 
+import { required } from './invariant'
+
 // word: 표시 단위(글자). ti: 정답 글자 인덱스(ok/miss만 존재, extra는 없음).
-export type DiffOp = { type: 'ok' | 'miss' | 'extra'; word: string; ti?: number }
+export interface DiffOp {
+  type: 'ok' | 'miss' | 'extra'
+  word: string
+  ti?: number
+}
 
 /** 어절 배열 (구두점 제거, 공백으로 분리) */
 export function tokenize(text: string): string[] {
@@ -44,37 +50,47 @@ export function diffWords(
 ): { matched: number; ops: DiffOp[] } {
   const n = target.length
   const m = attempt.length
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  // LCS 길이 DP. 행 배열을 중첩하면 noUncheckedIndexedAccess 아래에서 접근마다
+  // undefined 검사가 붙으므로, (n+1)×(m+1)을 평탄한 배열 하나로 잡는다.
+  // 전 구간을 0으로 채우므로 `?? 0`은 실제로는 발동하지 않는 총합 기본값이다.
+  const width = m + 1
+  const dp = new Array<number>((n + 1) * width).fill(0)
+  const lcs = (i: number, j: number): number => dp[i * width + j] ?? 0
   for (let i = n - 1; i >= 0; i--) {
     for (let j = m - 1; j >= 0; j--) {
-      dp[i][j] =
+      dp[i * width + j] =
         target[i] === attempt[j]
-          ? dp[i + 1][j + 1] + 1
-          : Math.max(dp[i + 1][j], dp[i][j + 1])
+          ? lcs(i + 1, j + 1) + 1
+          : Math.max(lcs(i + 1, j), lcs(i, j + 1))
     }
   }
   const ops: DiffOp[] = []
   let i = 0
   let j = 0
   while (i < n && j < m) {
-    if (target[i] === attempt[j]) {
-      ops.push({ type: 'ok', word: target[i], ti: i })
+    const t = required(target[i], `정답 ${String(i)}번째 글자`)
+    const a = required(attempt[j], `답안 ${String(j)}번째 글자`)
+    if (t === a) {
+      ops.push({ type: 'ok', word: t, ti: i })
       i++
       j++
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      ops.push({ type: 'miss', word: target[i], ti: i })
+    } else if (lcs(i + 1, j) >= lcs(i, j + 1)) {
+      ops.push({ type: 'miss', word: t, ti: i })
       i++
     } else {
-      ops.push({ type: 'extra', word: attempt[j] })
+      ops.push({ type: 'extra', word: a })
       j++
     }
   }
   while (i < n) {
-    ops.push({ type: 'miss', word: target[i], ti: i })
+    ops.push({ type: 'miss', word: required(target[i], `정답 ${String(i)}번째 글자`), ti: i })
     i++
   }
-  while (j < m) ops.push({ type: 'extra', word: attempt[j++] })
-  return { matched: dp[0][0], ops }
+  while (j < m) {
+    ops.push({ type: 'extra', word: required(attempt[j], `답안 ${String(j)}번째 글자`) })
+    j++
+  }
+  return { matched: lcs(0, 0), ops }
 }
 
 export interface TypingGrade {

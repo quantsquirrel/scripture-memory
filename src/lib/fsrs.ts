@@ -1,12 +1,13 @@
 import {
+  type Card,
   createEmptyCard,
   fsrs,
   generatorParameters,
+  type Grade,
   Rating,
   State,
-  type Card,
-  type Grade,
 } from 'ts-fsrs'
+
 import type { SerializedCard } from './types'
 
 /** 장기 유지용 기본 목표 기억률 */
@@ -34,30 +35,72 @@ export function getRequestRetention(): number {
 }
 
 export function serializeCard(c: Card): SerializedCard {
-  return {
+  const base: SerializedCard = {
     due: c.due.toISOString(),
     stability: c.stability,
     difficulty: c.difficulty,
+    // 예외: ts-fsrs가 elapsed_days를 6.0에서 제거 예정으로 표시했지만, 이 필드는
+    // v1 사용자 데이터와 골든 fixture(tests/fixtures/export-v1.json)에 이미 들어
+    // 있다. 읽고 다시 쓰지 않으면 기존 백업의 왕복이 손실된다 — 하드 경계 3.
+    // ts-fsrs가 실제로 제거하는 시점에 마이그레이션과 함께 정리한다.
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     elapsed_days: c.elapsed_days,
     scheduled_days: c.scheduled_days,
     reps: c.reps,
     lapses: c.lapses,
     learning_steps: c.learning_steps,
     state: c.state,
-    last_review: c.last_review ? new Date(c.last_review).toISOString() : undefined,
   }
+  // exactOptionalPropertyTypes: last_review는 '없음'과 'undefined 값'이 다르다.
+  // 복습 전 카드는 키 자체를 두지 않는다 (v1 export와 바이트 단위로 같은 모양).
+  return c.last_review === undefined
+    ? base
+    : { ...base, last_review: new Date(c.last_review).toISOString() }
+}
+
+/**
+ * 영속된 state 숫자를 FSRS State로 확인 — 손상된 저장 데이터나 다른 버전의
+ * 백업을 조용히 통과시키지 않는다. 조회 표로 만들어 raw number와 열거형을
+ * 직접 비교하지 않는다.
+ */
+const STATE_BY_VALUE = new Map<number, State>([
+  [State.New, State.New],
+  [State.Learning, State.Learning],
+  [State.Review, State.Review],
+  [State.Relearning, State.Relearning],
+])
+
+export function toState(n: number): State {
+  const s = STATE_BY_VALUE.get(n)
+  if (s === undefined) throw new Error(`알 수 없는 카드 상태입니다: ${String(n)}`)
+  return s
 }
 
 export function reviveCard(s: SerializedCard): Card {
-  return {
-    ...s,
+  const base: Card = {
     due: new Date(s.due),
-    last_review: s.last_review ? new Date(s.last_review) : undefined,
-  } as Card
+    stability: s.stability,
+    difficulty: s.difficulty,
+    elapsed_days: s.elapsed_days,
+    scheduled_days: s.scheduled_days,
+    reps: s.reps,
+    lapses: s.lapses,
+    learning_steps: s.learning_steps,
+    state: toState(s.state),
+  }
+  return s.last_review === undefined ? base : { ...base, last_review: new Date(s.last_review) }
 }
 
 export function newCard(now: Date = new Date()): SerializedCard {
   return serializeCard(createEmptyCard(now))
+}
+
+/** 앱의 등급 숫자(1~4) → ts-fsrs Grade. 총 매핑이라 캐스팅이 필요 없다. */
+const GRADE: Record<1 | 2 | 3 | 4, Grade> = {
+  1: Rating.Again,
+  2: Rating.Hard,
+  3: Rating.Good,
+  4: Rating.Easy,
 }
 
 export function applyRating(
@@ -65,7 +108,7 @@ export function applyRating(
   rating: 1 | 2 | 3 | 4,
   now: Date = new Date(),
 ): SerializedCard {
-  const { card } = scheduler.next(reviveCard(s), now, rating as Grade)
+  const { card } = scheduler.next(reviveCard(s), now, GRADE[rating])
   return serializeCard(card)
 }
 
@@ -74,12 +117,10 @@ export function intervalPreview(
   s: SerializedCard,
   now: Date = new Date(),
 ): Record<1 | 2 | 3 | 4, string> {
-  const out = {} as Record<1 | 2 | 3 | 4, string>
-  for (const r of [1, 2, 3, 4] as const) {
-    const { card } = scheduler.next(reviveCard(s), now, r as Grade)
-    out[r] = formatInterval(card.due.getTime() - now.getTime())
-  }
-  return out
+  const revived = reviveCard(s)
+  const preview = (r: 1 | 2 | 3 | 4): string =>
+    formatInterval(scheduler.next(revived, now, GRADE[r]).card.due.getTime() - now.getTime())
+  return { 1: preview(1), 2: preview(2), 3: preview(3), 4: preview(4) }
 }
 
 /** when 시점까지 추가 복습이 없다고 가정한 예측 기억률 (0~1) */

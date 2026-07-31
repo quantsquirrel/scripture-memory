@@ -1,5 +1,6 @@
 import { collectionOf, COLLECTIONS, VERSES } from '../data/verses'
 import { retrievabilityAt, State } from './fsrs'
+import { required } from './invariant'
 import { DIRECTIONS, type LearnProgress, type StoredCard } from './types'
 
 export const DEFAULT_GOAL_DATE = '2026-08-26'
@@ -18,7 +19,10 @@ export function examModeActive(
 }
 
 /** 목표 범위: DEP242 완결까지. 180구절 확장은 목표일 페이싱에 포함하지 않는다. */
-const DEP_ORDER = COLLECTIONS.find((c) => c.key === 'DEP')!.order
+const DEP_ORDER = required(
+  COLLECTIONS.find((c) => c.key === 'DEP'),
+  'DEP 컬렉션',
+).order
 const GOAL_VERSE_IDS = new Set(
   VERSES.filter((v) => collectionOf(v).order <= DEP_ORDER).map((v) => v.id),
 )

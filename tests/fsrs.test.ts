@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+
 import {
   applyRating,
   DEFAULT_RETENTION,
@@ -8,6 +9,7 @@ import {
   serializeCard,
   setRequestRetention,
 } from '../src/lib/fsrs'
+import { required } from '../src/lib/invariant'
 
 describe('fsrs 래퍼', () => {
   it('직렬화 라운드트립이 유지된다', () => {
@@ -37,7 +39,7 @@ describe('fsrs 래퍼', () => {
       prev = reviewAt
     }
     expect(new Date(s.due).getTime()).toBeGreaterThan(prev.getTime())
-    expect(intervals[3]).toBeGreaterThan(intervals[0])
+    expect(required(intervals[3])).toBeGreaterThan(required(intervals[0]))
   })
 
   it('Again은 lapse를 기록한다 (Review 상태 이후)', () => {
@@ -53,7 +55,9 @@ describe('fsrs 래퍼', () => {
 })
 
 describe('시험 모드 목표 기억률', () => {
-  afterEach(() => setRequestRetention(DEFAULT_RETENTION))
+  afterEach(() => {
+    setRequestRetention(DEFAULT_RETENTION)
+  })
 
   /** Review 상태의 성숙 카드 하나와 다음 복습 시점을 만든다 */
   const matureCard = () => {

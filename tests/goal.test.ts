@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+
+import { collectionOf, COLLECTIONS, VERSES } from '../src/data/verses'
 import {
   computeGoal,
   computeReadiness,
@@ -7,7 +9,7 @@ import {
   GOAL_VERSE_COUNT,
   PACE_WINDOW_DAYS,
 } from '../src/lib/goal'
-import { collectionOf, COLLECTIONS, VERSES } from '../src/data/verses'
+import { required } from '../src/lib/invariant'
 import type { Direction, LearnProgress, StoredCard } from '../src/lib/types'
 
 const lp = (verseId: string, step: number, updatedAt: string): LearnProgress => ({
@@ -16,7 +18,7 @@ const lp = (verseId: string, step: number, updatedAt: string): LearnProgress => 
   updatedAt,
 })
 
-const DEP_ORDER = COLLECTIONS.find((c) => c.key === 'DEP')!.order
+const DEP_ORDER = required(COLLECTIONS.find((c) => c.key === 'DEP')).order
 const GOAL_IDS = VERSES.filter((v) => collectionOf(v).order <= DEP_ORDER).map((v) => v.id)
 
 describe('computeGoal', () => {
@@ -138,7 +140,11 @@ describe('computeReadiness', () => {
   })
 
   it('한 방향이라도 안정도가 낮으면 미준비', () => {
-    const cards = [card('AS1a', 'topic', 500), card('AS1a', 'ref', 500), card('AS1a', 'text', 1)]
+    const cards = [
+      card('AS1a', 'topic', 500),
+      card('AS1a', 'ref', 500),
+      card('AS1a', 'text', 1),
+    ]
     expect(computeReadiness(cards, '2026-08-20', now).ready).toBe(0)
   })
 

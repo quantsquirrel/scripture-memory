@@ -1,3 +1,4 @@
+import { required } from './invariant'
 import type { Direction, ReviewMode, StoredCard } from './types'
 
 /**
@@ -29,7 +30,10 @@ export function reviewMode(direction: Direction, reps: number): ReviewMode {
  * 같은 구절 카드 사이 간격을 최대로 벌린다 — 마지막에 한 구절만 남는 경우가
  * 아니면 같은 구절이 연달아 나오지 않는다.
  */
-export function orderQueue(cards: StoredCard[], rand: () => number = Math.random): StoredCard[] {
+export function orderQueue(
+  cards: StoredCard[],
+  rand: () => number = Math.random,
+): StoredCard[] {
   const byVerse = new Map<string, StoredCard[]>()
   for (const c of cards) {
     const g = byVerse.get(c.verseId)
@@ -51,7 +55,9 @@ export function orderQueue(cards: StoredCard[], rand: () => number = Math.random
 function shuffle<T>(arr: T[], rand: () => number): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(rand() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    const a = required(arr[i], `셔플 대상 ${String(i)}`)
+    arr[i] = required(arr[j], `셔플 대상 ${String(j)}`)
+    arr[j] = a
   }
   return arr
 }

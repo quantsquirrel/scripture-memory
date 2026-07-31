@@ -24,7 +24,9 @@ export function RatingBar({
         <button
           key={r}
           className={`rate rate-${r}${suggested === r ? ' suggested' : ''}`}
-          onClick={() => onRate(r)}
+          onClick={() => {
+            onRate(r)
+          }}
         >
           <span className="rate-label">{LABELS[r]}</span>
           <span className="rate-interval">{preview[r]}</span>

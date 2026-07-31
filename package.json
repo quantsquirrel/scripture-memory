@@ -8,7 +8,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "test": "TZ=Asia/Seoul vitest run"
+    "test": "TZ=Asia/Seoul vitest run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "idb": "^8.0.3",
@@ -17,11 +21,20 @@
     "ts-fsrs": "^5.4.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
+    "eslint": "^9.39.5",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "fake-indexeddb": "^6.2.5",
-    "typescript": "^7.0.2",
+    "globals": "^16.5.0",
+    "prettier": "^3.9.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.65.0",
     "vite": "^8.1.5",
     "vite-plugin-pwa": "^1.3.0",
     "vitest": "^4.1.10"

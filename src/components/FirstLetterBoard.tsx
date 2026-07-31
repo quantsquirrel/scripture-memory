@@ -1,14 +1,9 @@
 import { useMemo, useState } from 'react'
+
 import { firstLetterWords } from '../lib/firstLetter'
 
 /** 어절 첫 글자만 보여주고, 탭하면 공개(엿보기 1회 카운트). */
-export function FirstLetterBoard({
-  text,
-  onPeek,
-}: {
-  text: string
-  onPeek: () => void
-}) {
+export function FirstLetterBoard({ text, onPeek }: { text: string; onPeek: () => void }) {
   const words = useMemo(() => firstLetterWords(text), [text])
   const [revealed, setRevealed] = useState<ReadonlySet<number>>(new Set())
   return (

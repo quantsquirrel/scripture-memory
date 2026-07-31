@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+
 import { BulletBar, ForecastBars, HistoryBars } from '../components/StatCharts'
 import {
   collectionOf,
@@ -7,9 +8,16 @@ import {
   topicOf,
   VERSE_BY_ID,
   VERSES,
-  type VerseEntry,
 } from '../data/verses'
-import { dueCards, getAllCards, getAllLearning, getSetting, reviewsSince } from '../lib/db'
+import {
+  dueCards,
+  getAllCards,
+  getAllLearning,
+  getExamMode,
+  getGoalBufferDays,
+  getGoalDate,
+  reviewsSince,
+} from '../lib/db'
 import { DEFAULT_RETENTION } from '../lib/fsrs'
 import {
   computeGoal,
@@ -22,28 +30,28 @@ import {
   type GoalInfo,
 } from '../lib/goal'
 import {
+  type AccuracySummary,
   dailyPick,
   directionRetention,
+  type DueForecast,
   dueForecast,
+  type KnowledgeNow,
   knowledgeNow,
+  type Maturity,
   maturity,
   objectiveAccuracy,
-  queueProgress,
-  reviewHistory,
-  selfGradeCalibration,
-  trueRetention,
-  weakVerses,
-  type AccuracySummary,
-  type DueForecast,
-  type KnowledgeNow,
-  type Maturity,
   type QueueProgress,
+  queueProgress,
   type ReviewHistory,
+  reviewHistory,
   type SelfGradeCalibration,
+  selfGradeCalibration,
   type TrueRetention,
+  trueRetention,
   type WeakVerse,
+  weakVerses,
 } from '../lib/stats'
-import { DIRECTION_LABEL, type Direction, type StoredCard } from '../lib/types'
+import { type Direction, DIRECTION_LABEL, type StoredCard } from '../lib/types'
 
 interface StatsData {
   cards: StoredCard[]
@@ -98,9 +106,9 @@ export function Stats() {
       getAllLearning(),
       dueCards(),
       reviewsSince(new Date(0).toISOString()),
-      getSetting<string>('goalDate'),
-      getSetting<number>('goalBufferDays'),
-      getSetting<boolean>('examMode'),
+      getGoalDate(),
+      getGoalBufferDays(),
+      getExamMode(),
     ]).then(([cards, learning, due, allReviews, goalDate, buffer, examMode]) => {
       const gd = goalDate ?? DEFAULT_GOAL_DATE
       const weekAgo = new Date(midnight.getTime() - 7 * 86400_000).toISOString()
@@ -168,9 +176,12 @@ export function Stats() {
     return { ...row, depth, done }
   })
 
-  const weakEntries = data.weak
-    .map((w) => ({ ...w, verse: VERSE_BY_ID[w.verseId] as VerseEntry | undefined }))
-    .filter((w) => w.verse)
+  // 본문이 없는 구절(다른 버전 백업에서 온 id)은 목록에서 빼고, 남은 항목은
+  // verse가 반드시 있는 형태로 좁혀 둔다 — `!` 없이 렌더할 수 있게.
+  const weakEntries = data.weak.flatMap((w) => {
+    const verse = VERSE_BY_ID[w.verseId]
+    return verse ? [{ ...w, verse }] : []
+  })
 
   return (
     <div>
@@ -208,14 +219,12 @@ export function Stats() {
               <span className="muted small"> · {topicOf(meditation).title}</span>
             </p>
             <p className="muted small">
-              이미 새긴 {engraved.length}구절 중 오늘의 하나 — 외우기 위해서가 아니라
-              곱씹기 위해, 소리 내어 한 번 읽어보세요. 내일은 다음 구절이 찾아옵니다.
+              이미 새긴 {engraved.length}구절 중 오늘의 하나 — 외우기 위해서가 아니라 곱씹기
+              위해, 소리 내어 한 번 읽어보세요. 내일은 다음 구절이 찾아옵니다.
             </p>
           </>
         ) : (
-          <p className="muted">
-            첫 구절을 새기면, 여기서 매일 한 구절씩 다시 만나게 됩니다.
-          </p>
+          <p className="muted">첫 구절을 새기면, 여기서 매일 한 구절씩 다시 만나게 됩니다.</p>
         )}
       </section>
 
@@ -226,19 +235,19 @@ export function Stats() {
             <div key={w.verseId} className="weak-item">
               <div className="weak-head">
                 <span>
-                  {w.verse!.refAbbr}{' '}
-                  <span className="muted small">{topicOf(w.verse!).title}</span>
+                  {w.verse.refAbbr}{' '}
+                  <span className="muted small">{topicOf(w.verse).title}</span>
                 </span>
                 <span className="muted small">{w.lapses}번 다시 붙듦</span>
               </div>
               <p className="weak-snippet muted small">
-                {w.verse!.text.length > 40 ? `${w.verse!.text.slice(0, 40)}…` : w.verse!.text}
+                {w.verse.text.length > 40 ? `${w.verse.text.slice(0, 40)}…` : w.verse.text}
               </p>
             </div>
           ))}
           <p className="muted small">
-            자주 놓치는 말씀은 어쩌면 지금 내게 가장 필요한 말씀입니다 — 복습에서 다시
-            만나면 뜻을 한 번 더 새겨보세요.
+            자주 놓치는 말씀은 어쩌면 지금 내게 가장 필요한 말씀입니다 — 복습에서 다시 만나면
+            뜻을 한 번 더 새겨보세요.
           </p>
         </section>
       )}
@@ -249,10 +258,7 @@ export function Stats() {
           <div key={row.key} className="col-row col-row-static">
             <span className="col-label">{row.label}</span>
             <span className="progress col-bar">
-              <span
-                className="progress-fill"
-                style={{ width: `${(row.depth ?? 0) * 100}%` }}
-              />
+              <span className="progress-fill" style={{ width: `${(row.depth ?? 0) * 100}%` }} />
             </span>
             <span className="muted small">
               {row.done > 0 && row.depth !== null ? `${row.done}구절 · ${pct(row.depth)}` : '—'}
@@ -260,8 +266,8 @@ export function Stats() {
           </div>
         ))}
         <p className="muted small">
-          영역별로 말씀이 얼마나 깊이 새겨져 있는지 (막대 = 새긴 구절의 평균 기억
-          생생함) — 비어 있는 밭이 다음에 심을 자리입니다.
+          영역별로 말씀이 얼마나 깊이 새겨져 있는지 (막대 = 새긴 구절의 평균 기억 생생함) — 비어
+          있는 밭이 다음에 심을 자리입니다.
         </p>
       </section>
 
@@ -308,8 +314,8 @@ export function Stats() {
         </div>
         <p className="muted small">
           시험 준비 {data.readiness.ready}/{data.readiness.total} — 지금 복습을 멈춰도{' '}
-          {formatMonthDay(data.goal.goalDate)}에 기억률 {pct(EXAM_RETENTION)} 이상으로
-          예측되는 구절
+          {formatMonthDay(data.goal.goalDate)}에 기억률 {pct(EXAM_RETENTION)} 이상으로 예측되는
+          구절
         </p>
 
         <h3>카드 성숙도</h3>
@@ -330,8 +336,8 @@ export function Stats() {
               />
             </div>
             <p className="muted small">
-              학습 중 {mat.learning} · 어린 카드 {mat.young} · 성숙 카드 {mat.mature} (간격
-              21일 이상)
+              학습 중 {mat.learning} · 어린 카드 {mat.young} · 성숙 카드 {mat.mature} (간격 21일
+              이상)
             </p>
           </>
         ) : (
@@ -343,8 +349,8 @@ export function Stats() {
           <>
             <BulletBar rate={data.retention7.rate} target={retentionTarget} />
             <p className="muted small">
-              지난 7일 기억률 {pct(data.retention7.rate)} (눈금 = 목표 {pct(retentionTarget)})
-              · 카드별 하루 첫 시도 {data.retention7.total}회 기준
+              지난 7일 기억률 {pct(data.retention7.rate)} (눈금 = 목표 {pct(retentionTarget)}) ·
+              카드별 하루 첫 시도 {data.retention7.total}회 기준
             </p>
           </>
         )}
@@ -368,7 +374,7 @@ export function Stats() {
               <span className="stat-val">
                 {data.dirRetention[d].rate !== null ? (
                   <>
-                    {pct(data.dirRetention[d].rate!)}{' '}
+                    {pct(data.dirRetention[d].rate)}{' '}
                     <span className="muted small">({data.dirRetention[d].total}회)</span>
                   </>
                 ) : (
@@ -431,8 +437,7 @@ export function Stats() {
             <BulletBar rate={data.queue.rate} />
             <p className="muted small">
               오늘 소화 {data.queue.done}/{data.queue.done + data.queue.remaining}장 (
-              {pct(data.queue.rate)})
-              {data.overdue > 0 && ` · 밀린 카드 ${data.overdue}장`}
+              {pct(data.queue.rate)}){data.overdue > 0 && ` · 밀린 카드 ${data.overdue}장`}
             </p>
           </>
         )}
@@ -446,8 +451,8 @@ export function Stats() {
           <>
             <h3>학습 페이스</h3>
             <p>
-              최근 7일 하루 <strong>{data.goal.recentPace.toFixed(1)}</strong>구절 · 필요
-              페이스 하루 {data.goal.requiredPace.toFixed(1)}구절
+              최근 7일 하루 <strong>{data.goal.recentPace.toFixed(1)}</strong>구절 · 필요 페이스
+              하루 {data.goal.requiredPace.toFixed(1)}구절
               <br />
               {data.goal.projectedDone && data.goal.aheadDays !== null ? (
                 <span>

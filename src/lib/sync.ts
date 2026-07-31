@@ -1,4 +1,4 @@
-import { exportAll, importAll, type ExportBundle } from './db'
+import { exportAll, type ExportBundle, importAll } from './db'
 import type { LearnProgress, ReviewEntry, StoredCard } from './types'
 
 export interface SyncConfig {
@@ -33,7 +33,7 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const reviews = new Map<string, ReviewEntry>()
   for (const r of [...a.reviews, ...b.reviews]) {
     const { id: _id, ...rest } = r
-    reviews.set(`${r.cardKey}|${r.ts}|${r.rating}`, rest as ReviewEntry)
+    reviews.set(`${r.cardKey}|${r.ts}|${r.rating}`, rest)
   }
   const cards = new Map<string, StoredCard>()
   for (const c of [...a.cards, ...b.cards]) {
@@ -49,11 +49,7 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const learning = new Map<string, LearnProgress>()
   for (const l of [...a.learning, ...b.learning]) {
     const prev = learning.get(l.verseId)
-    if (
-      !prev ||
-      l.step > prev.step ||
-      (l.step === prev.step && l.updatedAt > prev.updatedAt)
-    ) {
+    if (!prev || l.step > prev.step || (l.step === prev.step && l.updatedAt > prev.updatedAt)) {
       learning.set(l.verseId, l)
     }
   }

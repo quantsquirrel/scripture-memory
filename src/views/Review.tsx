@@ -1,26 +1,36 @@
 import { useCallback, useEffect, useState } from 'react'
-import { crumbOf, topicOf, topicOrdinalOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
+
 import { DiffView } from '../components/DiffView'
 import { FirstLetterBoard } from '../components/FirstLetterBoard'
 import { RatingBar } from '../components/RatingBar'
-import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } from '../lib/diff'
-import { gradeRef } from '../lib/refInput'
-import { formatInterval } from '../lib/fsrs'
+import { crumbOf, topicOf, topicOrdinalOf, VERSE_BY_ID, type VerseEntry } from '../data/verses'
 import { dueCards, nextDueAt, submitReview, upcomingLearningCards } from '../lib/db'
+import { gradeTyping, ratingFromAccuracy, ratingFromPeeks, type TypingGrade } from '../lib/diff'
+import { formatInterval } from '../lib/fsrs'
+import { required } from '../lib/invariant'
 import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../lib/policy'
+import { gradeRef } from '../lib/refInput'
 import type { ReviewMode, StoredCard } from '../lib/types'
+
+/**
+ * 본문을 찾을 수 없는 카드는 큐에서 뺀다. 다른 버전에서 만든 백업을 가져오면
+ * 이 앱에 없는 구절 id를 가진 카드가 섞일 수 있고, 그 카드는 출제할 수 없다.
+ */
+const reviewable = (cards: StoredCard[]): StoredCard[] =>
+  cards.filter((c) => VERSE_BY_ID[c.verseId] !== undefined)
 
 export function Review({ onExit }: { onExit: () => void }) {
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   const [idx, setIdx] = useState(0)
   const [done, setDone] = useState(0)
-  const [nextDue, setNextDue] = useState<string | null>(null)
+  // 다음 복습까지 남은 시간은 '읽은 순간' 기준 라벨로 굳혀 둔다 (렌더는 순수하게)
+  const [nextDueLabel, setNextDueLabel] = useState<string | null>(null)
 
   useEffect(() => {
     // 홈에서 learn-ahead 카드로 진입한 경우 due 큐가 비어 있을 수 있다
     void dueCards().then(async (cards) => {
       if (cards.length === 0) cards = await upcomingLearningCards(LEARN_AHEAD_MS)
-      setQueue(orderQueue(cards))
+      setQueue(orderQueue(reviewable(cards)))
     })
   }, [])
 
@@ -39,15 +49,16 @@ export function Review({ onExit }: { onExit: () => void }) {
       if (queue && idx + 1 < queue.length) {
         setIdx(idx + 1)
       } else {
-        let more = await dueCards()
-        if (more.length === 0) more = await upcomingLearningCards(LEARN_AHEAD_MS)
+        let more = reviewable(await dueCards())
+        if (more.length === 0) more = reviewable(await upcomingLearningCards(LEARN_AHEAD_MS))
         if (more.length > 0) {
           setQueue(orderQueue(more))
           setIdx(0)
         } else {
           setQueue([])
           setIdx(0)
-          setNextDue(await nextDueAt())
+          const at = await nextDueAt()
+          setNextDueLabel(at ? formatInterval(new Date(at).getTime() - Date.now()) : null)
         }
       }
     },
@@ -61,11 +72,7 @@ export function Review({ onExit }: { onExit: () => void }) {
       <div className="panel center">
         <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
         {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
-        {nextDue && (
-          <p className="muted">
-            다음 복습: {formatInterval(new Date(nextDue).getTime() - Date.now())} 후
-          </p>
-        )}
+        {nextDueLabel && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
         {queue.length === 0 && done === 0 && (
           <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
         )}
@@ -76,7 +83,8 @@ export function Review({ onExit }: { onExit: () => void }) {
     )
   }
 
-  const verse = VERSE_BY_ID[current.verseId]
+  // reviewable()이 걸러낸 뒤이므로 본문은 반드시 존재한다
+  const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
   const mode = reviewMode(current.direction, current.card.reps)
   const remaining = queue.length - idx
 
@@ -88,7 +96,15 @@ export function Review({ onExit }: { onExit: () => void }) {
         </button>
         <span className="muted">남은 카드 {remaining}</span>
       </div>
-      <CardFace key={current.key + ':' + current.card.reps} sc={current} verse={verse} mode={mode} onRate={rate} />
+      <CardFace
+        key={`${current.key}:${current.card.reps}`}
+        sc={current}
+        verse={verse}
+        mode={mode}
+        onRate={(r, m, accuracy, peeks) => {
+          void rate(r, m, accuracy, peeks)
+        }}
+      />
     </div>
   )
 }
@@ -101,7 +117,11 @@ function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
         <span className="chip">{crumbOf(verse).join(' · ')}</span>
         <h2 className="prompt-main">
           {topicOf(verse).title}
-          {total > 1 && <span className="prompt-ord">{nth}/{total}</span>}
+          {total > 1 && (
+            <span className="prompt-ord">
+              {nth}/{total}
+            </span>
+          )}
         </h2>
         <p className="muted">
           {total > 1
@@ -165,7 +185,12 @@ function CardFace({
   sc: StoredCard
   verse: VerseEntry
   mode: ReviewMode
-  onRate: (r: 1 | 2 | 3 | 4, mode: ReviewMode, accuracy: number | null, peeks: number | null) => void
+  onRate: (
+    r: 1 | 2 | 3 | 4,
+    mode: ReviewMode,
+    accuracy: number | null,
+    peeks: number | null,
+  ) => void
 }) {
   const [revealed, setRevealed] = useState(false)
   const [peeks, setPeeks] = useState(0)
@@ -186,22 +211,42 @@ function CardFace({
       <Prompt sc={sc} verse={verse} />
 
       {mode === 'recite' && !revealed && (
-        <button className="btn btn-primary" onClick={() => setRevealed(true)}>
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            setRevealed(true)
+          }}
+        >
           정답 보기
         </button>
       )}
       {mode === 'recite' && revealed && (
         <>
           <Answer sc={sc} verse={verse} />
-          <RatingBar card={sc.card} onRate={(r) => onRate(r, mode, null, null)} />
+          <RatingBar
+            card={sc.card}
+            onRate={(r) => {
+              onRate(r, mode, null, null)
+            }}
+          />
         </>
       )}
 
       {mode === 'firstLetter' && !revealed && (
         <>
-          <FirstLetterBoard text={verse.text} onPeek={() => setPeeks((p) => p + 1)} />
+          <FirstLetterBoard
+            text={verse.text}
+            onPeek={() => {
+              setPeeks((p) => p + 1)
+            }}
+          />
           <p className="muted small">막히는 어절만 탭하세요 · 엿보기 {peeks}회</p>
-          <button className="btn btn-primary" onClick={() => setRevealed(true)}>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setRevealed(true)
+            }}
+          >
             낭송 완료 — 확인
           </button>
         </>
@@ -213,7 +258,9 @@ function CardFace({
           <RatingBar
             card={sc.card}
             suggested={ratingFromPeeks(peeks)}
-            onRate={(r) => onRate(r, mode, null, peeks)}
+            onRate={(r) => {
+              onRate(r, mode, null, peeks)
+            }}
           />
         </>
       )}
@@ -223,7 +270,9 @@ function CardFace({
           <textarea
             className="typing-input"
             value={attempt}
-            onChange={(e) => setAttempt(e.target.value)}
+            onChange={(e) => {
+              setAttempt(e.target.value)
+            }}
             placeholder="말씀을 입력하세요 (구두점 무시)"
             autoCapitalize="off"
             autoCorrect="off"
@@ -233,7 +282,9 @@ function CardFace({
           <button
             className="btn btn-primary"
             disabled={attempt.trim() === ''}
-            onClick={() => setGrade(gradeTyping(verse.text, attempt))}
+            onClick={() => {
+              setGrade(gradeTyping(verse.text, attempt))
+            }}
           >
             채점
           </button>
@@ -246,7 +297,9 @@ function CardFace({
           <RatingBar
             card={sc.card}
             suggested={ratingFromAccuracy(grade)}
-            onRate={(r) => onRate(r, mode, grade.accuracy, null)}
+            onRate={(r) => {
+              onRate(r, mode, grade.accuracy, null)
+            }}
           />
         </>
       )}
@@ -256,7 +309,9 @@ function CardFace({
           <input
             className="ref-input"
             value={attempt}
-            onChange={(e) => setAttempt(e.target.value)}
+            onChange={(e) => {
+              setAttempt(e.target.value)
+            }}
             placeholder="예: 고후 5:17 / 빌립보서 4:6-7"
             autoCapitalize="off"
             autoCorrect="off"
@@ -265,7 +320,9 @@ function CardFace({
           <button
             className="btn btn-primary"
             disabled={attempt.trim() === ''}
-            onClick={() => setRefOk(gradeRef(verse, attempt))}
+            onClick={() => {
+              setRefOk(gradeRef(verse, attempt))
+            }}
           >
             확인
           </button>
@@ -280,7 +337,9 @@ function CardFace({
           <RatingBar
             card={sc.card}
             suggested={refOk ? 3 : 1}
-            onRate={(r) => onRate(r, mode, refOk ? 1 : 0, null)}
+            onRate={(r) => {
+              onRate(r, mode, refOk ? 1 : 0, null)
+            }}
           />
         </>
       )}

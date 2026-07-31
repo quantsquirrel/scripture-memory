@@ -1,12 +1,17 @@
 import { Fragment } from 'react'
-import { wordBoundaries, type TypingGrade } from '../lib/diff'
+
+import { type TypingGrade, wordBoundaries } from '../lib/diff'
 
 export function DiffView({ grade, target }: { grade: TypingGrade; target: string }) {
   const boundaries = wordBoundaries(target)
   return (
     <div className="diff-view">
-      <div className={`diff-score ${grade.perfect ? 'good' : grade.accuracy >= 0.9 ? 'warn' : 'bad'}`}>
-        {grade.perfect ? '완벽합니다! (word-perfect)' : `정확도 ${Math.round(grade.accuracy * 100)}%`}
+      <div
+        className={`diff-score ${grade.perfect ? 'good' : grade.accuracy >= 0.9 ? 'warn' : 'bad'}`}
+      >
+        {grade.perfect
+          ? '완벽합니다! (word-perfect)'
+          : `정확도 ${Math.round(grade.accuracy * 100)}%`}
       </div>
       <p className="diff-words verse">
         {grade.ops.map((op, i) => (
@@ -18,7 +23,8 @@ export function DiffView({ grade, target }: { grade: TypingGrade; target: string
       </p>
       {!grade.perfect && (
         <p className="diff-legend">
-          <span className="diff-miss">빠뜨림</span> · <span className="diff-extra">틀림/추가</span>
+          <span className="diff-miss">빠뜨림</span> ·{' '}
+          <span className="diff-extra">틀림/추가</span>
         </p>
       )}
     </div>

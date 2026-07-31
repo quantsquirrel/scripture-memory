@@ -2,17 +2,20 @@
 // tests/fixtures/의 골든 fixture는 과거 버전 사용자 데이터의 대역이다 — 수정 금지.
 // 저장/export 스키마를 바꾸면 이 테스트가 (마이그레이션과 함께) 계속 통과해야 한다.
 import 'fake-indexeddb/auto'
+
 import { beforeEach, describe, expect, it } from 'vitest'
+
 import {
   exportAll,
+  type ExportBundle,
   getAllCards,
   getLearning,
   graduateVerse,
   importAll,
   resetAll,
   submitReview,
-  type ExportBundle,
 } from '../src/lib/db'
+import { required } from '../src/lib/invariant'
 import { DIRECTIONS, type ReviewEntry } from '../src/lib/types'
 import fixtureJson from './fixtures/export-v1.json'
 
@@ -46,15 +49,17 @@ describe('골든 fixture 호환성 (v1)', () => {
   })
 
   it('알 수 없는 버전/앱의 번들은 거부한다 (조용한 데이터 파괴 금지)', async () => {
-    await expect(importAll({ ...fixtureV1, version: 2 as 1 })).rejects.toThrow()
-    await expect(
-      importAll({ ...fixtureV1, app: 'other' as 'scripture-memory' }),
-    ).rejects.toThrow()
+    await expect(importAll({ ...fixtureV1, version: 2 })).rejects.toThrow()
+    await expect(importAll({ ...fixtureV1, app: 'other' })).rejects.toThrow()
+    // 형태 자체가 아닌 것도 저장소를 비우기 전에 거부한다
+    await expect(importAll(null)).rejects.toThrow()
+    await expect(importAll('{}')).rejects.toThrow()
+    await expect(importAll({ ...fixtureV1, cards: 'nope' })).rejects.toThrow()
   })
 
   it('import 후에도 복습 파이프라인이 이어서 동작한다', async () => {
     await importAll(fixtureV1)
-    const card = (await getAllCards()).find((c) => c.key === 'AS1a:topic')!
+    const card = required((await getAllCards()).find((c) => c.key === 'AS1a:topic'))
     const updated = await submitReview(card, 3, 'recite', { accuracy: null, peeks: null }, NOW)
     expect(updated.card.reps).toBe(card.card.reps + 1)
     expect(new Date(updated.card.due).getTime()).toBeGreaterThan(NOW.getTime())
@@ -72,10 +77,16 @@ describe('졸업 → 3방향 카드 생성', () => {
 
   it('재졸업해도 기존 카드의 FSRS 상태를 덮어쓰지 않는다', async () => {
     await graduateVerse('AS1a', NOW)
-    const before = (await getAllCards()).find((c) => c.key === 'AS1a:ref')!
-    const progressed = await submitReview(before, 3, 'recite', { accuracy: null, peeks: null }, NOW)
+    const before = required((await getAllCards()).find((c) => c.key === 'AS1a:ref'))
+    const progressed = await submitReview(
+      before,
+      3,
+      'recite',
+      { accuracy: null, peeks: null },
+      NOW,
+    )
     await graduateVerse('AS1a', new Date(NOW.getTime() + 1000))
-    const after = (await getAllCards()).find((c) => c.key === 'AS1a:ref')!
+    const after = required((await getAllCards()).find((c) => c.key === 'AS1a:ref'))
     expect(after.card).toStrictEqual(progressed.card)
   })
 })
@@ -83,7 +94,7 @@ describe('졸업 → 3방향 카드 생성', () => {
 describe('submitReview — 등급 적용과 증거 기록의 결합', () => {
   it('등급 적용은 항상 증거(ReviewEntry)와 함께 기록된다', async () => {
     await graduateVerse('AS1a', NOW)
-    const card = (await getAllCards()).find((c) => c.key === 'AS1a:topic')!
+    const card = required((await getAllCards()).find((c) => c.key === 'AS1a:topic'))
     await submitReview(card, 2, 'typing', { accuracy: 0.93, peeks: null }, NOW)
     const out = await exportAll()
     expect(out.reviews).toHaveLength(1)
@@ -95,7 +106,7 @@ describe('submitReview — 등급 적용과 증거 기록의 결합', () => {
       peeks: null,
       ts: NOW.toISOString(),
     })
-    const stored = out.cards.find((c) => c.key === 'AS1a:topic')!
+    const stored = required(out.cards.find((c) => c.key === 'AS1a:topic'))
     expect(stored.card.reps).toBe(card.card.reps + 1)
   })
 })

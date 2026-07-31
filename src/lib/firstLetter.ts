@@ -9,5 +9,5 @@ export function firstLetterWords(text: string): FLWord[] {
     .normalize('NFC')
     .split(/\s+/)
     .filter(Boolean)
-    .map((word) => ({ word, hint: word[0] }))
+    .map((word) => ({ word, hint: word.slice(0, 1) }))
 }
