@@ -1,0 +1,8 @@
+dist
+dev-dist
+coverage
+node_modules
+package-lock.json
+src/data/verses.json
+tests/fixtures
+.playwright-mcp
