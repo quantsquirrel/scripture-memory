@@ -16,8 +16,13 @@ export const LEARN_AHEAD_MS = 20 * 60_000
  */
 export function reviewMode(direction: Direction, reps: number): ReviewMode {
   if (direction === 'text') return 'refInput'
-  if (reps < 3) return 'firstLetter'
-  if ((reps + 1) % 5 === 0) return 'typing'
+  // reps는 카드에 영속되는 값이고 백업 가져오기·Gist 병합으로 외부에서 들어올 수
+  // 있다. 소수(예: 5.5)가 섞이면 `(reps + 1) % 5 === 0`이 영원히 거짓이 되어
+  // 타이핑 감사가 한 번도 끼지 않는다 — 자가 채점이 무한정 이어지는 구멍이었다.
+  // 정수로 내림해 주기를 계산하므로 어떤 실수 값에서도 5회 창이 성립한다.
+  const count = Number.isFinite(reps) ? Math.floor(reps) : 0
+  if (count < 3) return 'firstLetter'
+  if ((count + 1) % 5 === 0) return 'typing'
   return 'recite'
 }
 

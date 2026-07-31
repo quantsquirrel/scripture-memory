@@ -1,4 +1,3 @@
-import { type SyncConfig, syncNow as gistSync, type SyncResult } from '../adapters/gist'
 import { idbStore } from '../adapters/indexeddb'
 import type { ReviewEntry, ReviewEvidence, StoredCard } from '../domain/card'
 import type { LadderCommand, LadderOutcome, LadderStep, LearnProgress } from '../domain/ladder'
@@ -14,6 +13,11 @@ import * as settingsUseCase from './settings'
  * 여기에 등급을 적용하는 함수는 submitReview 하나뿐이다. domain의 applyRating은
  * 모듈 밖으로 나가지 않고, 저장소는 RatedCard만 커밋하므로 뷰에서 다른 경로로
  * FSRS 상태를 바꿀 수 없다.
+ */
+/**
+ * 기본 저장소. 조회 조립(app/queries.ts)과 훅이 쓰라고 내보내는 것이며, 뷰가
+ * store.graduate/importAll/reset을 직접 부르는 용도가 아니다 — 그 경로는 아래
+ * 유스케이스 바인딩으로만 노출한다.
  */
 export const store: Store = idbStore
 
@@ -80,6 +84,3 @@ export const getSyncGistId = (): Promise<string | undefined> => settings.syncGis
 export const setSyncGistId = notifying((v: string): Promise<void> => settings.setSyncGistId(v))
 export const getLastSyncAt = (): Promise<string | undefined> => settings.lastSyncAt()
 export const setLastSyncAt = notifying((v: string): Promise<void> => settings.setLastSyncAt(v))
-
-/** Gist 동기화 (선택 기능) — 기본 저장소에 묶어 둔 바인딩 */
-export const syncNow = notifying((cfg: SyncConfig): Promise<SyncResult> => gistSync(store, cfg))

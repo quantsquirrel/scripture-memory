@@ -130,6 +130,31 @@ export interface RatedCard {
   readonly entry: Omit<ReviewEntry, 'id'>
 }
 
+/**
+ * 저장소가 커밋 직전에 부르는 검증.
+ *
+ * 타입 브랜드는 `as unknown as RatedCard` 같은 이중 캐스팅으로 우회할 수 있다 —
+ * 컴파일러만으로는 막을 수 없는 구멍이다. 런타임에 브랜드와 증거의 존재를 한 번
+ * 더 확인해, 위조된 객체가 카드 상태를 바꾸지 못하게 한다.
+ */
+export function assertRated(value: RatedCard): void {
+  const rated: unknown = value
+  if (typeof rated !== 'object' || rated === null || !(RATED in rated)) {
+    throw new Error('등급 적용은 rateCard()가 만든 결과만 커밋할 수 있습니다')
+  }
+  const { card, entry } = value
+  if (typeof card !== 'object' || typeof entry !== 'object') {
+    throw new Error('등급 적용 결과가 손상되었습니다')
+  }
+  // 증거가 비어 있으면 커밋을 거부한다 — 경계 1의 마지막 방어선
+  if (typeof entry.mode !== 'string' || typeof entry.rating !== 'number') {
+    throw new Error('증거(모드·등급) 없이 등급을 적용할 수 없습니다')
+  }
+  if (typeof entry.ts !== 'string' || Number.isNaN(Date.parse(entry.ts))) {
+    throw new Error('증거에 유효한 시각이 없습니다')
+  }
+}
+
 export function rateCard(
   sc: StoredCard,
   evidence: ReviewEvidence,

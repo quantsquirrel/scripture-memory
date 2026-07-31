@@ -2,7 +2,7 @@ import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
 
 import { cardKey, type Direction, type ReviewEntry, type StoredCard } from '../domain/card'
 import { type LadderStep, type LearnProgress, stepFromLegacy } from '../domain/ladder'
-import { newCard, type RatedCard, State } from '../domain/scheduler'
+import { assertRated, newCard, type RatedCard, State } from '../domain/scheduler'
 import {
   type CardRepository,
   type ExportBundle,
@@ -150,10 +150,14 @@ class IdbCards implements CardRepository {
    * 증거 없이 카드만 바뀌는 경로가 없다 — 하드 경계 1.
    */
   async commitRating(rated: RatedCard): Promise<StoredCard> {
+    assertRated(rated)
     const d = await openTmsDb()
     const tx = d.transaction(['cards', 'reviews'], 'readwrite')
-    await tx.objectStore('cards').put(rated.card)
+    // 증거를 먼저 쓴다. 두 번째 쓰기가 동기적으로 던지면 IndexedDB는 트랜잭션을
+    // 자동으로 되돌리지 않으므로, 순서를 뒤집으면 카드만 갱신되고 증거가 없는
+    // 상태로 커밋될 수 있다. 증거가 먼저면 실패 시 카드가 그대로 남는다.
     await tx.objectStore('reviews').add(rated.entry)
+    await tx.objectStore('cards').put(rated.card)
     await tx.done
     return rated.card
   }

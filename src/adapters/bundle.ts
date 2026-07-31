@@ -66,6 +66,28 @@ function num(v: unknown, what: string): number {
   return v
 }
 
+/**
+ * 횟수·단계처럼 정수여야 하는 필드. 소수가 섞이면 정책 계산이 깨진다 —
+ * reps가 5.5이면 policy.ts의 5회 감사 주기가 한 번도 맞지 않는다.
+ * 음수도 거부한다(횟수는 뒤로 갈 수 없다).
+ */
+function count(v: unknown, what: string): number {
+  const n = num(v, what)
+  if (!Number.isInteger(n) || n < 0) {
+    throw new Error(`백업의 ${what}이(가) 0 이상의 정수가 아닙니다: ${String(n)}`)
+  }
+  return n
+}
+
+/** 날짜 필드는 파싱 가능한 ISO 문자열이어야 한다 */
+function isoDate(v: unknown, what: string): string {
+  const s = str(v, what)
+  if (Number.isNaN(Date.parse(s))) {
+    throw new Error(`백업의 ${what}이(가) 날짜가 아닙니다: ${s}`)
+  }
+  return s
+}
+
 function asDirection(v: unknown): Direction {
   const found = DIRECTIONS.find((d) => d === v)
   if (!found) throw new Error(`백업에 알 수 없는 방향이 있습니다: ${String(v)}`)
@@ -87,15 +109,15 @@ export function asStoredCard(v: unknown): StoredCard {
   const c = asRecord(v, 'card')
   const card = asRecord(c['card'], 'card.card')
   const base: SerializedCard = {
-    due: str(card['due'], 'card.due'),
+    due: isoDate(card['due'], 'card.due'),
     stability: num(card['stability'], 'card.stability'),
     difficulty: num(card['difficulty'], 'card.difficulty'),
-    elapsed_days: num(card['elapsed_days'], 'card.elapsed_days'),
-    scheduled_days: num(card['scheduled_days'], 'card.scheduled_days'),
-    reps: num(card['reps'], 'card.reps'),
-    lapses: num(card['lapses'], 'card.lapses'),
-    learning_steps: num(card['learning_steps'], 'card.learning_steps'),
-    state: toState(num(card['state'], 'card.state')),
+    elapsed_days: count(card['elapsed_days'], 'card.elapsed_days'),
+    scheduled_days: count(card['scheduled_days'], 'card.scheduled_days'),
+    reps: count(card['reps'], 'card.reps'),
+    lapses: count(card['lapses'], 'card.lapses'),
+    learning_steps: count(card['learning_steps'], 'card.learning_steps'),
+    state: toState(count(card['state'], 'card.state')),
   }
   return {
     key: str(c['key'], 'card.key'),
@@ -104,7 +126,7 @@ export function asStoredCard(v: unknown): StoredCard {
     card:
       card['last_review'] === undefined
         ? base
-        : { ...base, last_review: str(card['last_review'], 'card.last_review') },
+        : { ...base, last_review: isoDate(card['last_review'], 'card.last_review') },
   }
 }
 
@@ -118,7 +140,7 @@ export function asReviewEntry(v: unknown): ReviewEntry {
     rating: asRating(r['rating']),
     accuracy: r['accuracy'] === null ? null : num(r['accuracy'], 'review.accuracy'),
     peeks: r['peeks'] === null ? null : num(r['peeks'], 'review.peeks'),
-    ts: str(r['ts'], 'review.ts'),
+    ts: isoDate(r['ts'], 'review.ts'),
   }
 }
 
@@ -137,6 +159,6 @@ export function asLearnProgress(v: unknown): LearnProgress {
   return {
     verseId: str(l['verseId'], 'learning.verseId'),
     step: asLadderStep(l['step']),
-    updatedAt: str(l['updatedAt'], 'learning.updatedAt'),
+    updatedAt: isoDate(l['updatedAt'], 'learning.updatedAt'),
   }
 }
