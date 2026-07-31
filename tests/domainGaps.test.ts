@@ -6,11 +6,13 @@ import { toChars, tokenize, wordBoundaries } from '../src/domain/grading'
 import { required } from '../src/domain/invariant'
 import { parseRef } from '../src/domain/ref'
 import {
+  assertRated,
   DEFAULT_RETENTION,
   formatInterval,
   getRequestRetention,
   intervalPreview,
   newCard,
+  rateCard,
   retrievabilityAt,
   setRequestRetention,
   toState,
@@ -143,6 +145,46 @@ describe('스케줄러 보조 함수', () => {
     expect(() => toState(7)).toThrow('알 수 없는 카드 상태')
     expect(() => toState(-1)).toThrow()
     expect(() => toState(1.5)).toThrow()
+  })
+})
+
+describe('assertRated — 위조 커밋 차단의 마지막 방어선', () => {
+  const stored = {
+    key: 'v1:ref',
+    verseId: 'v1',
+    direction: 'ref' as const,
+    card: newCard(new Date('2026-07-31T00:00:00Z')),
+  }
+
+  it('rateCard가 만든 결과는 통과한다', () => {
+    const rated = rateCard(stored, { mode: 'typing', rating: 3, accuracy: 1, peeks: null })
+    expect(() => {
+      assertRated(rated)
+    }).not.toThrow()
+  })
+
+  it('브랜드가 없거나 객체가 아니면 거부한다', () => {
+    for (const bogus of [null, undefined, 'rated', 42, {}, { card: stored }]) {
+      expect(() => {
+        assertRated(bogus as never)
+      }).toThrow(/rateCard/)
+    }
+  })
+
+  it('구조가 손상되었거나 증거가 비면 거부한다', () => {
+    const real = rateCard(stored, { mode: 'recite', rating: 3, accuracy: null, peeks: null })
+    // card/entry가 객체가 아닌 경우
+    expect(() => {
+      assertRated({ ...real, card: 'nope' } as never)
+    }).toThrow(/손상/)
+    // 증거의 모드·등급이 빠진 경우
+    expect(() => {
+      assertRated({ ...real, entry: {} } as never)
+    }).toThrow(/증거\(모드·등급\)/)
+    // 증거의 시각이 날짜가 아닌 경우
+    expect(() => {
+      assertRated({ ...real, entry: { ...real.entry, ts: '언제인가' } })
+    }).toThrow(/시각/)
   })
 })
 

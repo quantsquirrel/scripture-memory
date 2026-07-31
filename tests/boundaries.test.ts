@@ -18,7 +18,7 @@ import type { ReviewMode, StoredCard } from '../src/domain/card'
 import { required } from '../src/domain/invariant'
 import { reviewMode } from '../src/domain/policy'
 import * as scheduler from '../src/domain/scheduler'
-import { rateCard } from '../src/domain/scheduler'
+import { rateCard, type RatedCard } from '../src/domain/scheduler'
 import * as ports from '../src/ports/repositories'
 
 const read = (rel: string): string =>
@@ -107,6 +107,40 @@ describe('경계 1 — 증거 없는 등급 적용 금지', () => {
     expect(await store.reviews.count()).toBe(modes.length)
   })
 
+  it('이중 캐스팅으로 위조한 RatedCard는 런타임에 거부된다', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    const card = required(await store.cards.get('AS1a:topic'))
+    // 타입 브랜드는 `as unknown as`로 우회할 수 있다 — 런타임 검증이 마지막 방어선
+    const forged = {
+      card: { ...card, card: { ...card.card, reps: 999 } },
+    } as unknown as RatedCard
+    await expect(store.cards.commitRating(forged)).rejects.toThrow(/rateCard/)
+    // 카드가 바뀌지 않았고 증거도 생기지 않았다
+    expect(required(await store.cards.get('AS1a:topic')).card.reps).toBe(card.card.reps)
+    expect(await store.reviews.count()).toBe(0)
+  })
+
+  it('증거가 비어 있으면 커밋을 거부한다', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    const card = required(await store.cards.get('AS1a:topic'))
+    const real = rateCard(card, { mode: 'typing', rating: 3, accuracy: 1, peeks: null })
+    const gutted = { ...real, entry: {} } as unknown as RatedCard
+    await expect(store.cards.commitRating(gutted)).rejects.toThrow(/증거/)
+    expect(await store.reviews.count()).toBe(0)
+  })
+
+  it('커밋은 증거를 먼저 쓴다 (두 번째 쓰기 실패 시 카드가 남지 않게)', () => {
+    const src = read('src/adapters/indexeddb.ts')
+    const body = src.slice(src.indexOf('async commitRating'))
+    const reviewsAt = body.indexOf("objectStore('reviews')")
+    const cardsAt = body.indexOf("objectStore('cards')")
+    expect(reviewsAt).toBeGreaterThanOrEqual(0)
+    expect(cardsAt).toBeGreaterThanOrEqual(0)
+    expect(reviewsAt, '증거 쓰기가 카드 쓰기보다 앞에 있어야 한다').toBeLessThan(cardsAt)
+  })
+
   it('RatedCard는 도메인 밖에서 위조할 수 없다 (브랜드 심볼 미공개)', () => {
     const src = read('src/domain/scheduler.ts')
     // 브랜드 심볼이 export되면 다른 모듈이 RatedCard를 만들 수 있게 된다
@@ -171,8 +205,66 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
 
   it('감사 주기가 정책에 상수로 남아 있다 (제거되면 실패)', () => {
     const src = read('src/domain/policy.ts')
-    expect(src).toMatch(/reps \+ 1\) % 5 === 0/)
-    expect(src).toMatch(/reps < 3/)
+    expect(src).toMatch(/% 5 === 0/)
+    expect(src).toMatch(/< 3/)
+  })
+
+  /**
+   * 독립 감사가 찾아낸 실제 구멍의 회귀 테스트.
+   * reps가 소수(5.5)면 `(reps + 1) % 5 === 0`이 영원히 거짓이 되어 타이핑 감사가
+   * 한 번도 끼지 않았다. reps는 백업 가져오기·Gist 병합으로 외부에서 들어오는
+   * 영속 값이므로 실제로 도달 가능한 경로였다.
+   */
+  it('소수·비정상 reps에서도 5회 창에 객관 모드가 낀다', () => {
+    const starts = [0.5, 2.5, 3.1, 4.9, 5.5, 9.999, 100.25, -1, -0.5, Number.EPSILON]
+    for (const dir of ['topic', 'ref'] as const) {
+      for (const start of starts) {
+        const window = [0, 1, 2, 3, 4].map((i) => reviewMode(dir, start + i))
+        expect(
+          window.some((m) => m !== 'recite'),
+          `${dir} reps ${String(start)}부터 5회가 전부 recite`,
+        ).toBe(true)
+      }
+      // NaN·Infinity도 자가 채점 무한 루프로 빠지지 않는다
+      for (const weird of [Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(reviewMode(dir, weird)).not.toBe('recite')
+      }
+    }
+  })
+
+  it('가져오기가 소수 reps를 아예 받지 않는다 (근본 차단)', async () => {
+    const store = new MemoryStore()
+    const bundle = {
+      app: 'scripture-memory',
+      version: 2,
+      exportedAt: '2026-07-31T00:00:00.000Z',
+      cards: [
+        {
+          key: 'AS1a:topic',
+          verseId: 'AS1a',
+          direction: 'topic',
+          card: {
+            due: '2026-08-01T00:00:00.000Z',
+            stability: 5,
+            difficulty: 5,
+            elapsed_days: 1,
+            scheduled_days: 2,
+            reps: 5.5,
+            lapses: 0,
+            learning_steps: 0,
+            state: 2,
+          },
+        },
+      ],
+      reviews: [],
+      learning: [],
+    }
+    await expect(store.importAll(bundle)).rejects.toThrow(/정수/)
+    // 음수 횟수도 거부한다
+    const negative = structuredClone(bundle)
+    const firstCard = required(negative.cards[0])
+    firstCard.card.reps = -3
+    await expect(store.importAll(negative)).rejects.toThrow(/정수/)
   })
 
   it('recite만 accuracy·peeks 둘 다 null로 남을 수 있다', async () => {
@@ -258,11 +350,27 @@ describe('경계 4 — 오프라인 완결', () => {
   it('네트워크는 Gist 어댑터에만 있고, 그것은 선택 기능이다', () => {
     const gist = read('src/adapters/gist.ts')
     expect(gist).toContain('fetch(')
-    // 핵심 경로(학습·복습·조회)는 Gist 어댑터를 import하지 않는다.
-    // (설정 화면이 Gist ID를 읽는 것은 값 조회일 뿐 네트워크가 아니다)
-    for (const rel of ['src/app/review.ts', 'src/app/queries.ts', 'src/app/settings.ts']) {
-      expect(read(rel), rel).not.toMatch(/from '.*adapters\/gist'/)
+    // 핵심 경로는 Gist 어댑터를 정적으로 import하지 않는다.
+    // app/index.ts를 반드시 포함한다 — 이 파일이 gist를 정적으로 끌고 있어서
+    // 네트워크 코드가 메인 번들에 섞여 들어갔던 것을 독립 감사가 찾아냈다.
+    for (const rel of [
+      'src/app/index.ts',
+      'src/app/review.ts',
+      'src/app/queries.ts',
+      'src/app/settings.ts',
+      'src/app/revision.ts',
+      'src/views/hooks.ts',
+      'src/views/App.tsx',
+      'src/views/Review.tsx',
+      'src/views/Learn.tsx',
+    ]) {
+      expect(read(rel), `${rel}가 gist를 정적으로 import한다`).not.toMatch(
+        /^import .*adapters\/gist/m,
+      )
     }
+    // 유일한 연결점은 동적 import여서 별도 청크로 갈라진다
+    const sync = read('src/app/sync.ts')
+    expect(sync).toMatch(/await import\('\.\.\/adapters\/gist'\)/)
   })
 
   it('학습·복습·export 전 과정이 저장소만으로 끝난다 (네트워크 어댑터 없이)', async () => {

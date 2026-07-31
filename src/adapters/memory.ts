@@ -1,6 +1,6 @@
 import { cardKey, type Direction, type ReviewEntry, type StoredCard } from '../domain/card'
 import type { LadderStep, LearnProgress } from '../domain/ladder'
-import { newCard, type RatedCard, State } from '../domain/scheduler'
+import { assertRated, newCard, type RatedCard, State } from '../domain/scheduler'
 import {
   type CardRepository,
   type ExportBundle,
@@ -52,10 +52,13 @@ export class MemoryStore implements Store {
         ),
       )
     },
-    commitRating: (rated: RatedCard) => {
+    // eslint-disable-next-line @typescript-eslint/require-await
+    commitRating: async (rated: RatedCard) => {
+      // 포트가 Promise를 약속하므로 검증 실패도 동기 throw가 아니라 reject로 나간다
+      assertRated(rated)
       this.cardRows.set(rated.card.key, rated.card)
       this.reviewRows.push({ ...rated.entry, id: this.nextReviewId++ })
-      return Promise.resolve(rated.card)
+      return rated.card
     },
   }
 
@@ -125,7 +128,8 @@ export class MemoryStore implements Store {
     })
   }
 
-  importAll(input: unknown): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async importAll(input: unknown): Promise<void> {
     const bundle = decodeBundle(input)
     this.cardRows = new Map(bundle.cards.map((c) => [c.key, c]))
     this.reviewRows = bundle.reviews.map((r) => {
@@ -133,7 +137,6 @@ export class MemoryStore implements Store {
       return { ...rest, id: this.nextReviewId++ }
     })
     this.learningRows = new Map(bundle.learning.map((l) => [l.verseId, l]))
-    return Promise.resolve()
   }
 
   reset(): Promise<void> {
@@ -143,14 +146,5 @@ export class MemoryStore implements Store {
     this.settingRows.clear()
     this.nextReviewId = 1
     return Promise.resolve()
-  }
-
-  /** 테스트 편의: 카드를 직접 심는다 (등급 적용 경로가 아니라 초기 상태 구성용) */
-  seedCard(card: StoredCard): void {
-    this.cardRows.set(card.key, card)
-  }
-
-  seedReview(entry: ReviewEntry): void {
-    this.reviewRows.push({ ...entry, id: this.nextReviewId++ })
   }
 }

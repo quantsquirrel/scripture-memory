@@ -12,8 +12,8 @@ import {
   setLastSyncAt as persistLastSyncAt,
   setSyncGistId as persistSyncGistId,
   setSyncToken as persistSyncToken,
-  syncNow,
 } from '../app'
+import { syncNow } from '../app/sync'
 import { useSettingsData } from './hooks'
 import { AboutPanel, DataPanel, GoalPanel, SyncPanel, ThemePanel } from './settings/panels'
 
