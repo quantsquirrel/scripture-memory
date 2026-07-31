@@ -10,3 +10,4 @@ dev-dist/
 __pycache__/
 test-results/
 playwright-report/
+coverage/
