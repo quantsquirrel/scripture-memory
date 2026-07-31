@@ -8,6 +8,18 @@ export default defineConfig({
   // 걸려 vitest가 집어 가면 실패한다.
   test: {
     include: ['tests/**/*.test.ts'],
+    coverage: {
+      provider: 'v8',
+      // 커버리지 목표는 도메인 코어다 — 규칙이 여기 있고, 어댑터·뷰는 E2E가 본다
+      include: ['src/domain/**/*.ts'],
+      reporter: ['text', 'json-summary'],
+      thresholds: {
+        lines: 90,
+        functions: 90,
+        statements: 90,
+        branches: 85,
+      },
+    },
   },
   plugins: [
     react(),
