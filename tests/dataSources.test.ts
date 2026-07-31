@@ -140,7 +140,7 @@ describe('원문 소스와의 대조 고정', () => {
     }
   })
 
-  it('180구절 본문은 띄어쓰기·개역한글 표기 차이 외에 원문과 같다', () => {
+  it('180구절 본문이 원문과 글자 단위로 전부 일치한다', () => {
     const src = readSource('scripts/data/tms180.txt')
     const texts: string[] = []
     for (const raw of src.split('\n')) {
@@ -158,56 +158,56 @@ describe('원문 소스와의 대조 고정', () => {
       }
       differing.push(v.id)
     }
-    // 글자 단위(띄어쓰기·구두점 무시)로 171/180이 완전히 같고, 다른 9건은
-    // tms180.txt의 '-ㄹ지' 현대화 표기 8건 + '힙입어' 오타 1건이 전부다.
-    // 즉 본문 자체가 어긋난 구절은 없다.
-    expect(identical).toBe(171)
-    expect(differing.sort()).toEqual([
-      'T1-19a',
-      'T1-20a',
-      'T2-15a',
-      'T2-1a',
-      'T2-8b',
-      'T3-11a',
-      'T4-3b',
-      'T5-18a',
-      'T5-24a',
-    ])
+    // 원문의 개역개정 혼입 8건('-ㄹ지')과 오타 1건('힙입어')을 개역한글로 바로잡은 뒤
+    // 글자 단위(띄어쓰기·구두점 무시)로 180/180이 완전히 일치한다.
+    expect(differing).toEqual([])
+    expect(identical).toBe(180)
   })
 
-  it('원문이 현대화한 8구절은 JSON이 개역한글 표기를 지킨다', () => {
-    const modernized = [
-      'T1-19a',
-      'T1-20a',
-      'T2-1a',
-      'T2-8b',
-      'T2-15a',
-      'T3-11a',
-      'T4-3b',
-      'T5-24a',
-    ]
-    const byId = new Map(VERSES.map((v) => [v.id, v]))
-    for (const id of modernized) {
-      const v = required(byId.get(id), id)
-      expect(v.text, `${id}는 개역한글 '찌' 표기를 지켜야 한다`).toMatch(/찌/)
-    }
-  })
-
-  it('원문의 오타 2건을 JSON이 따라가지 않는다', () => {
+  it('원문에 개역개정 표기나 오타가 되돌아오지 않는다', () => {
     const src180 = readSource('scripts/data/tms180.txt')
     const srcDep = readSource('scripts/data/dep242.txt')
-    // 원문에는 오타가 있다
-    expect(src180).toContain('힙입어')
-    expect(srcDep).toContain('엠6:17')
-    // JSON은 올바른 표기를 쓴다
+    // 원문을 개역한글로 바로잡았다 — 되돌아오면 실패한다
+    for (const revised of [
+      '예배할지니라',
+      '거룩할지어다',
+      '자랄지라',
+      '징계할지니',
+      '세우도록 할지니라',
+      '진리를 알지니',
+      '순복할지어다',
+      '핑계치 못할지니라',
+      '힙입어',
+    ]) {
+      expect(src180, `tms180.txt에 ${revised}가 되돌아왔다`).not.toContain(revised)
+    }
+    expect(srcDep, "dep242.txt의 '엠6:17' 오타가 되돌아왔다").not.toContain('엠6:17')
+    expect(srcDep).toContain('엡6:17')
+    // JSON도 개역한글 표기를 유지한다
     expect(VERSES.filter((v) => v.text.includes('힙입어'))).toEqual([])
     expect(VERSES.filter((v) => v.text.includes('힘입어')).map((v) => v.id)).toEqual(['T5-18a'])
-    expect(
-      VERSES.filter((v) => v.bookAbbr === '엡' && v.chapter === 6 && v.verses.join() === '17'),
-    ).toHaveLength(1)
   })
 
-  it('DEP242의 장절 241개가 dep242.txt와 일치한다 (남은 1건은 원문 오타)', () => {
+  it("'그들'·'따라'는 개역한글 정본 표기다 (KRV 원문 대조 확인)", () => {
+    // 처음에는 개역개정 혼입으로 의심했지만 KRV 원문과 대조해 개역한글 표기임을
+    // 확인했다. 아래 세 구절은 외부 KRV 본문과 글자 단위로 같다.
+    const confirmed: [string, string][] = [
+      ['LV3a', '무릇 하나님의 영으로 인도함을 받는 그들은 곧 하나님의 아들이라'],
+      ['A6a', '말씀하시되 나를 따라 오너라 내가 너희로 사람을 낚는 어부가 되게 하리라 하시니'],
+      [
+        'D7-24a',
+        '나의 간절한 기대와 소망을 따라 아무 일에든지 부끄럽지 아니하고 오직 전과 같이 이제도 온전히 담대하여 살든지 죽든지 내 몸에서 그리스도가 존귀히 되게 하려 하나니',
+      ],
+    ]
+    const byId = new Map(VERSES.map((v) => [v.id, v]))
+    for (const [id, krv] of confirmed) {
+      expect(norm(required(byId.get(id), id).text), id).toBe(norm(krv))
+    }
+    // 개역개정이 이 자리에 쓰는 형태는 들어오면 안 된다
+    expect(VERSES.filter((v) => v.text.includes('받는 사람은 곧 하나님'))).toEqual([])
+  })
+
+  it('DEP242의 장절 242개가 dep242.txt와 정확히 일치한다', () => {
     const abbrs = [...new Set(VERSES.map((v) => v.bookAbbr))].sort(
       (a, b) => b.length - a.length,
     )
@@ -226,7 +226,7 @@ describe('원문 소스와의 대조 고정', () => {
     const missing = dep.filter(
       (v) => !found.has(`${v.bookAbbr}${v.chapter}:${v.verses.join(',')}`),
     )
-    // 엡6:17만 빠진다 — 원문이 '엠6:17'로 잘못 적었기 때문이다
-    expect(missing.map((v) => v.refAbbr)).toEqual(['엡 6:17'])
+    // 원문의 '엠6:17' 오타를 바로잡은 뒤 242개가 빠짐없이 일치한다
+    expect(missing.map((v) => v.refAbbr)).toEqual([])
   })
 })
