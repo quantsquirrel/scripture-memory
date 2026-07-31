@@ -1,0 +1,35 @@
+/* 하단 내비게이션 */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-8) calc(10px + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--color-line);
+}
+
+.bottom-nav a {
+  flex: 1;
+  max-width: 132px;
+  /* 탭 전체가 누를 수 있는 면이 되도록 — 텍스트 폭만큼만 잡히면 14px까지 좁아진다 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-5) 0;
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  font-size: var(--text-base);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.bottom-nav a.active {
+  color: var(--color-accent);
+  font-weight: 700;
+  background: var(--color-panel);
+}

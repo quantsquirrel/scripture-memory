@@ -1,0 +1,152 @@
+/*
+ * 디자인 토큰.
+ *
+ * 색 값은 --palette-{테마}-{이름}에 딱 한 번만 적는다. 테마 전환은 의미 토큰
+ * (--color-bg 등)이 어느 팔레트를 가리키는지만 바꾸는 일이며, 색을 고칠 때
+ * 다크·라이트 두 곳을 따라다니며 수정할 필요가 없다.
+ *
+ * 명도비는 scripts/audit_contrast.py가 이 파일을 직접 읽어 계산한다
+ * (`npm run audit:contrast`). 값을 바꾸면 감사 결과가 함께 바뀐다.
+ */
+
+:root {
+  /* ── 팔레트: 다크 ───────────────────────────────────────── */
+  --palette-dark-bg: #10141f;
+  --palette-dark-panel: #1a2130;
+  --palette-dark-panel2: #232c40;
+  /* line: 장식용 헤어라인 구분선 (WCAG 1.4.11 비적용 — 컨트롤 식별에 필요하지 않음) */
+  --palette-dark-line: #46527a;
+  /* border: 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳 (3:1 이상 필요) */
+  --palette-dark-border: #6b78a6;
+  --palette-dark-text: #e8e6df;
+  --palette-dark-muted: #a8b0c4;
+  --palette-dark-accent: #e0b055;
+  --palette-dark-accent-text: #201a0d;
+  --palette-dark-blue: #9dbcec;
+  --palette-dark-ok: #7cc78a;
+  --palette-dark-warn: #e0ae4e;
+  --palette-dark-bad: #e58c81;
+
+  /* ── 팔레트: 라이트 ─────────────────────────────────────── */
+  --palette-light-bg: #f4f2ec;
+  --palette-light-panel: #ffffff;
+  --palette-light-panel2: #eee9dd;
+  --palette-light-line: #a99f88;
+  --palette-light-border: #8a7f66;
+  --palette-light-text: #26293a;
+  --palette-light-muted: #5b6070;
+  --palette-light-accent: #8a5f10;
+  --palette-light-accent-text: #fffbef;
+  --palette-light-blue: #2f4d7d;
+  --palette-light-ok: #2f6b3c;
+  --palette-light-warn: #7d5a10;
+  --palette-light-bad: #91362c;
+
+  /* ── 의미 토큰: 기본은 다크 ─────────────────────────────── */
+  color-scheme: dark;
+  --color-bg: var(--palette-dark-bg);
+  --color-panel: var(--palette-dark-panel);
+  --color-panel-alt: var(--palette-dark-panel2);
+  --color-line: var(--palette-dark-line);
+  --color-border: var(--palette-dark-border);
+  --color-text: var(--palette-dark-text);
+  --color-muted: var(--palette-dark-muted);
+  --color-accent: var(--palette-dark-accent);
+  --color-accent-text: var(--palette-dark-accent-text);
+  --color-info: var(--palette-dark-blue);
+  --color-ok: var(--palette-dark-ok);
+  --color-warn: var(--palette-dark-warn);
+  --color-bad: var(--palette-dark-bad);
+
+  /* ── 간격 (4px 스케일) ──────────────────────────────────── */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-10: 20px;
+  --space-12: 24px;
+
+  /* ── 타이포 ─────────────────────────────────────────────── */
+  --font-sans:
+    'Pretendard', 'Apple SD Gothic Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    'Noto Sans KR', sans-serif;
+  --font-serif: 'Noto Serif KR', ui-serif, 'Apple SD Gothic Neo', serif;
+  --text-xs: 0.72rem;
+  --text-sm: 0.8rem;
+  --text-sm2: 0.88rem;
+  --text-base: 0.95rem;
+  --text-md: 1.02rem;
+  --text-lg: 1.12rem;
+  --text-xl: 1.3rem;
+  --text-2xl: 1.45rem;
+  --text-3xl: 1.6rem;
+  --leading-tight: 1.3;
+  --leading-normal: 1.7;
+  --leading-relaxed: 1.8;
+  /* 본문 낭송용 — 한 줄을 눈으로 따라가기 쉽게 넉넉히 */
+  --leading-verse: 1.95;
+
+  /* ── 반경 ───────────────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* ── 그림자 ─────────────────────────────────────────────── */
+  --shadow-none: none;
+  --shadow-nav: 0 -1px 12px rgb(0 0 0 / 22%);
+  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 45%, transparent);
+
+  /* ── 레이아웃 ───────────────────────────────────────────── */
+  --layout-max: 560px;
+  /* 손가락으로 정확히 누를 수 있는 최소 크기 (WCAG 2.2 Target Size 최소 24, 권장 44) */
+  --touch-min: 44px;
+}
+
+/* 자동 모드(data-theme 미지정)에서 OS가 라이트일 때만 라이트 팔레트로 */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --color-bg: var(--palette-light-bg);
+    --color-panel: var(--palette-light-panel);
+    --color-panel-alt: var(--palette-light-panel2);
+    --color-line: var(--palette-light-line);
+    --color-border: var(--palette-light-border);
+    --color-text: var(--palette-light-text);
+    --color-muted: var(--palette-light-muted);
+    --color-accent: var(--palette-light-accent);
+    --color-accent-text: var(--palette-light-accent-text);
+    --color-info: var(--palette-light-blue);
+    --color-ok: var(--palette-light-ok);
+    --color-warn: var(--palette-light-warn);
+    --color-bad: var(--palette-light-bad);
+  }
+}
+
+/* 라이트 강제 선택 (OS 설정과 무관) — adapters/theme.ts가 data-theme를 세팅 */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: var(--palette-light-bg);
+  --color-panel: var(--palette-light-panel);
+  --color-panel-alt: var(--palette-light-panel2);
+  --color-line: var(--palette-light-line);
+  --color-border: var(--palette-light-border);
+  --color-text: var(--palette-light-text);
+  --color-muted: var(--palette-light-muted);
+  --color-accent: var(--palette-light-accent);
+  --color-accent-text: var(--palette-light-accent-text);
+  --color-info: var(--palette-light-blue);
+  --color-ok: var(--palette-light-ok);
+  --color-warn: var(--palette-light-warn);
+  --color-bad: var(--palette-light-bad);
+}
+
+/* 다크 강제 선택 — 기본값과 같지만 명시해 두면 OS가 라이트여도 확실히 다크다 */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}

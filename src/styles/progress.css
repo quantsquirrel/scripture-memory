@@ -1,0 +1,39 @@
+/* 진행률/시리즈 */
+.progress {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--color-panel-alt);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-accent);
+  border-radius: var(--radius-pill);
+  transition: width 0.4s;
+}
+
+.series-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+.series-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  padding: var(--space-4) 0;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.series-key {
+  font-weight: 800;
+  color: var(--color-info);
+}

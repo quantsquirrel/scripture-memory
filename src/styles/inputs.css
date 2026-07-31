@@ -1,0 +1,19 @@
+/* 타이핑/장절 입력 */
+.typing-input,
+.ref-input {
+  width: 100%;
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.7;
+  padding: var(--space-6);
+  margin-top: var(--space-4);
+}
+
+.typing-input:focus,
+.ref-input:focus {
+  outline: 2px solid var(--color-accent);
+}

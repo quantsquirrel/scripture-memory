@@ -1,0 +1,96 @@
+/* 통계 지표 행 (라벨 좌 · 값 우) */
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-5);
+  padding: 7px 0;
+  border-bottom: 1px solid var(--color-line);
+  font-size: var(--text-base);
+}
+
+.stat-row:last-child {
+  border-bottom: none;
+}
+
+.stat-row .stat-val {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 클릭 대상이 아닌 진행률 행 (마음 밭) */
+.col-row-static {
+  cursor: default;
+}
+
+/* 다시 붙들 말씀 목록 */
+.weak-item {
+  border-bottom: 1px solid var(--color-line);
+  padding: var(--space-3) 0;
+}
+
+.weak-item:last-of-type {
+  border-bottom: none;
+}
+
+.weak-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-5);
+}
+
+.weak-snippet {
+  margin: 3px 0 var(--space-2);
+  line-height: 1.7;
+}
+
+/* 접이식 훈련 상세 지표 */
+.tech-details {
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-8) var(--space-4);
+  margin-bottom: var(--space-7);
+}
+
+.tech-details[open] {
+  padding-bottom: var(--space-8);
+}
+
+.tech-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: var(--text-base);
+  padding: var(--space-6) 0;
+  color: var(--color-muted);
+}
+
+.tech-details[open] summary {
+  color: var(--color-text);
+}
+
+.tech-details h3 {
+  font-size: var(--text-base);
+  color: var(--color-info);
+  margin: var(--space-10) 0 var(--space-4);
+}
+
+/* 목표 눈금이 있는 진행 바 (bullet) */
+.bullet {
+  position: relative;
+  overflow: visible;
+}
+
+.btn + .bullet {
+  margin-top: var(--space-8);
+}
+
+.bullet-target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--color-muted);
+}
