@@ -80,7 +80,11 @@ function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) =
       )
     case 'learn':
       return (
+        // 구절이 바뀌면(다음 구절 버튼) Learn을 리마운트해 이전 구절의 채점
+        // 상태(grade/attempt/peeks)가 새 구절의 화면을 오염시키지 않게 한다.
+        // 같은 경로라도 verseId가 다르면 리마운트되어 사다리를 처음부터 시작한다.
         <Learn
+          key={route.verseId}
           verseId={route.verseId}
           onExit={() => {
             navigate({ name: 'home' })

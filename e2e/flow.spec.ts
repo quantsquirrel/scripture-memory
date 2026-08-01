@@ -105,6 +105,32 @@ test.describe('전체 흐름 왕복', () => {
     await expect(page.getByRole('button', { name: /복습 시작|지금 이어서 복습/ })).toBeVisible()
   })
 
+  /**
+   * 회귀: 졸업 화면의 "다음 구절"로 learn→learn 이동 시, 이전 구절의 타이핑
+   * 채점(grade)이 새 구절에 남아 있으면 타이핑 단계가 DiffView로 도배된다.
+   * 새 구절의 typing 단계는 빈 입력창이어야 한다.
+   */
+  test('다음 구절로 넘어가면 타이핑 단계가 빈 입력창으로 시작한다', async ({ page }) => {
+    await graduateFirstVerse(page)
+
+    // 졸업 화면의 "다음 구절" 버튼 — learn → learn hash 이동 (리마운트는 key가 한다)
+    const nextBtn = page.getByRole('button', { name: /다음 구절:/ })
+    await expect(nextBtn).toBeVisible()
+    await nextBtn.click()
+
+    // 새 구절 사다리: intro → firstLetter → typing
+    await expect(page.getByText('낭송 규칙 (TMS)')).toBeVisible()
+    const newRef = (await page.locator('h2.prompt-main').innerText()).trim()
+    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송 완료' }).click()
+
+    // 타이핑 단계: 이전 구절의 채점 DiffView가 아니라 빈 입력창 + 새 구절 ref
+    await expect(page.locator('textarea.typing-input')).toBeVisible()
+    await expect(page.locator('textarea.typing-input')).toHaveValue('')
+    await expect(page.locator('.diff-view')).toHaveCount(0)
+    await expect(page.locator('h2.prompt-main')).toHaveText(newRef)
+  })
+
   test('v1 백업 파일도 가져올 수 있다 (마이그레이션 경로)', async ({ page }) => {
     await page.goto(`${BASE}#/settings`)
     // 저장소의 골든 v1 fixture를 그대로 올린다
