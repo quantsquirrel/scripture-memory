@@ -138,6 +138,12 @@ export function TypingMode({
           spellCheck={false}
           rows={5}
         />
+        {/*
+          음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
+          화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
+          트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
+        */}
+        <p className="stt-context">{verse.text}</p>
         <button
           className="btn btn-primary"
           disabled={attempt.trim() === ''}

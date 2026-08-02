@@ -17,3 +17,20 @@
 .ref-input:focus {
   outline: 2px solid var(--color-accent);
 }
+
+/*
+ * 타이핑 입력란 아래에 깔리는 정답 사본 — 음성 전사 앱이 읽을 맥락용.
+ *
+ * transparent를 쓰는 이유: 배경색을 하드코딩하면 라이트(베이지)/다크 두 테마를
+ * 따라다녀야 하고 토큰이 바뀔 때마다 어긋난다. 색만 지우므로 어떤 배경 위에서도
+ * 보이지 않는다. display·visibility가 아니라서 접근성 트리에는 그대로 남는다.
+ *
+ * 명도비 감사(audit:contrast) 대상이 아니다 — 읽히라고 그린 텍스트가 아니다.
+ */
+.stt-context {
+  color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  margin: var(--space-4) 0 0;
+  line-height: var(--leading-normal);
+}
