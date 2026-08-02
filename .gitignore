@@ -7,6 +7,7 @@ dev-dist/
 *.png
 !public/icons/*.png
 .claude/
+.omo/
 __pycache__/
 test-results/
 playwright-report/
