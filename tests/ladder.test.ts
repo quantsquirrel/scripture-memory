@@ -57,6 +57,14 @@ describe('사다리 전이 (순수 함수)', () => {
     })
   })
 
+  it("'그냥 넘어가기'는 채점이 완벽하지 않아도 졸업시킨다", () => {
+    expect(advance({ step: 'typing', event: 'accept' })).toEqual({
+      kind: 'graduate',
+      step: 'graduated',
+      directions: DIRECTIONS,
+    })
+  })
+
   it('재도전은 단계를 되돌리지 않는다', () => {
     expect(advance({ step: 'firstLetter', event: 'retry' }).kind).toBe('stay')
     expect(advance({ step: 'typing', event: 'retry' }).kind).toBe('stay')
@@ -116,6 +124,17 @@ describe('사다리 유스케이스 (인메모리 저장소)', () => {
     expect((await store.learning.get('AS1a'))?.step).toBe('graduated')
     const cards = await store.cards.all()
     expect(cards.map((c) => c.direction).sort()).toEqual([...DIRECTIONS].sort())
+  })
+
+  it("타이핑에서 '그냥 넘어가기'를 누르면 3방향 카드가 생기고 졸업한다", async () => {
+    const store = new MemoryStore()
+    await runLadder(store, 'AS1a', { step: 'intro', event: 'recited' }, NOW)
+    await runLadder(store, 'AS1a', { step: 'firstLetter', event: 'attempted', peeks: 1 }, NOW)
+
+    const out = await runLadder(store, 'AS1a', { step: 'typing', event: 'accept' }, NOW)
+    expect(out.kind).toBe('graduate')
+    expect((await store.learning.get('AS1a'))?.step).toBe('graduated')
+    expect(await store.cards.all()).toHaveLength(DIRECTIONS.length)
   })
 
   it('통과하지 못한 시도는 단계를 올리지도, 카드를 만들지도 않는다', async () => {

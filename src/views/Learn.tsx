@@ -136,6 +136,7 @@ export function Learn({
               setGrade(null)
             }}
             onGraduate={() => void send({ step: 'typing', event: 'graded', perfect: true })}
+            onAccept={() => void send({ step: 'typing', event: 'accept' })}
           />
         )}
 

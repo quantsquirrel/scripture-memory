@@ -97,6 +97,7 @@ export function TypingStep({
   onGrade,
   onRetry,
   onGraduate,
+  onAccept,
 }: {
   verse: VerseEntry
   attempt: string
@@ -105,6 +106,7 @@ export function TypingStep({
   onGrade: () => void
   onRetry: () => void
   onGraduate: () => void
+  onAccept: () => void
 }) {
   return (
     <>
@@ -121,9 +123,17 @@ export function TypingStep({
               <p className="muted small">
                 틀린 곳을 확인했으면 정답을 가리고 기억만으로 다시 도전하세요.
               </p>
-              <button className="btn btn-primary" onClick={onRetry}>
-                다시 도전 (정답 가리고 재입력)
-              </button>
+              <div className="btn-row">
+                <button className="btn btn-primary" onClick={onRetry}>
+                  다시 도전 (정답 가리고 재입력)
+                </button>
+                <button className="btn" onClick={onAccept}>
+                  그냥 넘어가기
+                </button>
+              </div>
+              <p className="muted small">
+                오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다 — 그대로 졸업합니다.
+              </p>
             </>
           )}
         </>
@@ -145,6 +155,12 @@ export function TypingStep({
             spellCheck={false}
             rows={6}
           />
+          {/*
+            음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
+            화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
+            트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
+          */}
+          <p className="stt-context">{verse.text}</p>
           <button
             className="btn btn-primary"
             disabled={attempt.trim() === ''}
