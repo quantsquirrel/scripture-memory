@@ -42,6 +42,12 @@ export type LadderCommand =
   | { step: 'firstLetter'; event: 'retry' }
   | { step: 'typing'; event: 'graded'; perfect: boolean }
   | { step: 'typing'; event: 'retry' }
+  /**
+   * 채점이 잡아낸 차이를 사람이 "의식하지 못한 실수"로 인정하고 졸업한다.
+   * graded/perfect:true로 위장하지 않고 별도 사건으로 둔다 — 그래야
+   * '채점이 완벽했다'와 '사람이 넘겼다'가 코드에서 구분된 채로 남는다.
+   */
+  | { step: 'typing'; event: 'accept' }
 
 export type StayReason = 'peeksExceeded' | 'notPerfect' | 'restart'
 
@@ -66,6 +72,8 @@ export function advance(cmd: LadderCommand): LadderOutcome {
         : { kind: 'stay', step: 'firstLetter', reason: 'peeksExceeded' }
     case 'typing':
       if (cmd.event === 'retry') return { kind: 'stay', step: 'typing', reason: 'restart' }
+      if (cmd.event === 'accept')
+        return { kind: 'graduate', step: 'graduated', directions: DIRECTIONS }
       return cmd.perfect
         ? { kind: 'graduate', step: 'graduated', directions: DIRECTIONS }
         : { kind: 'stay', step: 'typing', reason: 'notPerfect' }
