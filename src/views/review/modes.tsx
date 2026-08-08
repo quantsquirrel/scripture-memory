@@ -132,6 +132,12 @@ export function TypingMode({
           onChange={(e) => {
             setAttempt(e.target.value)
           }}
+          onKeyDown={(e) => {
+            // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
+            if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            if (attempt.trim() !== '') setGrade(gradeTyping(verse.text, attempt))
+          }}
           placeholder="말씀을 입력하세요 (구두점 무시)"
           autoCapitalize="off"
           autoCorrect="off"
@@ -196,7 +202,14 @@ export function RefInputMode({
           onChange={(e) => {
             setAttempt(e.target.value)
           }}
+          onKeyDown={(e) => {
+            // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
+            if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+            e.preventDefault()
+            if (attempt.trim() !== '') setRefOk(gradeRef(verse, attempt))
+          }}
           placeholder="예: 고후 5:17 / 빌립보서 4:6-7"
+          autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}

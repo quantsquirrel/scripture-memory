@@ -149,6 +149,12 @@ export function TypingStep({
             onChange={(e) => {
               onAttempt(e.target.value)
             }}
+            onKeyDown={(e) => {
+              // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
+              if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+              e.preventDefault()
+              if (attempt.trim() !== '') onGrade()
+            }}
             placeholder="기억만으로 말씀 전체를 입력하세요"
             autoCapitalize="off"
             autoCorrect="off"
