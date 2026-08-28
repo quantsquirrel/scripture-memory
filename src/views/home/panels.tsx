@@ -101,9 +101,6 @@ export function NewVersePanel({
           </span>
         </p>
       )}
-      {goal.past && goal.remaining > 0 && (
-        <p className="muted small">목표일이 지났습니다 — 설정에서 목표일을 조정하세요.</p>
-      )}
       {resume && (
         <button
           className="btn"
@@ -127,9 +124,9 @@ export function NewVersePanel({
         !resume && <p>모든 구절을 학습했습니다! 🎉 이제 유지 복습만 하면 됩니다.</p>
       )}
       <p className="muted small">
-        이번 주 새 구절 {newThisWeek}개 · 새 구절은 {learnEndLabel}까지, 마지막{' '}
-        {goal.bufferDays}
-        일은 복습으로 굳히기
+        {goal.past
+          ? `이번 주 새 구절 ${newThisWeek}개 · 기한 없이 새기는 시기 — 마음에 오래 남는 속도로`
+          : `이번 주 새 구절 ${newThisWeek}개 · 새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`}
       </p>
     </section>
   )

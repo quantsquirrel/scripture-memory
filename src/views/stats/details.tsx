@@ -35,16 +35,21 @@ function MemoryStateSection({ d, retentionTarget }: { d: StatsData; retentionTar
       ) : (
         <p className="muted">아직 복습 궤도에 오른 카드가 없습니다.</p>
       )}
-      <div className="progress">
-        <div
-          className="progress-fill"
-          style={{ width: `${(d.readiness.ready / d.readiness.total) * 100}%` }}
-        />
-      </div>
-      <p className="muted small">
-        시험 준비 {d.readiness.ready}/{d.readiness.total} — 지금 복습을 멈춰도{' '}
-        {formatMonthDay(d.goal.goalDate)}에 기억률 {pct(EXAM_RETENTION)} 이상으로 예측되는 구절
-      </p>
+      {!d.goal.past && (
+        <>
+          <div className="progress">
+            <div
+              className="progress-fill"
+              style={{ width: `${(d.readiness.ready / d.readiness.total) * 100}%` }}
+            />
+          </div>
+          <p className="muted small">
+            시험 준비 {d.readiness.ready}/{d.readiness.total} — 지금 복습을 멈춰도{' '}
+            {formatMonthDay(d.goal.goalDate)}에 기억률 {pct(EXAM_RETENTION)} 이상으로 예측되는
+            구절
+          </p>
+        </>
+      )}
     </>
   )
 }
