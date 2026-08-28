@@ -131,6 +131,16 @@
   border-bottom: 1px dashed var(--color-border);
 }
 
+/* 가장 강하게 이끈 한 줄 — 아래 화살표의 출발점이 어디인지 드러낸다 */
+.chain-primary .chain-node {
+  font-weight: 700;
+}
+
+/* 거쳐 온 자리는 오늘 읽은 본문이 아니다 — 한 단계 낮춰 둔다 */
+.chain-via {
+  color: var(--color-muted);
+}
+
 /* 도착점 — 줄마다 되풀이하지 않고 목록 끝에 한 번만 */
 .chain-dest {
   margin: var(--space-6) 0 0;
