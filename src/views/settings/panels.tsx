@@ -225,8 +225,10 @@ export function AboutPanel() {
         <br />
         통독 계획: 성경 통독 365 (2026-08-18 ~ 2027-08-17, 66권 1189장).
         <br />
-        묵상의 상호참조: Cross References by OpenBible.info, CC BY 4.0 (www.openbible.info) —
-        원본을 그대로 싣지 않고 가중 그래프로 가공한 후보표를 담았습니다.
+        묵상의 상호참조: Cross References by OpenBible.info (2026-08-24판) —
+        www.openbible.info/labs/cross-references/ · CC BY 4.0
+        (creativecommons.org/licenses/by/4.0/). 원본을 그대로 싣지 않고 가중 그래프로 가공한
+        후보표를 담았습니다. 원 라이선스에 따라 어떠한 보증도 제공되지 않습니다.
       </p>
     </section>
   )

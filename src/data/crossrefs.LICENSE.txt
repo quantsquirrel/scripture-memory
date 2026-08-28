@@ -1,0 +1,30 @@
+이 앱의 묵상 탭이 쓰는 상호참조 후보표(xrefCandidates.json)의 원자료.
+
+  Cross References by OpenBible.info
+  https://www.openbible.info/labs/cross-references/
+  라이선스: Creative Commons Attribution 4.0 International (CC BY 4.0)
+  https://creativecommons.org/licenses/by/4.0/
+
+내려받은 원본 파일의 헤더 첫 줄 (스냅샷 날짜가 여기 들어 있다):
+
+  From Verse	To Verse	Votes	#www.openbible.info CC-BY 2026-08-24
+
+변경 사실 (CC BY 4.0 §3(a)(1)(B)):
+원본 34만 4,799행을 그대로 재배포하지 않는다. votes가 양수인 간선만 남기고,
+구간 참조를 낱개 절로 펼치고, 무게를 log1p(votes)/sqrt(구간)로 매기고, 역방향
+간선을 절반 무게로 더한 뒤, 1189개 장 각각에서 2홉 확산을 돌려 암송 495구절 중
+상위 10개와 그 참조 사슬만 추려 실었다. 전체의 약 3.6%다.
+재생성 방법과 파라미터는 scripts/data/build_xref.ts에 있다.
+
+votes 필드에 대해 (원본 About 페이지 인용):
+  "This data draws primarily from public-domain sources, especially the
+   Treasury of Scripture Knowledge, which provides most of the data. It also
+   includes data (to seed the initial votes) from my Topical Bible and
+   Twitter Bible Search."
+즉 간선의 존재는 Treasury of Scripture Knowledge(퍼블릭 도메인)에서 오고,
+votes는 그 초기 가중치에 이용자의 찬반투표(Helpful? Yes/No)가 누적된 값이다.
+음수는 "관련 없다"는 판정이므로 관계로 세지 않는다.
+
+votes는 절대 척도가 아니다 — 인기 있는 절일수록 표가 크게 붙는다(요 3:16의
+최상위 참조는 981표, 시 119:11은 92표). 그래서 전역 임계값을 두지 않고 장별
+상위 N개로만 자른다.

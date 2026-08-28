@@ -307,7 +307,11 @@ function spread(
           if (!cur || add > cur.mass) via1.set(e.to, { seed: u, label: e.label, mass: add })
           if (corpusAt.has(e.to))
             bump(e.to, 1, { seed: u, mid: null, label: e.label, midLabel: '', mass: add })
-        } else if (corpusAt.has(e.to) && chapKey(u) !== homeChapter && chapKey(u) !== chapKey(e.to)) {
+        } else if (
+          corpusAt.has(e.to) &&
+          chapKey(u) !== homeChapter &&
+          chapKey(u) !== chapKey(e.to)
+        ) {
           // 중간 지점이 오늘 읽는 장 안이거나 도착지와 같은 장이면 "다른 말씀을
           // 거쳐 왔다"가 아니다 — 사 7:14 → 요 1:1-2 → 요 1:1 같은 헛걸음이 된다
           const back = via1.get(u)

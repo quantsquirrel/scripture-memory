@@ -87,7 +87,11 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
   두지 않고, `scripts/data/build_xref.ts`가 걸어서 만든 후보표
   `src/data/xrefCandidates.json`(장 1189개 × 상위 10개)만 싣는다. 원본은
   `https://a.openbible.info/data/cross-references.zip`에서 받는다.
-  출처 표기는 설정 > 정보에 있다 (CC-BY 의무).
+  출처·변경 사실·라이선스 URI 표기는 설정 > 정보와 `src/data/crossrefs.LICENSE.txt`에
+  있다 — CC BY 4.0 §3(a)의 의무이므로 지우지 말 것. **라이선스 URI를 빼면 위반이다.**
+- votes는 절대 척도가 아니다 (요 3:16의 최상위 참조 981표 vs 시 119:11 92표 — 인기 절에
+  표가 몰린다). 전역 임계값을 두지 말고 장별 상위 N개로만 자른다. 음수 votes는
+  "관련 없다"는 반대표이므로 반드시 버린다.
 - 후보표는 1MB가 넘어 **동적 import로만** 닿는다(`src/data/xrefCandidates.ts`).
   정적으로 import하면 홈·복습 화면까지 무거워진다 — Gist를 떼어 둔 것과 같은 이유이며,
   `tests/boundaries.test.ts`가 지킨다.
