@@ -6,20 +6,20 @@ description: >
   이름이자 요한(Yohanan, "여호와는 은혜로우시다")의 슬라브형이다. 항해 도구가
   아니라 밤의 독서실 — 말씀이 주인공이고, 은혜의 등불 하나가 길을 비춘다.
 colors:
-  primary: '#e0b055'
-  bg: '#10141f'
-  panel: '#1a2130'
-  panel-alt: '#232c40'
-  line: '#46527a'
-  border: '#6b78a6'
-  text: '#e8e6df'
-  muted: '#a8b0c4'
-  accent: '#e0b055'
-  on-accent: '#201a0d'
-  info: '#9dbcec'
-  ok: '#7cc78a'
-  warn: '#e0ae4e'
-  bad: '#e58c81'
+  primary: '#e7b45a'
+  bg: '#0b1120'
+  panel: '#151f36'
+  panel-alt: '#1f2c4c'
+  line: '#48588f'
+  border: '#7286bd'
+  text: '#ede8da'
+  muted: '#a9b3cd'
+  accent: '#e7b45a'
+  on-accent: '#221a09'
+  info: '#a2c2f2'
+  ok: '#82cd90'
+  warn: '#e3b258'
+  bad: '#ec9186'
 typography:
   app-title:
     fontFamily: Pretendard
@@ -153,30 +153,30 @@ warm/cafe류의 라이프스타일 브랜드 톤, 글래스모피즘·그라디�
 `npm run audit:contrast`(WCAG 감사)를 통과한 상태이므로, 색을 바꿀 때는 이
 문서와 tokens.css를 함께 고치고 감사를 다시 돌린다.
 
-- **bg (#10141f):** 밤바다. 앱 전체의 바닥. 순검정이 아닌 남빛 — 차갑지 않고
+- **bg (#0b1120):** 밤바다. 앱 전체의 바닥. 순검정이 아닌 남빛 — 차갑지 않고
   깊게.
-- **panel (#1a2130) / panel-alt (#232c40):** 물결의 층. 카드와 입력면을 배경에서
+- **panel (#151f36) / panel-alt (#1f2c4c):** 물결의 층. 카드와 입력면을 배경에서
   한 단계씩 들어올린다. 그림자 대신 이 두 단의 명도 차가 깊이를 만든다.
-- **line (#46527a):** 장식용 헤어라인. 컨트롤 식별에 쓰지 않는다(WCAG 1.4.11
+- **line (#48588f):** 장식용 헤어라인. 컨트롤 식별에 쓰지 않는다(WCAG 1.4.11
   비적용 대상).
-- **border (#6b78a6):** 입력·버튼처럼 경계가 컨트롤을 식별하는 곳 전용.
+- **border (#7286bd):** 입력·버튼처럼 경계가 컨트롤을 식별하는 곳 전용.
   배경 대비 3:1 이상을 유지해야 한다.
-- **text (#e8e6df):** 양피지 상아색. 순백을 쓰지 않는 이유는 어둠 속에서
+- **text (#ede8da):** 양피지 상아색. 순백을 쓰지 않는 이유는 어둠 속에서
   눈부심 없이 오래 읽기 위해서다.
-- **muted (#a8b0c4):** 메타데이터·지표·보조 설명. "물러서는 것들"의 색.
-- **primary = accent (#e0b055) / on-accent (#201a0d):** 등불의 금색. 이 시스템의
+- **muted (#a9b3cd):** 메타데이터·지표·보조 설명. "물러서는 것들"의 색.
+- **primary = accent (#e7b45a) / on-accent (#221a09):** 등불의 금색. 이 시스템의
   primary이자 유일한 브랜드색. 주 행동 버튼, 활성 탭, 진행률 채움에만 쓴다.
   넓은 면적의 배경으로 쓰지 않는다. 구현(`--color-accent`)에서는 accent라는
   이름을 쓴다.
-- **info (#9dbcec):** 장절 표기·모드 태그. 차분한 하늘빛으로 본문과 구분한다.
-- **ok (#7cc78a) / warn (#e0ae4e) / bad (#e58c81):** 채점 결과 전용 상태색.
+- **info (#a2c2f2):** 장절 표기·모드 태그. 차분한 하늘빛으로 본문과 구분한다.
+- **ok (#82cd90) / warn (#e3b258) / bad (#ec9186):** 채점 결과 전용 상태색.
   diff 점수와 오답 표시 밖에서는 쓰지 않는다.
 
 **라이트 팔레트는 다크의 반전이다** — Navi→Ivan 역철의 시각 번역. 잉크와 종이가
-자리를 바꾼다: bg `#f4f2ec`(따뜻한 종이) / panel `#ffffff` / panel-alt
-`#eee9dd` / line `#a99f88` / border `#8a7f66` / text `#26293a`(남빛 잉크) /
-muted `#5b6070` / accent `#8a5f10`(깊은 금) / on-accent `#fffbef` / info
-`#2f4d7d` / ok `#2f6b3c` / warn `#7d5a10` / bad `#91362c`. 새 색을 더할 때는
+자리를 바꾼다: bg `#f7f1e3`(따뜻한 종이) / panel `#fffdf6` / panel-alt
+`#f0e7d2` / line `#a2977c` / border `#837455` / text `#222b45`(남빛 잉크) /
+muted `#565f78` / accent `#8a5a09`(깊은 금) / on-accent `#fffaee` / info
+`#2c4b80` / ok `#2d6a3b` / warn `#7a570c` / bad `#90352a`. 새 색을 더할 때는
 반드시 두 팔레트에 쌍으로 더하고, 의미 토큰(`--color-*`)을 통해서만 참조한다.
 
 ## Typography

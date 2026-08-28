@@ -11,36 +11,36 @@
 
 :root {
   /* ── 팔레트: 다크 ───────────────────────────────────────── */
-  --palette-dark-bg: #10141f;
-  --palette-dark-panel: #1a2130;
-  --palette-dark-panel2: #232c40;
+  --palette-dark-bg: #0b1120;
+  --palette-dark-panel: #151f36;
+  --palette-dark-panel2: #1f2c4c;
   /* line: 장식용 헤어라인 구분선 (WCAG 1.4.11 비적용 — 컨트롤 식별에 필요하지 않음) */
-  --palette-dark-line: #46527a;
+  --palette-dark-line: #48588f;
   /* border: 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳 (3:1 이상 필요) */
-  --palette-dark-border: #6b78a6;
-  --palette-dark-text: #e8e6df;
-  --palette-dark-muted: #a8b0c4;
-  --palette-dark-accent: #e0b055;
-  --palette-dark-accent-text: #201a0d;
-  --palette-dark-blue: #9dbcec;
-  --palette-dark-ok: #7cc78a;
-  --palette-dark-warn: #e0ae4e;
-  --palette-dark-bad: #e58c81;
+  --palette-dark-border: #7286bd;
+  --palette-dark-text: #ede8da;
+  --palette-dark-muted: #a9b3cd;
+  --palette-dark-accent: #e7b45a;
+  --palette-dark-accent-text: #221a09;
+  --palette-dark-blue: #a2c2f2;
+  --palette-dark-ok: #82cd90;
+  --palette-dark-warn: #e3b258;
+  --palette-dark-bad: #ec9186;
 
   /* ── 팔레트: 라이트 ─────────────────────────────────────── */
-  --palette-light-bg: #f4f2ec;
-  --palette-light-panel: #ffffff;
-  --palette-light-panel2: #eee9dd;
-  --palette-light-line: #a99f88;
-  --palette-light-border: #8a7f66;
-  --palette-light-text: #26293a;
-  --palette-light-muted: #5b6070;
-  --palette-light-accent: #8a5f10;
-  --palette-light-accent-text: #fffbef;
-  --palette-light-blue: #2f4d7d;
-  --palette-light-ok: #2f6b3c;
-  --palette-light-warn: #7d5a10;
-  --palette-light-bad: #91362c;
+  --palette-light-bg: #f7f1e3;
+  --palette-light-panel: #fffdf6;
+  --palette-light-panel2: #f0e7d2;
+  --palette-light-line: #a2977c;
+  --palette-light-border: #837455;
+  --palette-light-text: #222b45;
+  --palette-light-muted: #565f78;
+  --palette-light-accent: #8a5a09;
+  --palette-light-accent-text: #fffaee;
+  --palette-light-blue: #2c4b80;
+  --palette-light-ok: #2d6a3b;
+  --palette-light-warn: #7a570c;
+  --palette-light-bad: #90352a;
 
   /* ── 의미 토큰: 기본은 다크 ─────────────────────────────── */
   color-scheme: dark;
