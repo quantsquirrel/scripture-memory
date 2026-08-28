@@ -1,10 +1,10 @@
 import { Browse } from './Browse'
 import { Home } from './Home'
 import { Learn } from './Learn'
+import { Meditate } from './Meditate'
 import { Review } from './Review'
 import { type Route, TABS, toHash, useRoute } from './router'
 import { Settings } from './Settings'
-import { Stats } from './Stats'
 
 export default function App() {
   const { route, navigate } = useRoute()
@@ -100,8 +100,8 @@ function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) =
           }}
         />
       )
-    case 'stats':
-      return <Stats />
+    case 'meditate':
+      return <Meditate />
     case 'settings':
       return <Settings />
   }

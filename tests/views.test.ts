@@ -10,7 +10,7 @@ describe('hash 라우팅', () => {
     { name: 'home' },
     { name: 'review' },
     { name: 'browse' },
-    { name: 'stats' },
+    { name: 'meditate' },
     { name: 'settings' },
     { name: 'learn', verseId: 'AS1a' },
   ]
@@ -25,6 +25,10 @@ describe('hash 라우팅', () => {
     for (const route of routes) {
       expect(toHash(route).startsWith('#/')).toBe(true)
     }
+  })
+
+  it('옛 #/stats 링크는 묵상 탭으로 간다 (탭 이름이 바뀌어도 저장된 링크가 살아 있게)', () => {
+    expect(parseHash('#/stats')).toEqual({ name: 'meditate' })
   })
 
   it('구절 id를 인코딩해 특수문자가 섞여도 왕복한다', () => {

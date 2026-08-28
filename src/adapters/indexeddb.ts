@@ -235,6 +235,12 @@ class IdbSettings implements SettingsStore {
   setSyncGistId = (v: string): Promise<void> => this.write('syncGistId', v)
   lastSyncAt = (): Promise<string | undefined> => this.read('lastSyncAt', isString)
   setLastSyncAt = (v: string): Promise<void> => this.write('lastSyncAt', v)
+  qtPosition = (): Promise<string | undefined> => this.read('qtPosition', isString)
+  setQtPosition = (v: string): Promise<void> => this.write('qtPosition', v)
+  qtPositionDate = (): Promise<string | undefined> => this.read('qtPositionDate', isIsoDate)
+  setQtPositionDate = (v: string): Promise<void> => this.write('qtPositionDate', v)
+  meditationLog = (): Promise<string | undefined> => this.read('meditationLog', isString)
+  setMeditationLog = (v: string): Promise<void> => this.write('meditationLog', v)
 }
 
 class IdbStore implements Store {

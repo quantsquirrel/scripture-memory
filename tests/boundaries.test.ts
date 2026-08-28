@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MemoryStore } from '../src/adapters/memory'
 import * as appIndex from '../src/app'
+import { loadMeditation, rememberMeditation, setQtPosition } from '../src/app/meditation'
 import { submitReview } from '../src/app/review'
 import type { ReviewMode, StoredCard } from '../src/domain/card'
 import { required } from '../src/domain/invariant'
@@ -330,6 +331,9 @@ describe('경계 4 — 오프라인 완결', () => {
       'src/domain/goal.ts',
       'src/app/review.ts',
       'src/app/queries.ts',
+      'src/app/meditation.ts',
+      'src/domain/meditation.ts',
+      'src/domain/qt.ts',
       'src/adapters/indexeddb.ts',
       'src/adapters/memory.ts',
     ]) {
@@ -392,5 +396,67 @@ describe('경계 4 — 오프라인 완결', () => {
     expect((await other.cards.all()).map((c) => c.key).sort()).toEqual(
       bundle.cards.map((c: StoredCard) => c.key).sort(),
     )
+  })
+})
+
+describe('묵상 — 경계를 건드리지 않는 읽기 전용 기능', () => {
+  it('묵상 경로에서는 FSRS 등급도 증거도 만들어지지 않는다 (경계 1)', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    const before = {
+      cards: (await store.cards.all())
+        .map((c) => `${c.key}:${c.card.due}:${c.card.reps}`)
+        .sort(),
+      reviews: await store.reviews.count(),
+    }
+    // 화면을 여는 것과 같은 순서로: 오늘 것을 읽고, 보여준 구절을 기록한다
+    const data = await loadMeditation(store, NOW)
+    await rememberMeditation(store, data.dateKey, data.result.pick?.verseId ?? 'AS1a')
+    await setQtPosition(store, { book: '고전', chapter: 15 }, data.dateKey)
+    await loadMeditation(store, NOW)
+
+    expect(
+      (await store.cards.all()).map((c) => `${c.key}:${c.card.due}:${c.card.reps}`).sort(),
+    ).toEqual(before.cards)
+    expect(await store.reviews.count()).toBe(before.reviews)
+  })
+
+  it('묵상 모듈은 스케줄러·복습 경로를 아예 import하지 않는다', () => {
+    for (const rel of [
+      'src/domain/meditation.ts',
+      'src/domain/qt.ts',
+      'src/app/meditation.ts',
+    ]) {
+      const src = read(rel)
+      expect(src, `${rel}가 스케줄러를 import한다`).not.toMatch(/from '.*domain\/scheduler'/)
+      expect(src, `${rel}가 복습 경로를 import한다`).not.toMatch(/from '.*app\/review'/)
+    }
+  })
+
+  it('1MB짜리 후보표는 동적 import로만 닿는다 (첫 화면이 무거워지지 않게)', () => {
+    // 정적으로 import하면 메인 번들에 섞여 홈·복습 화면까지 느려진다.
+    // Gist를 동적 import로 떼어 둔 것과 같은 이유이며, 같은 방식으로 지킨다.
+    for (const rel of [
+      'src/domain/meditation.ts',
+      'src/app/meditation.ts',
+      'src/app/index.ts',
+      'src/views/hooks.ts',
+      'src/views/App.tsx',
+      'src/views/Meditate.tsx',
+    ]) {
+      expect(read(rel), `${rel}가 후보표를 정적으로 import한다`).not.toMatch(
+        /^import .*xrefCandidates\.json/m,
+      )
+    }
+    expect(read('src/data/xrefCandidates.ts')).toMatch(/import\('\.\/xrefCandidates\.json'\)/)
+  })
+
+  it('오프라인에서도 오늘의 말씀이 나온다 (저장소와 동봉 데이터만으로)', async () => {
+    const store = new MemoryStore()
+    const data = await loadMeditation(store, new Date('2026-08-28T09:00:00+09:00'))
+    expect(data.planDay).toBe(11)
+    expect(data.planLabel).toBe('창 33-35')
+    expect(data.result.pick).not.toBeNull()
+    expect(data.result.pick?.chains.length).toBeGreaterThan(0)
   })
 })

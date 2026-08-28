@@ -1,7 +1,9 @@
 import { idbStore } from '../adapters/indexeddb'
 import type { ReviewEntry, ReviewEvidence, StoredCard } from '../domain/card'
 import type { LadderCommand, LadderOutcome, LadderStep, LearnProgress } from '../domain/ladder'
+import type { QtPosition } from '../domain/qt'
 import type { ExportBundle, SettingsStore, Store } from '../ports/repositories'
+import * as meditation from './meditation'
 import * as review from './review'
 import { notifying } from './revision'
 
@@ -78,3 +80,12 @@ export const getSyncGistId = (): Promise<string | undefined> => settings.syncGis
 export const setSyncGistId = notifying((v: string): Promise<void> => settings.setSyncGistId(v))
 export const getLastSyncAt = (): Promise<string | undefined> => settings.lastSyncAt()
 export const setLastSyncAt = notifying((v: string): Promise<void> => settings.setLastSyncAt(v))
+
+// 묵상 — 오늘 읽은 본문에서 고른 한 구절과 그 참조 사슬
+export const loadMeditation = (now?: Date): Promise<meditation.MeditationData> =>
+  meditation.loadMeditation(store, now)
+export const rememberMeditation = (dateKey: string, verseId: string): Promise<void> =>
+  meditation.rememberMeditation(store, dateKey, verseId)
+export const setQtPosition = notifying((position: QtPosition, dateKey: string): Promise<void> =>
+  meditation.setQtPosition(store, position, dateKey),
+)
