@@ -162,29 +162,38 @@ export function MeditationVersePanel({
 export function ChainPanel({
   chains,
   destination,
+  fromLabel,
   textOf,
 }: {
   chains: readonly Chain[]
   /** 도착점(묵상 구절)의 장절 — 사슬마다 되풀이하지 않고 아래에 한 번만 적는다 */
   destination: string
+  /** 사슬이 시작된 본문 ('고전 15') — 통독과 QT 중 어느 쪽인지 밝힌다 */
+  fromLabel: string
   textOf: (ref: string) => string | null
 }) {
   if (chains.length === 0) return null
   return (
     <section className="panel">
-      <h2>여기에 이르기까지</h2>
+      {/*
+        제목이 목록의 방향과 같아야 한다. "여기에 이르기까지"는 바로 위 묵상
+        구절을 "여기"로 읽게 만드는데, 정작 목록에 적힌 것은 오늘 읽은 자리들이다.
+      */}
+      <h2>이 말씀을 가리키는 자리</h2>
       <p className="muted small">
-        오늘 읽은 본문의 이 자리들이 그 말씀을 가리킵니다 — 성경이 스스로 서로를 비추며 이어
-        놓은 길입니다.
+        오늘 읽은 <strong>{fromLabel}</strong>의 이 자리들에서 이어집니다 — 성경이 스스로 서로를
+        비추며 놓아 둔 관주(貫珠)의 길입니다.
       </p>
       <ol className="chain-list">
-        {chains.map((chain) => {
+        {chains.map((chain, order) => {
           // 마지막 노드는 늘 같은 도착점이라 줄마다 되풀이하지 않는다
           const steps = chain.nodes.slice(0, -1)
           return (
             <li
               key={chain.nodes.join('>')}
-              className="chain"
+              // 세 줄이 동등해 보이면 아래 화살표가 어디서 출발했는지 모호해진다.
+              // 가장 강하게 이끈 한 줄만 승격한다.
+              className={order === 0 ? 'chain chain-primary' : 'chain'}
               // 화살표는 aria-hidden이라 읽히지 않는다 — 관계를 문장으로 알려준다
               aria-label={`${steps.join(', 이어서 ')} 에서 ${destination}`}
             >
@@ -196,7 +205,10 @@ export function ChainPanel({
                         →
                       </span>
                     )}
-                    <span className={i === 0 ? 'chain-node chain-seed' : 'chain-node'}>
+                    {/* 경유 지점은 오늘 읽은 자리가 아니므로 한 단계 낮춘다 */}
+                    <span
+                      className={i === 0 ? 'chain-node chain-seed' : 'chain-node chain-via'}
+                    >
                       {node}
                     </span>
                   </span>
@@ -235,7 +247,7 @@ export function AlternatesPanel({ rows }: { rows: readonly AlternateRow[] }) {
   if (rows.length === 0) return null
   return (
     <details className="tech-details">
-      <summary>함께 떠오른 말씀</summary>
+      <summary>함께 가리키는 말씀</summary>
       {rows.map((r) => (
         <div key={r.verseId} className="weak-item">
           <div className="weak-head">
@@ -247,7 +259,7 @@ export function AlternatesPanel({ rows }: { rows: readonly AlternateRow[] }) {
         </div>
       ))}
       <p className="muted small">
-        오늘 본문이 함께 불러낸 말씀들입니다 — 위의 한 구절이 마음에 닿지 않으면 여기서
+        오늘 본문이 함께 가리키는 말씀들입니다 — 위의 한 구절이 마음에 닿지 않으면 여기서
         찾아보세요.
       </p>
     </details>

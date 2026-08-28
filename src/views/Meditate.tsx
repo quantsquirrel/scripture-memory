@@ -89,7 +89,12 @@ export function Meditate() {
             topicTitle={topicOf(verse).title}
             collection={collectionOf(verse).short}
           />
-          <ChainPanel chains={chains} destination={verse.refAbbr} textOf={corpusTextFor} />
+          <ChainPanel
+            chains={chains}
+            destination={verse.refAbbr}
+            fromLabel={pick.from.label}
+            textOf={corpusTextFor}
+          />
           <AlternatesPanel rows={alternates} />
         </>
       ) : (
