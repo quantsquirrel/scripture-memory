@@ -23,9 +23,16 @@ def fetch(code, chap):
         return r.read().decode("utf-8", "replace")
 
 def parse(h):
-    """{절번호: 본문} — 각주 div/마커 제거, 절 경계는 </font></span>"""
+    """{절번호: 본문} — 각주 div/마커 제거, 절 경계는 </font></span>
+
+    절 번호가 `4-5`인 합본 절은 여기서 버린다. 이 스크립트가 뽑는 TMS 66절에는
+    그런 자리가 없어서 무해하지만, 전권을 뽑으려면 19개 장 40절이 조용히
+    사라진다 — 전권 추출은 합본까지 잡는 bsk_fetch.py를 쓸 것.
+    """
     out = {}
-    for m in re.finditer(r'<span class="number">(\d+)&nbsp;.*?</span>(.*?)</font></span>', h, re.S):
+    for m in re.finditer(r'<span class="number">(\d+(?:-\d+)?)&nbsp;.*?</span>(.*?)</font></span>', h, re.S):
+        if "-" in m.group(1):
+            continue
         n = int(m.group(1))
         seg = m.group(2)
         seg = re.sub(r"<div[^>]*>.*?</div>", "", seg, flags=re.S)   # 각주 팝업 본문

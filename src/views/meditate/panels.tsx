@@ -3,11 +3,24 @@ import { useState } from 'react'
 import { BOOK_BY_ABBR, BOOKS } from '../../data/canon'
 import type { VerseEntry } from '../../data/verses'
 import type { QtPosition } from '../../domain/qt'
+import type { Passage } from '../../domain/scripture'
 
 /** 사슬 한 줄: [오늘 읽은 절, …거쳐온 참조, 묵상 구절] */
 export interface Chain {
   nodes: readonly string[]
 }
+
+/**
+ * 사슬에 곁들이는 본문의 길이.
+ *
+ * 사슬 세 줄 × 자리 두 곳이면 여섯 줄이 전부 본문으로 찬다. 여기서 눈이
+ * 지치면 정작 위의 묵상 구절로 돌아가지 못한다 — 곁들임은 곁들임에 그쳐야
+ * 하므로 한 줄 남짓에서 끊는다.
+ */
+const CHAIN_TEXT_MAX = 44
+
+const clip = (text: string): string =>
+  text.length > CHAIN_TEXT_MAX ? `${text.slice(0, CHAIN_TEXT_MAX)}…` : text
 
 export function TodayReadingPanel({
   planDay,
@@ -154,10 +167,13 @@ export function MeditationVersePanel({
 /**
  * 참조 사슬.
  *
- * 본문을 함께 싣지 못하는 것은 한계가 아니라 관주(貫珠)의 방식이다 — 종이
- * 성경의 관주도 장절만 가리키고, 펼쳐 보는 일은 읽는 사람의 몫으로 남긴다.
- * 앱이 가진 본문은 검증된 암송 495구절뿐이라(하드 경계: 본문 정본), 가진
- * 것만 보여주고 나머지는 정직하게 장절로 남긴다.
+ * 종이 성경의 관주(貫珠)는 장절만 가리키고 펼쳐 보는 일을 읽는 사람의 몫으로
+ * 남긴다. 여기서는 장절을 먼저 보이고 본문을 그 아래 곁들인다 — 관주의 순서를
+ * 지키되 펼치는 수고는 덜어 준다.
+ *
+ * 본문은 정본 등급이 두 단이다. 495구절에 있는 자리는 사용자가 실제로 외운
+ * 그 문장(그 띄어쓰기)이 나오고, 나머지는 개역한글 전문에서 온다. 우선순위는
+ * `domain/scripture.ts`의 textOf에 있다.
  */
 export function ChainPanel({
   chains,
@@ -170,7 +186,7 @@ export function ChainPanel({
   destination: string
   /** 사슬이 시작된 본문 ('고전 15') — 통독과 QT 중 어느 쪽인지 밝힌다 */
   fromLabel: string
-  textOf: (ref: string) => string | null
+  textOf: (ref: string) => Passage | null
 }) {
   if (chains.length === 0) return null
   return (
@@ -215,10 +231,19 @@ export function ChainPanel({
                 ))}
               </span>
               {steps.map((node) => {
-                const text = textOf(node)
-                return text === null ? null : (
+                const passage = textOf(node)
+                if (passage === null) return null
+                /*
+                  이제 대개 모든 자리에 본문이 붙는다. 자리가 여럿이면 어느
+                  본문이 어느 자리의 것인지 장절 없이는 알 수 없고, 펼친 범위가
+                  물은 자리보다 넓으면(사 7:9 → 사 7:8-9) 그 사실도 밝혀야 한다.
+                  둘 다 아니면 바로 위에 적힌 장절을 되풀이할 뿐이라 생략한다.
+                */
+                const needsRef = steps.length > 1 || passage.ref !== node
+                return (
                   <span key={`t-${node}`} className="chain-text muted small">
-                    {text}
+                    {needsRef && <span className="chain-text-ref">{passage.ref}</span>}
+                    {clip(passage.text)}
                   </span>
                 )
               })}

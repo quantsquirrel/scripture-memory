@@ -62,6 +62,8 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
 - 빌드: `npm run build` · E2E: `npm run e2e`
 - 본문 정본 대조: `npm run verify:data` · 명도비 감사: `npm run audit:contrast`
 - 묵상 후보표 재생성: `npm run build:xref -- <cross_references.txt>`
+- 개역한글 전문 재취득: `npm run fetch:krv -- <캐시경로.json>` (약 20분)
+- 개역한글 전문 재생성: `npm run build:krv -- <캐시경로.json>` (게이트 4개 내장)
 - 365일 묵상 구절 미리보기: `npm run preview:meditation -- [시작일차] [개수]`
 
 하드 경계 회귀 테스트는 `tests/boundaries.test.ts`에 있다. 경계를 건드리는
@@ -70,6 +72,8 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
 ## 데이터
 
 - 본문 정본: 대한성서공회(bskorea) 개역한글판. GitHub의 KRV 소스는 결함이 있어 쓰지 않는다.
+  bible2ppt·obsidian·getbible은 전부 골든 495 대조에서 떨어졌다 (각각 470·464·461/495).
+  bskorea 직접 추출만 무보정 495/495다 — 다시 조사하지 말 것.
 - 성경 데이터: src/data/verses.json (학습 권장 순서로 정렬됨)
 - 원문 소스: scripts/data/tms180.txt(장절+본문), scripts/data/dep242.txt(장절만).
   두 파일은 개역한글로 교정했다 — '-ㄹ찌'가 개역한글, '-ㄹ지'가 개역개정이다.
@@ -95,6 +99,27 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
 - 후보표는 1MB가 넘어 **동적 import로만** 닿는다(`src/data/xrefCandidates.ts`).
   정적으로 import하면 홈·복습 화면까지 무거워진다 — Gist를 떼어 둔 것과 같은 이유이며,
   `tests/boundaries.test.ts`가 지킨다.
+- **개역한글 전문**: `src/data/fullText.json` (66권 1189장 31,102절, 4.5MB).
+  **정본 등급은 두 단이고 섞지 않는다.** 495구절(verses.json)은 "외울 본문" —
+  채점·학습·표시의 정본이고, 전문은 "펼쳐 볼 본문" — 사슬 표시 전용이다.
+  **겹치는 자리는 언제나 495가 이긴다**(`src/domain/scripture.ts`의 `textOf`).
+  전문으로 495를 덮어쓰지 말 것 — 띄어쓰기가 바뀌면 `firstLetter.ts`의 힌트 칸 수가
+  달라져 과거 `ReviewEntry.peeks` 증거가 비교 불가능해진다. 전문을 `gradeTyping`의
+  target으로 넘기는 경로도 만들지 말 것(경계 1).
+- 합본 절(개역한글은 사 7:8-9처럼 두 절을 한 덩어리로 인쇄한다, 19개 장 40절)은
+  쪼개지 않는다. 첫 절 자리에 본문을 두고 이어지는 자리를 null로 남기며, 사슬이 뒤 절을
+  가리키면 실제 범위를 밝혀 보여준다. 사슬 노드 21개가 이 자리를 가리킨다.
+- 전문 재생성: `npm run fetch:krv -- <캐시경로>`(약 20분) → `npm run build:krv -- <캐시경로>`.
+  빌더가 게이트 4개(구조·골든 495 전수 대조·역본 판별·사슬 해석)를 통과해야만 파일을
+  쓴다(fail-closed). **게이트 2를 예외 목록으로 우회하지 말 것** — 495/495가 안 나오면
+  추출이나 파싱이 잘못된 것이다. 같은 검증을 `tests/fullText.test.ts`가 CI에서 다시 한다.
+- **개역개정판(1998)은 보호 중인 저작물이다.** 혼입은 저작권 문제가 된다 — 역본 판별
+  게이트를 지우지 말 것. `그들`·`따라`·`저희`·`좇아`로는 판정하지 않는다(개역한글도
+  '그들'·'따라'를 쓴다). 판별자는 `나병/맹인/파수꾼/일꾼/막론하고/청하건대/일찍이/침례`
+  검출과 `-ㄹ찌`(개역한글) 대 `-ㄹ지`(개역개정) 어미 비율이다.
+- 전문은 4.5MB라 **동적 import로만** 닿고(`src/data/fullText.ts`), workbox의
+  `maximumFileSizeToCacheInBytes`를 5MB로 올려 precache에 통째로 넣는다. 런타임 캐시로
+  바꾸지 말 것 — 365일 중 63일(17.3%)이 "처음 보는 권"이라 그만큼 오프라인이 깨진다.
 - **묵상은 읽기 전용이다.** FSRS 등급도 ReviewEntry도 만들지 않는다(경계 1). 남기는
   것은 "오늘 무엇을 보여줬는지"뿐이고, 그것은 export 번들에 들어가지 않는 파생 상태다.
 - 알고리즘 파라미터(`scripts/data/build_xref.ts`의 `P`)를 건드렸다면
