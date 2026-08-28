@@ -1,5 +1,4 @@
 import type { GoalInfo } from '../../domain/goal'
-import { EXAM_RETENTION } from '../../domain/goal'
 import { formatInterval } from '../../domain/scheduler'
 
 /** 프레젠테이션: props만 받는 순수 함수 — 저장소도 시각도 직접 읽지 않는다 */
@@ -11,7 +10,6 @@ export function TodayReviewPanel({
   todayReviews,
   nextDue,
   now,
-  examActive,
   onReview,
 }: {
   due: number
@@ -21,7 +19,6 @@ export function TodayReviewPanel({
   todayReviews: number
   nextDue: string | null
   now: number
-  examActive: boolean
   onReview: () => void
 }) {
   const untilNext = nextDue === null ? null : formatInterval(new Date(nextDue).getTime() - now)
@@ -56,12 +53,6 @@ export function TodayReviewPanel({
           {todayReviews > 0 ? `오늘 ${todayReviews}회 복습 완료! ` : ''}
           대기 중인 카드가 없습니다.
           {untilNext !== null && ` 다음 복습: ${untilNext} 후`}
-        </p>
-      )}
-      {examActive && (
-        <p className="muted small">
-          시험 모드 — 목표 기억률 {Math.round(EXAM_RETENTION * 100)}% 기준으로 복습 간격을 짧게
-          잡는 중
         </p>
       )}
     </section>

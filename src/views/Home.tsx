@@ -46,7 +46,6 @@ export function Home({
         todayReviews={data.todayReviews}
         nextDue={data.nextDue}
         now={data.now}
-        examActive={data.examActive}
         onReview={onReview}
       />
       <NewVersePanel

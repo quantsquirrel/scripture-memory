@@ -7,17 +7,8 @@ import { retrievabilityAt, State } from './scheduler'
 export const DEFAULT_GOAL_DATE = '2026-08-26'
 /** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
 export const DEFAULT_REVIEW_BUFFER_DAYS = 7
-/** 시험 준비 판정 기준(시험일 예측 기억률)이자 시험 모드의 스케줄러 목표 기억률 */
+/** 시험 준비 판정 기준: 목표일 예측 기억률이 이 값 이상이면 준비된 구절로 센다 */
 export const EXAM_RETENTION = 0.95
-
-/** 시험 모드 활성 판정: 설정이 켜져 있고 시험일(목표일)이 지나지 않았을 때만. 지나면 자동 해제. */
-export function examModeActive(
-  enabled: boolean,
-  goalDate: string,
-  now: Date = new Date(),
-): boolean {
-  return enabled && now.getTime() <= new Date(`${goalDate}T23:59:59`).getTime()
-}
 
 /** 목표 범위: DEP242 완결까지. 180구절 확장은 목표일 페이싱에 포함하지 않는다. */
 const DEP_ORDER = required(

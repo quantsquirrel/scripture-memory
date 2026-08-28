@@ -2,6 +2,7 @@ import type { StatsData } from '../../app/queries'
 import { BulletBar, ForecastBars } from '../../components/StatCharts'
 import { type Direction, DIRECTION_LABEL } from '../../domain/card'
 import { EXAM_RETENTION } from '../../domain/goal'
+import { DEFAULT_RETENTION } from '../../domain/scheduler'
 import { pct } from './reflect'
 
 /** "YYYY-MM-DD" → "M/D" */
@@ -16,7 +17,7 @@ function calibrationVerdict(gapPp: number): string {
   return '자가 채점이 객관 채점과 잘 맞습니다'
 }
 
-function MemoryStateSection({ d, retentionTarget }: { d: StatsData; retentionTarget: number }) {
+function MemoryStateSection({ d }: { d: StatsData }) {
   return (
     <>
       <h3>지금 기억 상태</h3>
@@ -26,10 +27,10 @@ function MemoryStateSection({ d, retentionTarget }: { d: StatsData; retentionTar
             지금 전부 물어보면 <strong className="big-number">{d.knowledge.estKnown}</strong>
             <span className="muted">/{d.knowledge.graded}장</span> 정답 예상
           </p>
-          <BulletBar rate={d.knowledge.avgRetrievability} target={retentionTarget} />
+          <BulletBar rate={d.knowledge.avgRetrievability} target={DEFAULT_RETENTION} />
           <p className="muted small">
             평균 예측 기억률 {pct(d.knowledge.avgRetrievability)} (눈금 = 목표{' '}
-            {pct(retentionTarget)})
+            {pct(DEFAULT_RETENTION)})
           </p>
         </>
       ) : (
@@ -87,15 +88,15 @@ function MaturitySection({ d }: { d: StatsData }) {
   )
 }
 
-function RetentionSection({ d, retentionTarget }: { d: StatsData; retentionTarget: number }) {
+function RetentionSection({ d }: { d: StatsData }) {
   return (
     <>
       <h3>복습 성과</h3>
       {d.retention7.rate !== null && (
         <>
-          <BulletBar rate={d.retention7.rate} target={retentionTarget} />
+          <BulletBar rate={d.retention7.rate} target={DEFAULT_RETENTION} />
           <p className="muted small">
-            지난 7일 기억률 {pct(d.retention7.rate)} (눈금 = 목표 {pct(retentionTarget)}) ·
+            지난 7일 기억률 {pct(d.retention7.rate)} (눈금 = 목표 {pct(DEFAULT_RETENTION)}) ·
             카드별 하루 첫 시도 {d.retention7.total}회 기준
           </p>
         </>
@@ -245,19 +246,17 @@ function PaceSection({ d, learnEndLabel }: { d: StatsData; learnEndLabel: string
  */
 export function TechDetails({
   d,
-  retentionTarget,
   learnEndLabel,
 }: {
   d: StatsData
-  retentionTarget: number
   learnEndLabel: string
 }) {
   return (
     <details className="tech-details">
       <summary>훈련 상세 지표 — 암기 훈련을 점검하고 싶을 때</summary>
-      <MemoryStateSection d={d} retentionTarget={retentionTarget} />
+      <MemoryStateSection d={d} />
       <MaturitySection d={d} />
-      <RetentionSection d={d} retentionTarget={retentionTarget} />
+      <RetentionSection d={d} />
       <CalibrationSection d={d} />
       <LoadSection d={d} />
       <PaceSection d={d} learnEndLabel={learnEndLabel} />

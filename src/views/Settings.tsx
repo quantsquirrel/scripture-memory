@@ -2,11 +2,9 @@ import { useRef, useState } from 'react'
 
 import { getTheme, setTheme, type Theme } from '../adapters/theme'
 import {
-  applySchedulerSettings,
   exportAll,
   importAll,
   resetAll,
-  setExamMode as persistExamMode,
   setGoalBufferDays as persistGoalBufferDays,
   setGoalDate as persistGoalDate,
   setLastSyncAt as persistLastSyncAt,
@@ -37,14 +35,7 @@ export function Settings() {
 
   const saveGoalDate = async (d: string) => {
     await persistGoalDate(d)
-    await applySchedulerSettings() // 시험 모드 활성 판정이 목표일에 걸려 있음
     setMsg('목표일을 저장했습니다.')
-  }
-
-  const saveExamMode = async (on: boolean) => {
-    await persistExamMode(on)
-    await applySchedulerSettings()
-    setMsg(on ? '시험 모드를 켰습니다.' : '시험 모드를 껐습니다.')
   }
 
   const saveBuffer = async (n: number) => {
@@ -116,10 +107,8 @@ export function Settings() {
       <GoalPanel
         goalDate={data.goalDate}
         bufferDays={data.bufferDays}
-        examMode={data.examMode}
         onGoalDate={(d) => void saveGoalDate(d)}
         onBufferDays={(n) => void saveBuffer(n)}
-        onExamMode={(on) => void saveExamMode(on)}
       />
 
       <SyncPanel

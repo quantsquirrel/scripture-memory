@@ -7,14 +7,11 @@ import { required } from '../src/domain/invariant'
 import { parseRef } from '../src/domain/ref'
 import {
   assertRated,
-  DEFAULT_RETENTION,
   formatInterval,
-  getRequestRetention,
   intervalPreview,
   newCard,
   rateCard,
   retrievabilityAt,
-  setRequestRetention,
   toState,
 } from '../src/domain/scheduler'
 import { dailyPick, dueForecast, reviewHistory } from '../src/domain/stats'
@@ -127,16 +124,6 @@ describe('스케줄러 보조 함수', () => {
     expect(now).toBeGreaterThanOrEqual(0)
     expect(now).toBeLessThanOrEqual(1)
     expect(later).toBeLessThanOrEqual(now)
-  })
-
-  it('setRequestRetention은 같은 값이면 아무 일도 하지 않는다', () => {
-    const before = getRequestRetention()
-    setRequestRetention(before)
-    expect(getRequestRetention()).toBe(before)
-    setRequestRetention(0.95)
-    expect(getRequestRetention()).toBe(0.95)
-    setRequestRetention(DEFAULT_RETENTION)
-    expect(getRequestRetention()).toBe(DEFAULT_RETENTION)
   })
 
   it('toState는 알 수 없는 상태 숫자를 거부한다 (손상된 데이터 차단)', () => {

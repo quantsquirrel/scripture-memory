@@ -43,8 +43,6 @@ export interface SettingsStore {
   setGoalDate(v: string): Promise<void>
   goalBufferDays(): Promise<number | undefined>
   setGoalBufferDays(v: number): Promise<void>
-  examMode(): Promise<boolean | undefined>
-  setExamMode(v: boolean): Promise<void>
   syncToken(): Promise<string | undefined>
   setSyncToken(v: string): Promise<void>
   syncGistId(): Promise<string | undefined>

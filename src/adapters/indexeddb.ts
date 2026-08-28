@@ -199,10 +199,6 @@ function isString(v: unknown): v is string {
   return typeof v === 'string'
 }
 
-function isBoolean(v: unknown): v is boolean {
-  return typeof v === 'boolean'
-}
-
 function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
@@ -233,8 +229,6 @@ class IdbSettings implements SettingsStore {
   goalBufferDays = (): Promise<number | undefined> =>
     this.read('goalBufferDays', isFiniteNumber)
   setGoalBufferDays = (v: number): Promise<void> => this.write('goalBufferDays', v)
-  examMode = (): Promise<boolean | undefined> => this.read('examMode', isBoolean)
-  setExamMode = (v: boolean): Promise<void> => this.write('examMode', v)
   syncToken = (): Promise<string | undefined> => this.read('syncToken', isString)
   setSyncToken = (v: string): Promise<void> => this.write('syncToken', v)
   syncGistId = (): Promise<string | undefined> => this.read('syncGistId', isString)
