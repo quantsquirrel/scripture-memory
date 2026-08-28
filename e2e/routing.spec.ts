@@ -12,7 +12,7 @@ const BASE = '/scripture-memory/'
 test.describe('hash 라우팅', () => {
   test('탭 이동이 URL에 반영되고 뒤로가기·앞으로가기가 동작한다', async ({ page }) => {
     await page.goto(BASE)
-    await expect(page.getByRole('heading', { name: '말씀암송' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ivan' })).toBeVisible()
 
     await page.getByRole('link', { name: '목록' }).click()
     await expect(page).toHaveURL(/#\/browse$/)
@@ -124,7 +124,7 @@ test.describe('오프라인 완결', () => {
 
     await context.setOffline(true)
     await page.reload()
-    await expect(page.getByRole('heading', { name: '말씀암송' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Ivan' })).toBeVisible()
     await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
 
     // 오프라인에서도 이동과 본문 표시가 된다 (본문은 번들에 포함)

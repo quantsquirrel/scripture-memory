@@ -12,8 +12,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>말씀암송</h1>
-        <span className="muted small">주제별 성경암송 · 개역한글</span>
+        {/* 워드마크: i의 점이 등불(악센트 금색) — DESIGN.md Overview의 시각 은유 */}
+        <h1 className="brand" aria-label="Ivan">
+          <span aria-hidden="true">
+            <span className="brand-i">ı</span>van
+          </span>
+        </h1>
+        <span className="muted small">말씀암송 · 개역한글</span>
       </header>
 
       {/*
