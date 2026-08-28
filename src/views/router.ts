@@ -15,7 +15,7 @@ export type Route =
   | { name: 'review' }
   | { name: 'learn'; verseId: string }
   | { name: 'browse' }
-  | { name: 'stats' }
+  | { name: 'meditate' }
   | { name: 'settings' }
 
 export type RouteName = Route['name']
@@ -24,7 +24,7 @@ export type RouteName = Route['name']
 export const TABS: readonly { name: RouteName; label: string }[] = [
   { name: 'home', label: '홈' },
   { name: 'review', label: '복습' },
-  { name: 'stats', label: '돌아보기' },
+  { name: 'meditate', label: '묵상' },
   { name: 'browse', label: '목록' },
   { name: 'settings', label: '설정' },
 ]
@@ -44,8 +44,11 @@ export function parseHash(hash: string): Route {
       return { name: 'review' }
     case 'browse':
       return { name: 'browse' }
+    case 'meditate':
+      return { name: 'meditate' }
+    // 이전 이름 — 홈 화면에 저장해 둔 링크나 열려 있던 탭이 빈 화면이 되지 않게 한다
     case 'stats':
-      return { name: 'stats' }
+      return { name: 'meditate' }
     case 'settings':
       return { name: 'settings' }
     case 'learn': {

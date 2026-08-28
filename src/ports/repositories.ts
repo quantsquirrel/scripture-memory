@@ -49,6 +49,27 @@ export interface SettingsStore {
   setSyncGistId(v: string): Promise<void>
   lastSyncAt(): Promise<string | undefined>
   setLastSyncAt(v: string): Promise<void>
+  /**
+   * QT 본문 위치 — '고전 15' 처럼 `약칭 장` 한 칸.
+   *
+   * 통독 계획과 달리 QT 진도는 앱이 알 수 없다(카톡방에 매일 올라온다).
+   * 네트워크를 필수 의존으로 만들지 않으려고(하드 경계 4) 마지막으로 확인한
+   * 위치를 저장해 두고, 날짜가 지나면 한 장씩 자동으로 밀어 기본값을 만든다.
+   */
+  qtPosition(): Promise<string | undefined>
+  setQtPosition(v: string): Promise<void>
+  /** qtPosition이 가리키는 날짜 'YYYY-MM-DD' — 자동 전진의 기준점 */
+  qtPositionDate(): Promise<string | undefined>
+  setQtPositionDate(v: string): Promise<void>
+  /**
+   * 최근에 보여준 묵상 구절 기록 (JSON 문자열, 'YYYY-MM-DD|구절id' 목록).
+   *
+   * 같은 말씀이 몇 달 안에 다시 오지 않게 하는 데만 쓰는 파생 상태다.
+   * FSRS 증거가 아니므로 export 번들에는 들어가지 않는다 — 잃어도 복습
+   * 이력은 그대로고, 잠시 중복이 나올 뿐이다.
+   */
+  meditationLog(): Promise<string | undefined>
+  setMeditationLog(v: string): Promise<void>
 }
 
 /** export/import 번들의 현재 스키마 버전 */

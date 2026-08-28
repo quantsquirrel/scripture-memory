@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from '@playwright/test'
 
 /**
- * 전체 흐름 왕복: 홈 → 학습(졸업) → 복습(채점) → 돌아보기 → 설정 내보내기/가져오기.
+ * 전체 흐름 왕복: 홈 → 학습(졸업) → 복습(채점) → 묵상 → 설정 내보내기/가져오기.
  * 실제 파일 다운로드와 파일 선택을 거쳐 백업이 왕복하는지까지 확인한다.
  */
 const BASE = '/scripture-memory/'
@@ -24,7 +24,7 @@ async function graduateFirstVerse(page: import('@playwright/test').Page): Promis
 }
 
 test.describe('전체 흐름 왕복', () => {
-  test('홈 → 학습 → 복습 → 돌아보기 → 설정 내보내기/가져오기', async ({ page }) => {
+  test('홈 → 학습 → 복습 → 묵상 → 설정 내보내기/가져오기', async ({ page }) => {
     // ── 홈: 아직 아무것도 없는 상태
     await page.goto(BASE)
     await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
@@ -56,8 +56,15 @@ test.describe('전체 흐름 왕복', () => {
     // 남은 카드가 줄었다
     await expect(page.getByText(/남은 카드 2|복습 완료!/)).toBeVisible()
 
-    // ── 돌아보기: 새긴 구절과 복습 기록이 보인다
-    await page.getByRole('link', { name: '돌아보기' }).click()
+    // ── 묵상: 오늘 읽은 본문에서 고른 한 구절과 그 참조 사슬이 보인다
+    await page.getByRole('link', { name: '묵상' }).click()
+    await expect(page.getByRole('heading', { name: '오늘 읽은 말씀' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '오늘 마음에 두실 말씀' })).toBeVisible()
+    await expect(page.locator('.meditation-verse')).not.toBeEmpty()
+    await expect(page.locator('.chain').first()).toBeVisible()
+
+    // 지난 걸음(옛 돌아보기 지표)은 접혀 있고, 펼치면 그대로 남아 있다
+    await page.getByText('지난 걸음 돌아보기').click()
     await expect(page.getByRole('heading', { name: '마음에 새긴 말씀' })).toBeVisible()
     await expect(page.getByText(/1\/495구절.*마음에 새겨져/)).toBeVisible()
     await expect(page.getByRole('heading', { name: '동행' })).toBeVisible()

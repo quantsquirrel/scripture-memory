@@ -222,6 +222,11 @@ export function AboutPanel() {
         스케줄링: FSRS (ts-fsrs, 목표 기억율 90%).
         <br />
         낭송 규칙: 주제 → 장절 → 말씀 → 장절.
+        <br />
+        통독 계획: 성경 통독 365 (2026-08-18 ~ 2027-08-17, 66권 1189장).
+        <br />
+        묵상의 상호참조: Cross References by OpenBible.info, CC BY 4.0 (www.openbible.info) —
+        원본을 그대로 싣지 않고 가중 그래프로 가공한 후보표를 담았습니다.
       </p>
     </section>
   )

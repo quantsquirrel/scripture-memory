@@ -1,6 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
-import { store } from '../app'
+import { loadMeditation, store } from '../app'
+import type { MeditationData } from '../app/meditation'
 import {
   type BrowseData,
   type HomeData,
@@ -53,6 +54,24 @@ export function useStatsSummary(): StatsData | null {
   useEffect(() => {
     let alive = true
     void loadStats(store).then((v) => {
+      if (alive) setData(v)
+    })
+    return () => {
+      alive = false
+    }
+  }, [revision])
+  return data
+}
+
+/**
+ * 오늘의 묵상. 리비전을 구독하므로 QT 본문을 고쳐 적으면 곧바로 다시 고른다.
+ */
+export function useMeditation(): MeditationData | null {
+  const revision = useRevision()
+  const [data, setData] = useState<MeditationData | null>(null)
+  useEffect(() => {
+    let alive = true
+    void loadMeditation().then((v) => {
       if (alive) setData(v)
     })
     return () => {

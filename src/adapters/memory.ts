@@ -88,6 +88,12 @@ export class MemoryStore implements Store {
     setSyncGistId: (v) => this.writeSetting('syncGistId', v),
     lastSyncAt: () => this.readSetting('lastSyncAt', (v) => typeof v === 'string'),
     setLastSyncAt: (v) => this.writeSetting('lastSyncAt', v),
+    qtPosition: () => this.readSetting('qtPosition', (v) => typeof v === 'string'),
+    setQtPosition: (v) => this.writeSetting('qtPosition', v),
+    qtPositionDate: () => this.readSetting('qtPositionDate', (v) => typeof v === 'string'),
+    setQtPositionDate: (v) => this.writeSetting('qtPositionDate', v),
+    meditationLog: () => this.readSetting('meditationLog', (v) => typeof v === 'string'),
+    setMeditationLog: (v) => this.writeSetting('meditationLog', v),
   }
 
   private readSetting<T>(key: string, ok: (v: unknown) => boolean): Promise<T | undefined> {

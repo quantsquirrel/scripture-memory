@@ -61,6 +61,8 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
 - 타입 검사: `npm run typecheck` · 린트: `npm run lint` · 포맷: `npm run format`
 - 빌드: `npm run build` · E2E: `npm run e2e`
 - 본문 정본 대조: `npm run verify:data` · 명도비 감사: `npm run audit:contrast`
+- 묵상 후보표 재생성: `npm run build:xref -- <cross_references.txt>`
+- 365일 묵상 구절 미리보기: `npm run preview:meditation -- [시작일차] [개수]`
 
 하드 경계 회귀 테스트는 `tests/boundaries.test.ts`에 있다. 경계를 건드리는
 변경을 했다면 이 파일이 먼저 실패해야 정상이다.
@@ -74,3 +76,23 @@ Why에는 이론이 아니라 **관찰된 사실 한 줄**만 쓴다 (예: "실�
   `npm run verify:data`가 verses.json과 어절 단위로 전수 대조한다.
 - '그들'·'따라'는 개역한글 표기다 (KRV 원문 대조 확인). '저희'·'좇아'로
   "고치지" 말 것.
+
+### 묵상 탭 데이터
+
+- **통독 계획**: `src/data/bible365.txt` 한 파일이 정본이다 (탭 구분 `일차/날짜/본문`,
+  2026-08-18~2027-08-17, 66권 1189장 전수). 생성물을 따로 두지 않으므로 어긋날 여지가
+  없다. 불변식은 `tests/readingPlan.test.ts`가 지킨다. 민 32장이 52·53일차에 겹치는 것은
+  원 계획 그대로다 — "고치지" 말 것.
+- **상호참조**: OpenBible.info cross-references (CC BY 4.0). 원본 34만 간선은 저장소에
+  두지 않고, `scripts/data/build_xref.ts`가 걸어서 만든 후보표
+  `src/data/xrefCandidates.json`(장 1189개 × 상위 10개)만 싣는다. 원본은
+  `https://a.openbible.info/data/cross-references.zip`에서 받는다.
+  출처 표기는 설정 > 정보에 있다 (CC-BY 의무).
+- 후보표는 1MB가 넘어 **동적 import로만** 닿는다(`src/data/xrefCandidates.ts`).
+  정적으로 import하면 홈·복습 화면까지 무거워진다 — Gist를 떼어 둔 것과 같은 이유이며,
+  `tests/boundaries.test.ts`가 지킨다.
+- **묵상은 읽기 전용이다.** FSRS 등급도 ReviewEntry도 만들지 않는다(경계 1). 남기는
+  것은 "오늘 무엇을 보여줬는지"뿐이고, 그것은 export 번들에 들어가지 않는 파생 상태다.
+- 알고리즘 파라미터(`scripts/data/build_xref.ts`의 `P`)를 건드렸다면
+  `npm run preview:meditation`으로 365일치를 눈으로 확인한다 — 분포와 결정성은 테스트가
+  보지만, 말씀이 본문과 어울리는지는 읽어봐야 안다.

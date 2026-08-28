@@ -1,0 +1,150 @@
+/* 묵상 화면 */
+
+/* 오늘 읽은 말씀 — 라벨 좌 · 본문 우 */
+.reading-list {
+  margin: 0;
+}
+
+.reading-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-6);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.reading-row:last-child {
+  border-bottom: none;
+}
+
+.reading-row dt {
+  flex: none;
+  width: 2.6rem;
+  font-size: var(--text-xs);
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.reading-row dd {
+  margin: 0;
+  flex: 1;
+}
+
+.qt-edit {
+  margin-left: var(--space-5);
+  text-decoration: underline;
+}
+
+.qt-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-line);
+}
+
+.qt-editor label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.qt-editor select {
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font: inherit;
+  padding: var(--space-4) var(--space-5);
+  min-height: var(--touch-min);
+}
+
+.qt-editor .qt-save {
+  width: auto;
+  margin-top: 0;
+  min-height: var(--touch-min);
+}
+
+/*
+ * 오늘의 말씀 — 이 화면의 주인공. 다른 패널보다 한 단계 크고 넉넉하게 두고,
+ * 등불색 세로선 하나로 "여기를 보라"만 표시한다 (DESIGN.md: 금색은 행동과
+ * 시선의 초점에만).
+ */
+.meditation-panel {
+  border-color: var(--color-border);
+}
+
+.meditation-verse {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: var(--leading-verse);
+  word-break: keep-all;
+  margin: var(--space-6) 0 var(--space-8);
+  padding-left: var(--space-8);
+  border-left: 2px solid var(--color-accent);
+}
+
+.meditation-ref {
+  margin: 0;
+  font-weight: 700;
+}
+
+.meditation-source {
+  margin: var(--space-2) 0 var(--space-6);
+}
+
+/* 참조 사슬 */
+.chain-list {
+  list-style: none;
+  margin: var(--space-6) 0 0;
+  padding: 0;
+}
+
+.chain {
+  padding: var(--space-5) 0;
+  border-bottom: 1px solid var(--color-line);
+  line-height: var(--leading-normal);
+}
+
+.chain:last-child {
+  border-bottom: none;
+}
+
+.chain-line {
+  display: block;
+}
+
+.chain-arrow {
+  color: var(--color-muted);
+  margin: 0 var(--space-3);
+}
+
+.chain-node {
+  font-size: var(--text-sm2);
+  white-space: nowrap;
+}
+
+/* 오늘 읽은 자리 — 출발점임을 색이 아니라 밑줄로 표시한다 */
+.chain-seed {
+  border-bottom: 1px dashed var(--color-border);
+}
+
+/* 도착점 — 줄마다 되풀이하지 않고 목록 끝에 한 번만 */
+.chain-dest {
+  margin: var(--space-6) 0 0;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-line);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+/* 코퍼스에 본문이 있는 참조만 한 줄 곁들인다 */
+.chain-text {
+  display: block;
+  margin: var(--space-2) 0 var(--space-3) var(--space-6);
+  border-left: 1px solid var(--color-line);
+  padding-left: var(--space-5);
+  word-break: keep-all;
+}
