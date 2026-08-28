@@ -27,7 +27,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
       manifest: {
-        name: 'Ivan — 말씀암송 (개역한글)',
+        name: 'Ivan',
         short_name: 'Ivan',
         description: '네비게이토 주제별 성경암송(TMS) 60구절 — FSRS 간격 반복 + 축자 암기 훈련',
         lang: 'ko',
