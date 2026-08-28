@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 
 import { rememberMeditation, setQtPosition } from '../app'
-import { collectionOf, topicOf, VERSE_BY_ID, VERSES } from '../data/verses'
+import { collectionOf, topicOf, VERSE_BY_ID } from '../data/verses'
 import type { QtPosition } from '../domain/qt'
-import { useMeditation } from './hooks'
+import { useMeditation, useVerseTexts } from './hooks'
 import {
   type AlternateRow,
   AlternatesPanel,
@@ -14,34 +14,9 @@ import {
 } from './meditate/panels'
 import { Stats } from './Stats'
 
-/**
- * 낱개 절 표기('삼하 11:2') → 암송 코퍼스의 본문.
- *
- * 참조 사슬의 중간 지점은 대부분 코퍼스 밖이라 본문이 없다. 있는 것만
- * 곁들이고 없는 것은 장절로 남긴다 — 검증되지 않은 본문을 지어 넣지 않는다.
- */
-const TEXT_BY_VERSE: ReadonlyMap<string, string> = new Map(
-  VERSES.flatMap((v) =>
-    v.verses.map((n) => [`${v.bookAbbr} ${v.chapter}:${n}`, v.text] as const),
-  ),
-)
-
-const REF_RE = /^(\S+)\s+(\d+):(\d+)(?:-(\d+))?$/
-
-function corpusTextFor(ref: string): string | null {
-  const m = REF_RE.exec(ref)
-  if (!m?.[1] || !m[2] || !m[3]) return null
-  const from = parseInt(m[3], 10)
-  const to = m[4] === undefined ? from : parseInt(m[4], 10)
-  for (let n = from; n <= to; n++) {
-    const text = TEXT_BY_VERSE.get(`${m[1]} ${m[2]}:${n}`)
-    if (text !== undefined) return text.length > 52 ? `${text.slice(0, 52)}…` : text
-  }
-  return null
-}
-
 export function Meditate() {
   const data = useMeditation()
+  const textOf = useVerseTexts()
   const pick = data?.result.pick ?? null
   const dateKey = data?.dateKey ?? null
   const pickedId = pick?.verseId ?? null
@@ -93,7 +68,7 @@ export function Meditate() {
             chains={chains}
             destination={verse.refAbbr}
             fromLabel={pick.from.label}
-            textOf={corpusTextFor}
+            textOf={textOf}
           />
           <AlternatesPanel rows={alternates} />
         </>

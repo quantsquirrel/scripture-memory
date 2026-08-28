@@ -18,6 +18,8 @@
     "coverage": "TZ=Asia/Seoul vitest run --coverage",
     "verify:data": "python3 scripts/data/verify_verses.py",
     "build:xref": "vite-node scripts/data/build_xref.ts",
+    "fetch:krv": "python3 scripts/data/bsk_fetch.py",
+    "build:krv": "python3 scripts/data/build_fulltext.py",
     "preview:meditation": "vite-node scripts/preview_meditation.ts",
     "audit:contrast": "python3 scripts/audit_contrast.py"
   },

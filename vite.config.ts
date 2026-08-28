@@ -26,6 +26,14 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
+      workbox: {
+        // 개역한글 전문 청크가 workbox 기본 한도 2 MiB를 넘는다. 넘으면
+        // vite-plugin-pwa가 경고가 아니라 빌드 실패로 죽고, 한도만 낮춰
+        // 넘어가면 precache에서 조용히 빠져 오프라인에서 사슬 본문이 빈다
+        // (하드 경계 4). 묵상 탭이 닿는 절은 66권 전부에 흩어져 있어
+        // 런타임 캐시로는 1년에 63일이 깨진다 — 통째로 미리 받는다.
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
       manifest: {
         name: 'Ivan',
         short_name: 'Ivan',

@@ -47,6 +47,21 @@ export const VERSES: VerseEntry[] = data.verses
 export const VERSE_BY_ID: Record<string, VerseEntry> = Object.fromEntries(
   VERSES.map((v) => [v.id, v]),
 )
+
+/**
+ * 낱개 절 표기('삼하 11:2') → 그 절을 품은 암송 구절.
+ *
+ * 묵상 탭의 참조 사슬이 장절을 본문으로 바꿀 때 **가장 먼저** 보는 표다.
+ * 전문에도 같은 자리가 있지만 495가 이긴다 — 사용자가 실제로 외운 그 문장,
+ * 그 띄어쓰기를 보여주기 위해서다.
+ */
+export const VERSE_PASSAGES: ReadonlyMap<string, { ref: string; text: string }> = new Map(
+  VERSES.flatMap((v) =>
+    v.verses.map(
+      (n) => [`${v.bookAbbr} ${v.chapter}:${n}`, { ref: v.refAbbr, text: v.text }] as const,
+    ),
+  ),
+)
 const TOPIC_BY_KEY: Record<string, TopicInfo> = Object.fromEntries(
   TOPICS.map((t) => [t.key, t]),
 )
