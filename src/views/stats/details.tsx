@@ -244,13 +244,7 @@ function PaceSection({ d, learnEndLabel }: { d: StatsData; learnEndLabel: string
  * 훈련 상세 지표. 프레젠테이션 전용 — 저장소를 읽지 않고 스냅샷만 그린다.
  * 섹션별로 쪼개 각 컴포넌트를 짧게 유지한다.
  */
-export function TechDetails({
-  d,
-  learnEndLabel,
-}: {
-  d: StatsData
-  learnEndLabel: string
-}) {
+export function TechDetails({ d, learnEndLabel }: { d: StatsData; learnEndLabel: string }) {
   return (
     <details className="tech-details">
       <summary>훈련 상세 지표 — 암기 훈련을 점검하고 싶을 때</summary>
