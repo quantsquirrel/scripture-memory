@@ -80,9 +80,20 @@ test.describe('리마운트 제거 (상태 보존)', () => {
     const scrollBefore = await page.evaluate(() => window.scrollY)
     expect(scrollBefore).toBeGreaterThan(0)
 
-    // 시험 모드 토글 = IndexedDB 쓰기 + 리비전 증가
-    await page.getByRole('button', { name: '켬' }).click()
-    await expect(page.getByText('시험 모드를 켰습니다.')).toBeVisible()
+    // 목표일 변경 = IndexedDB 쓰기 + 리비전 증가. Playwright fill은 요소를
+    // 화면 안으로 스크롤해 버리므로, 네이티브 setter로 값을 넣고 input 이벤트만 쏜다.
+    await page.evaluate(() => {
+      const input = document.querySelector<HTMLInputElement>('#goal-date')
+      if (!input) throw new Error('#goal-date 없음')
+      // eslint-disable-next-line @typescript-eslint/unbound-method -- 네이티브 setter를 떼어내 React 값 추적을 우회하는 의도된 패턴
+      const setter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        'value',
+      )?.set
+      setter?.call(input, '2099-12-31')
+      input.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await expect(page.getByText('목표일을 저장했습니다.')).toBeVisible()
 
     // 입력값이 살아 있어야 한다 (리마운트되었다면 빈 문자열이 된다)
     await expect(gistId).toHaveValue('my-draft-gist-id')
@@ -91,17 +102,14 @@ test.describe('리마운트 제거 (상태 보존)', () => {
 
   test('쓰기 후 구독 중인 화면의 데이터는 갱신된다', async ({ page }) => {
     await page.goto(`${BASE}#/settings`)
-    // 시험 모드는 목표일이 미래일 때만 활성 — 기본 목표일이 지나 있으므로 먼저 미래로 잡는다
+    // 미래 목표일 저장 = IndexedDB 쓰기. 홈 학습 패널의 D-day 문구가 이를 반영한다.
     await page.locator('#goal-date').fill('2099-12-31')
     await expect(page.getByText('목표일을 저장했습니다.')).toBeVisible()
-    await page.getByRole('button', { name: '켬' }).click()
-    await expect(page.getByText('시험 모드를 켰습니다.')).toBeVisible()
 
-    // 홈이 새 설정을 반영한다 (시험 모드 안내 문구)
     await page.getByRole('link', { name: '홈' }).click()
     await expect(page).toHaveURL(/#\/home$/)
     await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
-    await expect(page.getByText(/시험 모드/)).toBeVisible()
+    await expect(page.getByText(/DEP242 완결/)).toBeVisible()
   })
 })
 

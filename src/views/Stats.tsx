@@ -1,6 +1,4 @@
 import { topicOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import { EXAM_RETENTION } from '../domain/goal'
-import { DEFAULT_RETENTION } from '../domain/scheduler'
 import { useStatsSummary } from './hooks'
 import { TechDetails } from './stats/details'
 import {
@@ -68,7 +66,6 @@ export function Stats() {
       <StreakPanel history={data.history} />
       <TechDetails
         d={data}
-        retentionTarget={data.examActive ? EXAM_RETENTION : DEFAULT_RETENTION}
         learnEndLabel={`${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`}
       />
     </div>

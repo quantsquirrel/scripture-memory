@@ -1,8 +1,6 @@
 import type { RefObject } from 'react'
 
 import type { Theme } from '../../adapters/theme'
-import { EXAM_RETENTION } from '../../domain/goal'
-import { DEFAULT_RETENTION } from '../../domain/scheduler'
 
 const THEME_OPTIONS: readonly [Theme, string][] = [
   ['auto', '자동'],
@@ -46,17 +44,13 @@ export function ThemePanel({
 export function GoalPanel({
   goalDate,
   bufferDays,
-  examMode,
   onGoalDate,
   onBufferDays,
-  onExamMode,
 }: {
   goalDate: string
   bufferDays: number
-  examMode: boolean
   onGoalDate: (d: string) => void
   onBufferDays: (n: number) => void
-  onExamMode: (on: boolean) => void
 }) {
   return (
     <section className="panel">
@@ -93,35 +87,6 @@ export function GoalPanel({
         끝내는 것으로 일일 목표를 계산하고 남은 기간은 복습만 합니다. 목표일이 지나면 D-day
         페이싱과 시험 준비 지표는 사라지고, FSRS가 복습 간격을 늘려 가는 유지 모드로
         돌아갑니다 — 평상시에는 목표일 없이 그대로 두면 됩니다.
-      </p>
-      <span className="muted small" id="exam-mode-label">
-        시험 모드
-      </span>
-      <div className="seg-row" role="group" aria-labelledby="exam-mode-label">
-        {(
-          [
-            [false, '끔'],
-            [true, '켬'],
-          ] as const
-        ).map(([v, label]) => (
-          <button
-            key={label}
-            type="button"
-            aria-pressed={examMode === v}
-            className={`seg${examMode === v ? ' active' : ''}`}
-            onClick={() => {
-              onExamMode(v)
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <p className="muted small">
-        시험 모드는 복습 간격 계산의 목표 기억률을 {Math.round(DEFAULT_RETENTION * 100)}%→
-        {Math.round(EXAM_RETENTION * 100)}%로 올려 시험 전까지 간격을 짧게 잡습니다. 기억 모델과
-        복습 기록에는 영향이 없고, 시험일(목표일)이 지나면 자동으로{' '}
-        {Math.round(DEFAULT_RETENTION * 100)}% 체계로 복귀합니다.
       </p>
     </section>
   )
@@ -254,7 +219,7 @@ export function AboutPanel() {
         생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
         성경암송 시리즈 180구절.
         <br />
-        스케줄링: FSRS (ts-fsrs, 목표 기억율 90% · 시험 모드 95%).
+        스케줄링: FSRS (ts-fsrs, 목표 기억율 90%).
         <br />
         낭송 규칙: 주제 → 장절 → 말씀 → 장절.
       </p>

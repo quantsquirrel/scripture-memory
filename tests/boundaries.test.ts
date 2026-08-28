@@ -330,7 +330,6 @@ describe('경계 4 — 오프라인 완결', () => {
       'src/domain/goal.ts',
       'src/app/review.ts',
       'src/app/queries.ts',
-      'src/app/settings.ts',
       'src/adapters/indexeddb.ts',
       'src/adapters/memory.ts',
     ]) {
@@ -357,7 +356,6 @@ describe('경계 4 — 오프라인 완결', () => {
       'src/app/index.ts',
       'src/app/review.ts',
       'src/app/queries.ts',
-      'src/app/settings.ts',
       'src/app/revision.ts',
       'src/views/hooks.ts',
       'src/views/App.tsx',

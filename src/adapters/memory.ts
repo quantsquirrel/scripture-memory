@@ -82,8 +82,6 @@ export class MemoryStore implements Store {
     setGoalDate: (v) => this.writeSetting('goalDate', v),
     goalBufferDays: () => this.readSetting('goalBufferDays', (v) => typeof v === 'number'),
     setGoalBufferDays: (v) => this.writeSetting('goalBufferDays', v),
-    examMode: () => this.readSetting('examMode', (v) => typeof v === 'boolean'),
-    setExamMode: (v) => this.writeSetting('examMode', v),
     syncToken: () => this.readSetting('syncToken', (v) => typeof v === 'string'),
     setSyncToken: (v) => this.writeSetting('syncToken', v),
     syncGistId: () => this.readSetting('syncGistId', (v) => typeof v === 'string'),

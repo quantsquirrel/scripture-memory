@@ -1,9 +1,5 @@
-import { useEffect } from 'react'
-
-import { applySchedulerSettings } from '../app'
 import { Browse } from './Browse'
 import { Home } from './Home'
-import { useRevision } from './hooks'
 import { Learn } from './Learn'
 import { Review } from './Review'
 import { type Route, TABS, toHash, useRoute } from './router'
@@ -12,12 +8,6 @@ import { Stats } from './Stats'
 
 export default function App() {
   const { route, navigate } = useRoute()
-  const revision = useRevision()
-
-  // 시험 모드 설정 → 스케줄러 목표 기억률. 설정이 바뀌면 리비전이 올라 재적용된다.
-  useEffect(() => {
-    void applySchedulerSettings()
-  }, [revision])
 
   return (
     <div className="app">

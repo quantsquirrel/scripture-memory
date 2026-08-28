@@ -5,7 +5,6 @@ import {
   computeReadiness,
   DEFAULT_GOAL_DATE,
   DEFAULT_REVIEW_BUFFER_DAYS,
-  examModeActive,
   type ExamReadiness,
   type GoalInfo,
 } from '../domain/goal'
@@ -41,19 +40,17 @@ const startOfDay = (now: Date): Date => {
   return d
 }
 
-/** 목표·시험 모드 설정을 기본값과 함께 한 번에 읽는다 */
+/** 목표 설정을 기본값과 함께 한 번에 읽는다 */
 async function readGoalSettings(
   store: Store,
-): Promise<{ goalDate: string; bufferDays: number; examMode: boolean }> {
-  const [goalDate, bufferDays, examMode] = await Promise.all([
+): Promise<{ goalDate: string; bufferDays: number }> {
+  const [goalDate, bufferDays] = await Promise.all([
     store.settings.goalDate(),
     store.settings.goalBufferDays(),
-    store.settings.examMode(),
   ])
   return {
     goalDate: goalDate ?? DEFAULT_GOAL_DATE,
     bufferDays: bufferDays ?? DEFAULT_REVIEW_BUFFER_DAYS,
-    examMode: examMode ?? false,
   }
 }
 
@@ -97,7 +94,6 @@ export interface HomeData {
   inProgress: LearnProgress | undefined
   newThisWeek: number
   goal: GoalInfo
-  examActive: boolean
 }
 
 export async function loadHome(store: Store, now: Date = new Date()): Promise<HomeData> {
@@ -123,7 +119,6 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     inProgress: learning.find(isInProgress),
     newThisWeek: learning.filter((l) => isGraduated(l) && l.updatedAt >= weekAgo).length,
     goal: computeGoal(settings.goalDate, learning, now, settings.bufferDays),
-    examActive: examModeActive(settings.examMode, settings.goalDate, now),
   }
 }
 
@@ -144,7 +139,6 @@ export interface StatsData {
   overdue: number
   weak: WeakVerse[]
   goal: GoalInfo
-  examActive: boolean
   /** 이미 새긴 구절 중 오늘의 한 구절 (id) */
   meditationId: string | null
   /** 영역별 깊이: 새긴 구절 수와 평균 예측 기억률 */
@@ -186,7 +180,6 @@ export async function loadStats(store: Store, now: Date = new Date()): Promise<S
     overdue: due.filter((c) => c.card.due < midnightIso).length,
     weak: weakVerses(cards, 5),
     goal: computeGoal(settings.goalDate, learning, now, settings.bufferDays),
-    examActive: examModeActive(settings.examMode, settings.goalDate, now),
     meditationId: dailyPick(engraved, now)?.id ?? null,
     fields: PROGRESS_ROWS.map((row) => {
       const ids = new Set(row.verseIds)
@@ -244,7 +237,6 @@ export interface SettingsData {
   graduated: number
   goalDate: string
   bufferDays: number
-  examMode: boolean
   syncToken: string
   syncGistId: string
   lastSyncAt: string | undefined
@@ -264,7 +256,6 @@ export async function loadSettings(store: Store): Promise<SettingsData> {
     graduated: learning.filter(isGraduated).length,
     goalDate: goal.goalDate,
     bufferDays: goal.bufferDays,
-    examMode: goal.examMode,
     syncToken: token ?? '',
     syncGistId: gistId ?? '',
     lastSyncAt,

@@ -4,7 +4,6 @@ import type { LadderCommand, LadderOutcome, LadderStep, LearnProgress } from '..
 import type { ExportBundle, SettingsStore, Store } from '../ports/repositories'
 import * as review from './review'
 import { notifying } from './revision'
-import * as settingsUseCase from './settings'
 
 /**
  * 뷰가 쓰는 유스케이스 표면. 기본 저장소(IndexedDB)에 묶어 둔 얇은 바인딩이며,
@@ -66,9 +65,6 @@ export const runLadder = notifying(
     review.runLadder(store, verseId, cmd, now),
 )
 
-export const applySchedulerSettings = (now?: Date): Promise<void> =>
-  settingsUseCase.applySchedulerSettings(store, now)
-
 // 설정 접근자 — 포트의 메서드를 뷰가 쓰는 이름으로 얇게 묶어 둔다
 export const getGoalDate = (): Promise<string | undefined> => settings.goalDate()
 export const setGoalDate = notifying((v: string): Promise<void> => settings.setGoalDate(v))
@@ -76,8 +72,6 @@ export const getGoalBufferDays = (): Promise<number | undefined> => settings.goa
 export const setGoalBufferDays = notifying((v: number): Promise<void> =>
   settings.setGoalBufferDays(v),
 )
-export const getExamMode = (): Promise<boolean | undefined> => settings.examMode()
-export const setExamMode = notifying((v: boolean): Promise<void> => settings.setExamMode(v))
 export const getSyncToken = (): Promise<string | undefined> => settings.syncToken()
 export const setSyncToken = notifying((v: string): Promise<void> => settings.setSyncToken(v))
 export const getSyncGistId = (): Promise<string | undefined> => settings.syncGistId()
