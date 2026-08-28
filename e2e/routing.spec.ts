@@ -91,6 +91,9 @@ test.describe('리마운트 제거 (상태 보존)', () => {
 
   test('쓰기 후 구독 중인 화면의 데이터는 갱신된다', async ({ page }) => {
     await page.goto(`${BASE}#/settings`)
+    // 시험 모드는 목표일이 미래일 때만 활성 — 기본 목표일이 지나 있으므로 먼저 미래로 잡는다
+    await page.locator('#goal-date').fill('2099-12-31')
+    await expect(page.getByText('목표일을 저장했습니다.')).toBeVisible()
     await page.getByRole('button', { name: '켬' }).click()
     await expect(page.getByText('시험 모드를 켰습니다.')).toBeVisible()
 
