@@ -32,8 +32,8 @@ export default defineConfig({
         description: '네비게이토 주제별 성경암송(TMS) 60구절 — FSRS 간격 반복 + 축자 암기 훈련',
         lang: 'ko',
         display: 'standalone',
-        background_color: '#10141f',
-        theme_color: '#10141f',
+        background_color: '#0b1120',
+        theme_color: '#0b1120',
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
