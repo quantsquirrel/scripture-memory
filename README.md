@@ -1,102 +1,147 @@
-# 말씀암송 — 주제별 성경암송 PWA
+# Scripture Memory: Topical Bible Memorization PWA
 
-네비게이토 암송 과정을 **축자(word-perfect) 암기**와 **장기 유지** 양쪽에서
-훈련하는 로컬 퍼스트 PWA.
+A local-first PWA for practicing the Navigators' scripture-memory curriculum,
+with an emphasis on both **word-perfect recall** and **long-term retention**.
 
-- **수록 총량 495구절**: 5확신(5) → 생활지침 8동행(8) → 주제별 60구절(60) →
-  제자의 도 DEP(242) → 주제별 성경암송 시리즈 180구절(180).
-- **목표 범위 315구절**: 목표일 페이싱과 시험 준비도는 DEP242 완결까지
-  (5+8+60+242)만 센다. 180구절 확장은 목표에 포함하지 않고 유지 복습 대상이다
-  (`src/domain/goal.ts`의 `GOAL_VERSE_COUNT`). 서버 없이 브라우저(IndexedDB)에만 기록하며,
-  아이폰/안드로이드 홈 화면에 설치해 오프라인으로 쓸 수 있다.
+- **495 verses included**: Five Assurances (5) → Guidelines for Christian Living (8) →
+  Topical Memory System (60) → The Disciple's Path, DEP (242) →
+  Topical Scripture Memory Series (180).
+- **315 verses in the goal scope**: Target-date pacing and exam readiness count only
+  the curriculum through DEP242 (5+8+60+242). The 180-verse extension is excluded
+  from the goal and used for maintenance review
+  (`src/domain/goal.ts`, `GOAL_VERSE_COUNT`). Records stay in the browser's IndexedDB,
+  without a server. Install the app on an iPhone or Android home screen for offline use.
 
-## 핵심 설계
+## Product & Quality
 
-- **학습 사다리** (새 구절): 본문 익히기(낭송 규칙: 주제→장절→말씀→장절) →
-  첫글자 복원(엿보기 2회 이하) → 타이핑 검증(word-perfect) → 졸업.
-- **3방향 카드**: 졸업 시 `주제→말씀`, `장절→말씀`, `말씀→장절` 카드가 각각
-  독립 FSRS 상태로 생성된다.
-- **FSRS 스케줄링**: [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs),
-  목표 기억율 90%.
-- **객관 채점 → 등급 자동 제안**: 타이핑은 어절 LCS diff(구두점 무시)로
-  정확도를 계산해 FSRS 등급(다시/어려움/좋음)을 제안한다. 첫글자 모드는 엿보기
-  횟수로, 장절 입력은 정오로 제안한다. 최종 선택은 사용자가 확정.
-- **복습 모드 정책**: 어린 카드(reps<3) 첫글자 → 이후 낭송+자가채점,
-  5회마다 타이핑 감사. `말씀→장절` 방향은 항상 장절 입력.
+**The user problem:** Learners need to memorize an assigned curriculum accurately
+while continuing to review verses they have already learned. The app separates
+learning into stages, connects typing evidence to review schedules, and keeps
+records on the device without requiring an account.
 
-## 본문 데이터
+- **Try it:** Open the [deployed app](https://quantsquirrel.github.io/scripture-memory/),
+  select a verse, and follow the learning ladder. Before changing devices, create
+  a backup using Export in Settings.
+- **Implementation evidence:** [Text-source tests](tests/dataSources.test.ts),
+  [storage and restoration lifecycle tests](tests/lifecycle.test.ts),
+  [end-to-end flow tests](e2e/flow.spec.ts), [accessibility checks](e2e/a11y.spec.ts),
+  and [CI history](https://github.com/quantsquirrel/scripture-memory/actions).
+- **What that evidence covers:** Tests and deployment records provide evidence of
+  implementation quality, not measured improvements in users' recall, achievement
+  of the target retention rate, onboarding completion, or repeat use.
+- **Read more:** [Product decisions, evidence, and the usability study plan](docs/PRODUCT-QUALITY.md).
+  The observation plan describes future work, not completed user research.
 
-- 역본: **성경전서 개역한글판(1961)** — 저작재산권 보호기간 만료(2011-12-31),
-  퍼블릭 도메인.
-- 추출: 대한성서공회 온라인 본문(bskorea.or.kr, version=HAN)에서 장 단위로
-  추출·각주 제거 후, 독립 소스 2종(GitHub KRV 데이터셋)과 어절 단위 전수 대조.
-- 구절 목록 (모두 복수 소스 교차 검증):
-  - **5확신** 그리스도인의 확신 5구절 — 영어 원전(Lessons on Assurance PDF) 대조
-  - **8동행** 그리스도인의 생활지침 8구절 — 독립 한국어 소스 2곳 일치
-  - **60구절** TMS 5시리즈 × 6주제 × 2구절
-  - **DEP** 제자의 도 8섹션(구원의 확신/경건의 시간/말씀/기도/교제/증거/주재권/세계비전)
-    242구절 — 블로그 소스에서 누락됐던 세계비전 9번째 주제 "약속성취의 영광
-    (합 2:14, 말 1:11)"은 사용자 책자 대조로 보완 완료(2026-07).
-    원문 소스는 `scripts/data/dep242.txt`, 빌드는 `scripts/data/build_v2.py`.
-    반절 구절(대하 16:9상 등 4건)은 장절 표기는 유지하되 본문은 절 전체를 수록.
-  - **180구절** 주제별 성경암송 시리즈 5시리즈 × 36구절 — 원문 소스는
-    `scripts/data/tms180.txt`. 장절 180/180, 본문은 글자 단위 180/180 일치
-    (`npm run verify:data`).
-- `src/data/verses.json` 스키마(v2):
-  `컬렉션 - 섹션(대제목) - 그룹 - 주제(제목) - 장절 - 말씀`. 기존 60구절 구절
-  id(A1a~E6b)는 사용자 데이터 호환을 위해 보존.
-- **전문** `src/data/fullText.json` — 같은 역본의 66권 1189장 31,102절(4.5MB,
-  2026-08-28 취득). 묵상 탭의 참조 사슬을 펼쳐 보기 위한 **표시 전용** 본문이며,
-  겹치는 자리는 언제나 495구절이 이긴다(495는 채점·학습의 정본이다). 출처와
-  가공 내역은 `src/data/fullText.LICENSE.txt`. 저작인격권은 소멸하지 않으므로
-  옛 표기와 문장부호를 그대로 둔다.
-  동적 import로만 닿고 서비스 워커가 통째로 미리 캐시한다 — 첫 설치 전송량이
-  약 384 KiB에서 약 1.25 MiB(gzip)로 늘고, 그 뒤로는 캐시에서 읽는다.
+## Core Design
 
-## 개발
+- **Learning ladder** for new verses: Learn the text (recitation order: topic →
+  reference → verse → reference) → first-letter recall (at most two peeks) →
+  word-perfect typing verification → graduation.
+- **Three card directions:** Graduation creates topic-to-verse, reference-to-verse,
+  and verse-to-reference cards, each with an independent FSRS state.
+- **FSRS scheduling:** Uses [ts-fsrs](https://github.com/open-spaced-repetition/ts-fsrs)
+  with a 90% target retention setting. This is a scheduling parameter, not a
+  measured learning outcome.
+- **Objective grading and suggested ratings:** Typing accuracy is calculated with
+  a whitespace-delimited word-unit LCS diff, ignoring punctuation, to suggest an
+  FSRS rating (Again, Hard, or Good). First-letter mode uses the number of peeks;
+  reference entry uses correctness. The user confirms the final rating.
+- **Review-mode policy:** Young cards (`reps < 3`) use first-letter recall, followed
+  by recitation and self-grading, with a typing audit every fifth review.
+  Verse-to-reference cards always require reference entry.
+
+## Scripture Data
+
+- **Translation:** The 1961 Korean Revised Version, **성경전서 개역한글판**.
+  Its economic copyright expired on December 31, 2011; the text is public domain.
+- **Extraction:** Chapters were extracted from the Korean Bible Society's online
+  text (bskorea.or.kr, `version=HAN`), with footnotes removed, then exhaustively
+  compared at the word-unit level against two independent GitHub KRV datasets.
+- **Verse lists**, each cross-checked against multiple sources:
+  - **Five Assurances:** Five verses on Christian assurance, checked against the
+    English original, the _Lessons on Assurance_ PDF.
+  - **Guidelines for Christian Living:** Eight verses, matching two independent
+    Korean sources.
+  - **60 verses:** TMS, five series × six topics × two verses.
+  - **DEP:** 242 verses across eight sections: assurance of salvation, quiet time,
+    the Word, prayer, fellowship, witness, lordship, and world vision. The ninth
+    world-vision topic, “The Glory of Fulfilled Promises” (Habakkuk 2:14; Malachi 1:11),
+    was missing from the blog source and was restored by comparison with the user's
+    booklet in July 2026. Source: `scripts/data/dep242.txt`;
+    build script: `scripts/data/build_v2.py`. Four partial-verse entries, such as
+    2 Chronicles 16:9a, retain their partial-verse references but include the full
+    verse text.
+  - **180 verses:** Topical Scripture Memory Series, five series × 36 verses.
+    Source: `scripts/data/tms180.txt`. References match in all 180 entries, and
+    all 180 verse texts match character for character (`npm run verify:data`).
+- **Schema (v2)** in `src/data/verses.json`:
+  collection → section (main heading) → group → topic (title) → reference → verse text.
+  Existing IDs for the 60-verse collection (`A1a` through `E6b`) are preserved for
+  compatibility with user data.
+- **Full Bible text:** `src/data/fullText.json` contains the same translation's
+  66 books, 1,189 chapters, and 31,102 verses (4.5 MB, acquired August 28, 2026).
+  This is **display-only** text for expanding reference chains in the meditation
+  tab. Where entries overlap, the 495-verse dataset always takes precedence as
+  the canonical source for grading and learning. Provenance and processing details
+  are in `src/data/fullText.LICENSE.txt`. Moral rights do not expire, so historical
+  spelling and punctuation are retained.
+  The full text is accessed only through a dynamic import and precached in full
+  by the service worker. This increases the initial installation transfer from
+  about 384 KiB to about 1.25 MiB (gzip); subsequent reads use the cache.
+
+## Development
 
 ```bash
 npm install
-npm run dev             # 개발 서버
-npm test                # vitest (TZ=Asia/Seoul 고정)
-npm run coverage        # vitest + domain/ 커버리지 임계값 검사
+npm run dev             # Development server
+npm test                # Vitest (fixed TZ=Asia/Seoul)
+npm run coverage        # Vitest + domain/ coverage thresholds
 npm run typecheck       # tsc --noEmit
 npm run lint            # ESLint 9 (typescript-eslint strict-type-checked)
 npm run format          # Prettier
-npm run build           # 프로덕션 빌드 (PWA 포함)
-npm run preview         # 빌드 결과 로컬 서빙
-npm run e2e             # Playwright (프로덕션 빌드 대상)
-npm run verify:data     # 본문 정본 전수 대조 (원문 소스와 어절 단위 비교)
-npm run audit:contrast  # 디자인 토큰 WCAG AA 명도비 감사
-npm run bench           # 저장소 쿼리 벤치마크
+npm run build           # Production build, including the PWA
+npm run preview         # Serve the production build locally
+npm run e2e             # Playwright against the production build
+npm run verify:data     # Exhaustive word-unit comparison with source texts
+npm run audit:contrast  # WCAG AA contrast audit for design tokens
+npm run bench           # Repository-query benchmarks
 ```
 
-## 구조
+## Architecture
 
-헥사고날 구조. 도메인은 순수 함수·타입만 두고 I/O를 모른다.
+Hexagonal architecture: the domain contains only pure functions and types,
+with no knowledge of I/O.
 
-```
+```text
 src/
-  domain/      순수 규칙 — I/O 없음
-    card.ts        카드·방향·증거 타입
-    ladder.ts      학습 사다리 상태 머신 (불법 전이를 타입으로 차단)
-    scheduler.ts   ts-fsrs 래퍼. applyRating은 이 모듈 밖으로 나가지 않는다
-    grading.ts     글자 LCS diff 채점, 등급 매핑
-    ref.ts         장절 입력 파서/채점
-    policy.ts      복습 모드 선택 + 주기적 타이핑 감사
-    stats.ts       통계 집계 · goal.ts 목표 페이싱
-  ports/       저장소 인터페이스 (CardRepository / ReviewLog / … / Store)
-  adapters/    indexeddb(v2 + 마이그레이션) · memory(테스트용) · gist · theme
-  app/         유스케이스 — submitReview가 등급 적용의 유일한 경로
-  views/       컨테이너/프레젠테이션 분리 + hash 라우팅
-  styles/      디자인 토큰 → base → 컴포넌트 → 접근성 보정
+  domain/      Pure rules, no I/O
+    card.ts        Card, direction, and evidence types
+    ladder.ts      Learning-ladder state machine; types prevent invalid transitions
+    scheduler.ts   ts-fsrs wrapper; applyRating stays inside this module
+    grading.ts     Character-level LCS diff grading and rating mapping
+    ref.ts         Reference-entry parsing and grading
+    policy.ts      Review-mode selection and periodic typing audits
+    stats.ts       Statistics; goal.ts handles goal pacing
+  ports/       Storage interfaces (CardRepository / ReviewLog / … / Store)
+  adapters/    indexeddb (v2 + migrations), memory (tests), gist, theme
+  app/         Use cases; submitReview is the only path for applying a rating
+  views/       Container/presentation separation and hash routing
+  styles/      Design tokens → base → components → accessibility adjustments
 ```
 
-등급 적용은 `app/submitReview` 하나뿐이다. `domain/scheduler.ts`의
-`applyRating`은 export되지 않고, 유일한 진입점 `rateCard()`가 증거를 필수
-인자로 받으며, 저장소는 그 결과(`RatedCard`)만 커밋할 수 있다 — 카드 상태
-변경과 증거 기록이 타입으로 묶여 있고 한 트랜잭션으로 처리된다.
+`app/submitReview` is the sole path for applying a rating.
+`applyRating` in `domain/scheduler.ts` is not exported; the single entry point,
+`rateCard()`, requires evidence, and storage can commit only its result,
+`RatedCard`. Card-state changes and evidence records are linked by the type
+system and persisted in one transaction.
 
-## 백업
+## Backups
 
-설정 → 내보내기로 전체 상태(JSON)를 보관하고, 새 기기에서 가져오기로 복원한다.
+Use Settings → Export to save the complete state as JSON. On a new device,
+use Import to restore it.
+
+## Documentation History
+
+The [original README from before this revision](docs/archive/README-before-product-ops-2026-09-21.md)
+is preserved. Where earlier descriptions differ from the current evidence scope,
+refer to this README and the product-quality guide.
