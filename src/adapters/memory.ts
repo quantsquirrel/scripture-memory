@@ -1,6 +1,13 @@
 import { cardKey, type Direction, type ReviewEntry, type StoredCard } from '../domain/card'
 import type { LadderStep, LearnProgress } from '../domain/ladder'
-import { assertRated, newCard, type RatedCard, State } from '../domain/scheduler'
+import {
+  assertRated,
+  isSameSchedule,
+  newCard,
+  type RatedCard,
+  StaleCardError,
+  State,
+} from '../domain/scheduler'
 import {
   type CardRepository,
   type ExportBundle,
@@ -56,6 +63,10 @@ export class MemoryStore implements Store {
     commitRating: async (rated: RatedCard) => {
       // 포트가 Promise를 약속하므로 검증 실패도 동기 throw가 아니라 reject로 나간다
       assertRated(rated)
+      const stored = this.cardRows.get(rated.card.key)
+      if (!stored || !isSameSchedule(stored.card, rated.base)) {
+        throw new StaleCardError(rated.card.key)
+      }
       this.cardRows.set(rated.card.key, rated.card)
       this.reviewRows.push({ ...rated.entry, id: this.nextReviewId++ })
       return rated.card
@@ -88,6 +99,8 @@ export class MemoryStore implements Store {
     setSyncGistId: (v) => this.writeSetting('syncGistId', v),
     lastSyncAt: () => this.readSetting('lastSyncAt', (v) => typeof v === 'string'),
     setLastSyncAt: (v) => this.writeSetting('lastSyncAt', v),
+    syncDeviceId: () => this.readSetting('syncDeviceId', (v) => typeof v === 'string'),
+    setSyncDeviceId: (v) => this.writeSetting('syncDeviceId', v),
     qtPosition: () => this.readSetting('qtPosition', (v) => typeof v === 'string'),
     setQtPosition: (v) => this.writeSetting('qtPosition', v),
     qtPositionDate: () => this.readSetting('qtPositionDate', (v) => typeof v === 'string'),
@@ -141,6 +154,26 @@ export class MemoryStore implements Store {
       return { ...rest, id: this.nextReviewId++ }
     })
     this.learningRows = new Map(bundle.learning.map((l) => [l.verseId, l]))
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async mergeAll(merge: (local: ExportBundle) => ExportBundle): Promise<ExportBundle> {
+    // 읽기와 쓰기 사이에 await가 없어야 다른 커밋이 끼어들지 못한다
+    const merged = merge({
+      app: 'scripture-memory',
+      version: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      cards: [...this.cardRows.values()],
+      reviews: [...this.reviewRows],
+      learning: [...this.learningRows.values()],
+    })
+    this.cardRows = new Map(merged.cards.map((c) => [c.key, c]))
+    this.reviewRows = merged.reviews.map((r) => {
+      const { id: _id, ...rest } = r
+      return { ...rest, id: this.nextReviewId++ }
+    })
+    this.learningRows = new Map(merged.learning.map((l) => [l.verseId, l]))
+    return merged
   }
 
   reset(): Promise<void> {

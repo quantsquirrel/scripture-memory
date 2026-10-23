@@ -135,8 +135,9 @@ describe('경계 1 — 증거 없는 등급 적용 금지', () => {
   it('커밋은 증거를 먼저 쓴다 (두 번째 쓰기 실패 시 카드가 남지 않게)', () => {
     const src = read('src/adapters/indexeddb.ts')
     const body = src.slice(src.indexOf('async commitRating'))
-    const reviewsAt = body.indexOf("objectStore('reviews')")
-    const cardsAt = body.indexOf("objectStore('cards')")
+    // 기준 상태 확인을 위한 카드 읽기는 쓰기가 아니다 — 두 쓰기의 순서만 본다
+    const reviewsAt = body.indexOf("objectStore('reviews').add(rated.entry)")
+    const cardsAt = body.indexOf("objectStore('cards').put(rated.card)")
     expect(reviewsAt).toBeGreaterThanOrEqual(0)
     expect(cardsAt).toBeGreaterThanOrEqual(0)
     expect(reviewsAt, '증거 쓰기가 카드 쓰기보다 앞에 있어야 한다').toBeLessThan(cardsAt)

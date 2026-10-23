@@ -17,6 +17,7 @@
     "e2e": "playwright test",
     "coverage": "TZ=Asia/Seoul vitest run --coverage",
     "verify:data": "python3 scripts/data/verify_verses.py",
+    "verify:sync": "bash scripts/formal/gist-sync/run.sh",
     "build:xref": "vite-node scripts/data/build_xref.ts",
     "fetch:krv": "python3 scripts/data/bsk_fetch.py",
     "build:krv": "python3 scripts/data/build_fulltext.py",

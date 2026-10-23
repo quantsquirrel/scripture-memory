@@ -21,6 +21,10 @@ export interface CardRepository {
    * RatedCard만 받는다 — 그 타입은 domain/scheduler.ts에서만 만들 수 있고
    * 생성 시 증거를 필수로 요구하므로, 구현은 카드 갱신과 증거 기록을 반드시
    * 한 트랜잭션으로 처리하게 된다. 하드 경계 1.
+   *
+   * 같은 트랜잭션에서 저장된 카드가 채점 기준(rated.base)과 같은지 먼저 본다.
+   * 다르면(다른 탭·기기의 동기화가 그 사이 카드를 바꿨으면) 아무것도 쓰지 않고
+   * StaleCardError로 거절한다 — 옛 사본으로 계산한 상태가 새 진도를 덮지 않게.
    */
   commitRating(rated: RatedCard): Promise<StoredCard>
 }
@@ -49,6 +53,13 @@ export interface SettingsStore {
   setSyncGistId(v: string): Promise<void>
   lastSyncAt(): Promise<string | undefined>
   setLastSyncAt(v: string): Promise<void>
+  /**
+   * 이 기기의 Gist 파일 이름에 쓰는 id. 기기마다 자기 파일에만 쓰므로 두 기기의
+   * 동기화가 겹쳐도 서로의 파일을 덮지 않는다. 기기 고유 값이라 export 번들에
+   * 들어가지 않는다 — 백업을 새 기기에 가져오면 그 기기는 새 id를 받는다.
+   */
+  syncDeviceId(): Promise<string | undefined>
+  setSyncDeviceId(v: string): Promise<void>
   /**
    * QT 본문 위치 — '고전 15' 처럼 `약칭 장` 한 칸.
    *
@@ -101,5 +112,14 @@ export interface Store {
   exportAll(now?: Date): Promise<ExportBundle>
   /** v1·v2 번들을 모두 받는다 (v1은 마이그레이션해서 적용) */
   importAll(input: unknown): Promise<void>
+  /**
+   * 동기화 병합. cards/reviews/learning을 한 트랜잭션 안에서 읽어 merge에 넘기고,
+   * 그 결과로 세 스토어를 교체한 뒤 결과를 돌려준다.
+   *
+   * 읽기와 쓰기 사이에 다른 쓰기가 끼어들 수 없으므로, 네트워크를 기다리는 동안
+   * 커밋된 복습도 merge가 본다. merge는 동기 함수여야 하고(트랜잭션 수명) 로컬
+   * 행을 버리면 안 된다 — 이 메서드는 merge가 돌려준 것을 그대로 쓴다.
+   */
+  mergeAll(merge: (local: ExportBundle) => ExportBundle): Promise<ExportBundle>
   reset(): Promise<void>
 }

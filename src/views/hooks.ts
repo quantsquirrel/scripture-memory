@@ -10,6 +10,7 @@ import {
   loadReviewQueue,
   loadSettings,
   loadStats,
+  reloadQueuedCard,
   type SettingsData,
   type StatsData,
 } from '../app/queries'
@@ -149,6 +150,7 @@ const isReviewable = (verseId: string): boolean => VERSE_BY_ID[verseId] !== unde
 export function useDueCards(): {
   queue: StoredCard[] | null
   refill: () => Promise<StoredCard[]>
+  reload: (key: string) => Promise<boolean>
 } {
   const [queue, setQueue] = useState<StoredCard[] | null>(null)
   useEffect(() => {
@@ -165,7 +167,19 @@ export function useDueCards(): {
     setQueue(next)
     return next
   }
-  return { queue, refill }
+  /** 큐의 카드 사본 하나를 저장소 최신값으로 바꾼다. 더 출제할 카드가 아니면 빼고 false. */
+  const reload = async (key: string): Promise<boolean> => {
+    const fresh = await reloadQueuedCard(store, key)
+    setQueue((q) =>
+      q === null
+        ? q
+        : fresh
+          ? q.map((c) => (c.key === key ? fresh : c))
+          : q.filter((c) => c.key !== key),
+    )
+    return fresh !== null
+  }
+  return { queue, refill, reload }
 }
 
 /**
