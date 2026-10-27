@@ -2,24 +2,24 @@
 version: alpha
 name: Ivan
 description: >
-  네비게이토 암송 과정 훈련 PWA "Ivan"의 디자인 시스템. Ivan은 Navi를 뒤집은
-  이름이자 요한(Yohanan, "여호와는 은혜로우시다")의 슬라브형이다. 항해 도구가
-  아니라 밤의 독서실 — 말씀이 주인공이고, 은혜의 등불 하나가 길을 비춘다.
+  네비게이토 암송 과정 훈련 PWA "Ivan"의 디자인 시스템: 침묵의 필사실 (The Quiet Scriptorium).
+  Ivan은 Navi를 뒤집은 이름이자 요한(Yohanan, "여호와는 은혜로우시다")의 슬라브형이다.
+  도구가 사람을 이끄는 것이 아니라 말씀이 화면의 주인이 되고, 은혜의 등불 하나가 길을 비춘다.
 colors:
-  primary: '#e7b45a'
-  bg: '#0b1120'
-  panel: '#151f36'
-  panel-alt: '#1f2c4c'
-  line: '#48588f'
-  border: '#7286bd'
-  text: '#ede8da'
-  muted: '#a9b3cd'
-  accent: '#e7b45a'
-  on-accent: '#221a09'
-  info: '#a2c2f2'
-  ok: '#82cd90'
-  warn: '#e3b258'
-  bad: '#ec9186'
+  primary: '#eab355'
+  bg: '#0e121b'
+  panel: '#161c28'
+  panel-alt: '#202838'
+  line: '#38435c'
+  border: '#657599'
+  text: '#f2ece1'
+  muted: '#9ea8c2'
+  accent: '#eab355'
+  on-accent: '#1c1405'
+  info: '#9bbcf0'
+  ok: '#85cf93'
+  warn: '#e5b458'
+  bad: '#ea8e82'
 typography:
   app-title:
     fontFamily: Pretendard
@@ -153,30 +153,25 @@ warm/cafe류의 라이프스타일 브랜드 톤, 글래스모피즘·그라디�
 `npm run audit:contrast`(WCAG 감사)를 통과한 상태이므로, 색을 바꿀 때는 이
 문서와 tokens.css를 함께 고치고 감사를 다시 돌린다.
 
-- **bg (#0b1120):** 밤바다. 앱 전체의 바닥. 순검정이 아닌 남빛 — 차갑지 않고
-  깊게.
-- **panel (#151f36) / panel-alt (#1f2c4c):** 물결의 층. 카드와 입력면을 배경에서
-  한 단계씩 들어올린다. 그림자 대신 이 두 단의 명도 차가 깊이를 만든다.
-- **line (#48588f):** 장식용 헤어라인. 컨트롤 식별에 쓰지 않는다(WCAG 1.4.11
-  비적용 대상).
-- **border (#7286bd):** 입력·버튼처럼 경계가 컨트롤을 식별하는 곳 전용.
-  배경 대비 3:1 이상을 유지해야 한다.
-- **text (#ede8da):** 양피지 상아색. 순백을 쓰지 않는 이유는 어둠 속에서
-  눈부심 없이 오래 읽기 위해서다.
-- **muted (#a9b3cd):** 메타데이터·지표·보조 설명. "물러서는 것들"의 색.
-- **primary = accent (#e7b45a) / on-accent (#221a09):** 등불의 금색. 이 시스템의
-  primary이자 유일한 브랜드색. 주 행동 버튼, 활성 탭, 진행률 채움에만 쓴다.
-  넓은 면적의 배경으로 쓰지 않는다. 구현(`--color-accent`)에서는 accent라는
-  이름을 쓴다.
-- **info (#a2c2f2):** 장절 표기·모드 태그. 차분한 하늘빛으로 본문과 구분한다.
-- **ok (#82cd90) / warn (#e3b258) / bad (#ec9186):** 채점 결과 전용 상태색.
+- **bg (#0e121b):** 짙은 묵빛과 흑요석(Deep Obsidian Ink). 차가운 디지털 블루를
+  걷어내고, 고요하고 아늑한 밤의 필사실 바닥.
+- **panel (#161c28) / panel-alt (#202838):** 고서의 가죽 장정과 양피지 판본의 층.
+  그림자 대신 이 두 단의 명도 차가 깊이를 만든다.
+- **line (#38435c):** 장식용 헤어라인 (고서 인쇄 괘선). 컨트롤 식별에 쓰지 않는다.
+- **border (#657599):** 입력·버튼 컨트롤 경계 (배경 대비 3:1 이상 충족).
+- **text (#f2ece1):** 오랜 세월을 견딘 양피지의 부드러운 상아빛 (Aged Parchment Ivory).
+- **muted (#9ea8c2):** 필사자의 먹물 회색. "물러서는 것들"의 색.
+- **primary = accent (#eab355) / on-accent (#1c1405):** 성서 사본의 손길 닿은 금박
+  (Illuminated Gold Leaf). 주 행동 버튼, 활성 탭, 진행률 채움에만 쓴다.
+- **info (#9bbcf0):** 장절 인덱스·모드 태그. 차분한 하늘빛으로 본문과 구분한다.
+- **ok (#85cf93) / warn (#e5b458) / bad (#ea8e82):** 채점 결과 전용 상태색.
   diff 점수와 오답 표시 밖에서는 쓰지 않는다.
 
 **라이트 팔레트는 다크의 반전이다** — Navi→Ivan 역철의 시각 번역. 잉크와 종이가
-자리를 바꾼다: bg `#f7f1e3`(따뜻한 종이) / panel `#fffdf6` / panel-alt
-`#f0e7d2` / line `#a2977c` / border `#837455` / text `#222b45`(남빛 잉크) /
-muted `#565f78` / accent `#8a5a09`(깊은 금) / on-accent `#fffaee` / info
-`#2c4b80` / ok `#2d6a3b` / warn `#7a570c` / bad `#90352a`. 새 색을 더할 때는
+자리를 바꾼다: bg `#f7f2e7`(수제 양피지) / panel `#fffdf8`(깨끗한 속지) / panel-alt
+`#efe7d5` / line `#a5997d`(괘선) / border `#887959` / text `#1e2538`(남빛 먹물) /
+muted `#58617a` / accent `#8c5a08`(깊은 옻칠 금빛) / on-accent `#fffbee` / info
+`#2a487c` / ok `#286835` / warn `#795609` / bad `#8f3227`. 새 색을 더할 때는
 반드시 두 팔레트에 쌍으로 더하고, 의미 토큰(`--color-*`)을 통해서만 참조한다.
 
 ## Typography

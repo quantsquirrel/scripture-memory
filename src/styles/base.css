@@ -7,7 +7,9 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .app {
@@ -28,12 +30,12 @@ body {
 .app-header h1 {
   margin: 0;
   font-size: var(--text-xl);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
-/* Ivan 워드마크 — 소문자 ıvan 위에 금색 점(등불)을 올린다 */
+/* Ivan 워드마크 — 소문자 ıvan 위에 금색 점(은혜의 등불)을 올린다 */
 .brand {
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .brand-i {
@@ -43,13 +45,14 @@ body {
 .brand-i::after {
   content: '';
   position: absolute;
-  top: 0.09em;
+  top: 0.08em;
   left: 50%;
   transform: translateX(-50%);
-  width: 0.16em;
-  height: 0.16em;
+  width: 0.17em;
+  height: 0.17em;
   border-radius: 50%;
   background: var(--color-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
 h2 {
@@ -79,14 +82,17 @@ h3 {
   border-radius: var(--radius-lg);
   padding: var(--space-8);
   margin-bottom: var(--space-7);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .verse {
   font-family: var(--font-serif);
   font-size: var(--text-lg);
   line-height: var(--leading-verse);
+  letter-spacing: -0.012em;
   word-break: keep-all;
   margin: var(--space-6) 0;
+  font-feature-settings: 'palt' 1, 'liga' 1;
 }
 
 .chip {
@@ -98,6 +104,7 @@ h3 {
   padding: 3px var(--space-6);
   font-size: var(--text-sm);
   margin-bottom: var(--space-3);
+  letter-spacing: 0.02em;
 }
 
 /* 큰 숫자 지표 — 본문색으로 크기만 키운다. 금색은 행동(등불)에 남겨둔다 */

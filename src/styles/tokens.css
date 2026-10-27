@@ -10,37 +10,41 @@
  */
 
 :root {
-  /* ── 팔레트: 다크 ───────────────────────────────────────── */
-  --palette-dark-bg: #0b1120;
-  --palette-dark-panel: #151f36;
-  --palette-dark-panel2: #1f2c4c;
-  /* line: 장식용 헤어라인 구분선 (WCAG 1.4.11 비적용 — 컨트롤 식별에 필요하지 않음) */
-  --palette-dark-line: #48588f;
-  /* border: 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳 (3:1 이상 필요) */
-  --palette-dark-border: #7286bd;
-  --palette-dark-text: #ede8da;
-  --palette-dark-muted: #a9b3cd;
-  --palette-dark-accent: #e7b45a;
-  --palette-dark-accent-text: #221a09;
-  --palette-dark-blue: #a2c2f2;
-  --palette-dark-ok: #82cd90;
-  --palette-dark-warn: #e3b258;
-  --palette-dark-bad: #ec9186;
+  /* ── 팔레트: 다크 (The Quiet Scriptorium — 짙은 묵빛과 흑요석) ── */
+  --palette-dark-bg: #0e121b;
+  --palette-dark-panel: #161c28;
+  --palette-dark-panel2: #202838;
+  /* line: 장식용 헤어라인 구분선 (고서 인쇄 괘선) */
+  --palette-dark-line: #38435c;
+  /* border: 입력·버튼 컨트롤 경계 (3:1 이상 충족) */
+  --palette-dark-border: #657599;
+  /* text: 세월을 견딘 양피지 상아빛 */
+  --palette-dark-text: #f2ece1;
+  /* muted: 조용히 물러서는 필사자의 먹물 회색 */
+  --palette-dark-muted: #9ea8c2;
+  /* accent: 성서 사본의 손길 닿은 금박 (Illuminated Gold Leaf) */
+  --palette-dark-accent: #eab355;
+  --palette-dark-accent-text: #1c1405;
+  /* blue: 장절 인덱스 및 모드 태그 하늘빛 */
+  --palette-dark-blue: #9bbcf0;
+  --palette-dark-ok: #85cf93;
+  --palette-dark-warn: #e5b458;
+  --palette-dark-bad: #ea8e82;
 
-  /* ── 팔레트: 라이트 ─────────────────────────────────────── */
-  --palette-light-bg: #f7f1e3;
-  --palette-light-panel: #fffdf6;
-  --palette-light-panel2: #f0e7d2;
-  --palette-light-line: #a2977c;
-  --palette-light-border: #837455;
-  --palette-light-text: #222b45;
-  --palette-light-muted: #565f78;
-  --palette-light-accent: #8a5a09;
-  --palette-light-accent-text: #fffaee;
-  --palette-light-blue: #2c4b80;
-  --palette-light-ok: #2d6a3b;
-  --palette-light-warn: #7a570c;
-  --palette-light-bad: #90352a;
+  /* ── 팔레트: 라이트 (수제 양피지와 깊은 먹빛) ─────────────── */
+  --palette-light-bg: #f7f2e7;
+  --palette-light-panel: #fffdf8;
+  --palette-light-panel2: #efe7d5;
+  --palette-light-line: #a5997d;
+  --palette-light-border: #887959;
+  --palette-light-text: #1e2538;
+  --palette-light-muted: #58617a;
+  --palette-light-accent: #8c5a08;
+  --palette-light-accent-text: #fffbee;
+  --palette-light-blue: #2a487c;
+  --palette-light-ok: #286835;
+  --palette-light-warn: #795609;
+  --palette-light-bad: #8f3227;
 
   /* ── 의미 토큰: 기본은 다크 ─────────────────────────────── */
   color-scheme: dark;
