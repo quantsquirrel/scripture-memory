@@ -59,6 +59,17 @@ export function TodayReviewPanel({
   )
 }
 
+/** 이만큼 밀리면 카드를 한 장씩 넘기기보다 구절 단위 개정이 덜 지친다 */
+export const RECALIBRATE_DUE_THRESHOLD = 30
+
+export function RecalibrateBanner({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button className="callout recal-banner" onClick={onOpen}>
+      오랫동안 쉬셨나요? <strong>말씀 상태 개정 모드</strong>로 부담 없이 복귀해 보세요 →
+    </button>
+  )
+}
+
 export interface LearnTarget {
   id: string
   label: string

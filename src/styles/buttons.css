@@ -2,15 +2,19 @@
 .btn {
   display: block;
   width: 100%;
-  padding: 13px var(--space-8);
+  padding: 14px var(--space-8);
   margin-top: var(--space-5);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-line);
   background: var(--color-panel-alt);
   color: var(--color-text);
   font-size: var(--text-base);
+  font-weight: 600;
   cursor: pointer;
   text-align: center;
+  transition:
+    transform 0.1s ease,
+    filter 0.15s ease;
 }
 
 .btn:active {
@@ -23,10 +27,18 @@
 }
 
 .btn-primary {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-accent) 92%, #fff 8%),
+    var(--color-accent)
+  );
+  border: 1px solid var(--color-accent);
   color: var(--color-accent-text);
   font-weight: 700;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 12%),
+    inset 0 1px 0 rgb(255 255 255 / 25%);
 }
 
 .btn-danger {

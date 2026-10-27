@@ -17,6 +17,7 @@ export type Route =
   | { name: 'browse' }
   | { name: 'meditate' }
   | { name: 'settings' }
+  | { name: 'recalibrate' }
 
 export type RouteName = Route['name']
 
@@ -51,6 +52,8 @@ export function parseHash(hash: string): Route {
       return { name: 'meditate' }
     case 'settings':
       return { name: 'settings' }
+    case 'recalibrate':
+      return { name: 'recalibrate' }
     case 'learn': {
       const verseId = decodeURIComponent(tail)
       return verseId === '' ? { name: 'home' } : { name: 'learn', verseId }

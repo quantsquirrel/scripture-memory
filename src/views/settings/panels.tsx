@@ -164,16 +164,24 @@ export function DataPanel({
   onExport,
   onImport,
   onReset,
+  onRecalibrate,
 }: {
   fileRef: RefObject<HTMLInputElement | null>
   message: string
   onExport: () => void
   onImport: (file: File) => void
   onReset: () => void
+  onRecalibrate: () => void
 }) {
   return (
     <section className="panel">
-      <h2>데이터</h2>
+      <h2>데이터 및 학습</h2>
+      <button className="btn" onClick={onRecalibrate}>
+        말씀 상태 개정 (Recalibrate)
+      </button>
+      <p className="muted small">
+        오래 쉬어 카드가 밀렸을 때, 구절마다 본문을 한 번 떠올려 보고 상태를 다시 정리합니다.
+      </p>
       <div className="btn-row">
         <button className="btn" onClick={onExport}>
           내보내기 (JSON)

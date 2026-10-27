@@ -2,25 +2,31 @@
 .seg-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-4);
+  gap: var(--space-3);
+  padding: 4px;
+  background: var(--color-panel-alt);
+  border-radius: var(--radius);
+  border: 1px solid var(--color-line);
   margin-bottom: var(--space-4);
 }
 
 .seg {
-  padding: var(--space-5);
-  border-radius: var(--radius);
-  border: 1px solid var(--color-line);
-  background: var(--color-panel-alt);
-  color: var(--color-text);
+  padding: 9px var(--space-2);
+  border-radius: calc(var(--radius) - 2px);
+  border: none;
+  background: transparent;
+  color: var(--color-muted);
   font-weight: 600;
-  font-size: var(--text-base);
+  font-size: 0.9rem;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .seg.active {
-  background: var(--color-accent);
-  color: var(--color-accent-text);
-  border-color: var(--color-accent);
+  background: var(--color-panel);
+  color: var(--color-accent);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
+  font-weight: 700;
 }
 
 /* 등급 버튼 */
@@ -42,6 +48,13 @@
   background: var(--color-panel-alt);
   color: var(--color-text);
   cursor: pointer;
+  transition:
+    transform 0.1s ease,
+    border-color 0.15s ease;
+}
+
+.rate:active {
+  transform: scale(0.96);
 }
 
 .rate-label {

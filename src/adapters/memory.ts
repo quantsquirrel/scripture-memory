@@ -1,4 +1,10 @@
-import { cardKey, type Direction, type ReviewEntry, type StoredCard } from '../domain/card'
+import {
+  cardKey,
+  type Direction,
+  DIRECTIONS,
+  type ReviewEntry,
+  type StoredCard,
+} from '../domain/card'
 import type { LadderStep, LearnProgress } from '../domain/ladder'
 import {
   assertRated,
@@ -131,6 +137,12 @@ export class MemoryStore implements Store {
       step: 'graduated',
       updatedAt: now.toISOString(),
     })
+    return Promise.resolve()
+  }
+
+  demoteToLadder(verseId: string, step: LadderStep, now: Date): Promise<void> {
+    for (const dir of DIRECTIONS) this.cardRows.delete(cardKey(verseId, dir))
+    this.learningRows.set(verseId, { verseId, step, updatedAt: now.toISOString() })
     return Promise.resolve()
   }
 

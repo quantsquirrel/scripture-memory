@@ -7,33 +7,34 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
 
 .app {
   max-width: var(--layout-max);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-8) calc(84px + env(safe-area-inset-bottom));
+  padding: var(--space-6) var(--space-8) calc(96px + env(safe-area-inset-bottom));
 }
 
 .app-header {
   display: flex;
   align-items: baseline;
-  gap: var(--space-5);
+  justify-content: space-between;
   padding: var(--space-4) var(--space-1) var(--space-6);
   border-bottom: 1px solid var(--color-line);
-  margin-bottom: var(--space-7);
+  margin-bottom: var(--space-8);
 }
 
 .app-header h1 {
   margin: 0;
   font-size: var(--text-xl);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
 }
 
 /* Ivan 워드마크 — 소문자 ıvan 위에 금색 점(등불)을 올린다 */
 .brand {
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
 }
 
 .brand-i {
@@ -43,18 +44,30 @@ body {
 .brand-i::after {
   content: '';
   position: absolute;
-  top: 0.09em;
+  top: 0.06em;
   left: 50%;
   transform: translateX(-50%);
-  width: 0.16em;
-  height: 0.16em;
+  width: 0.18em;
+  height: 0.18em;
   border-radius: 50%;
   background: var(--color-accent);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--color-accent) 60%, transparent);
 }
 
 h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   font-size: var(--text-md);
+  letter-spacing: -0.01em;
   margin: 0 0 var(--space-5);
+}
+
+h2::before {
+  content: '◆';
+  font-size: 0.52rem;
+  color: var(--color-accent);
+  opacity: 0.85;
 }
 
 h3 {
@@ -78,15 +91,32 @@ h3 {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: var(--space-8);
-  margin-bottom: var(--space-7);
+  margin-bottom: var(--space-8);
+  box-shadow: var(--shadow-nav);
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--color-border) 35%, transparent);
 }
 
 .verse {
   font-family: var(--font-serif);
   font-size: var(--text-lg);
   line-height: var(--leading-verse);
+  letter-spacing: -0.012em;
   word-break: keep-all;
   margin: var(--space-6) 0;
+  font-feature-settings:
+    'palt' 1,
+    'liga' 1;
 }
 
 .chip {

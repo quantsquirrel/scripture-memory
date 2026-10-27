@@ -15,24 +15,34 @@
   border-bottom: 1px solid var(--color-line);
   color: var(--color-text);
   font: inherit;
-  padding: var(--space-5) var(--space-1);
+  padding: 13px var(--space-2);
   cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.verse-row:hover {
+  background-color: color-mix(in srgb, var(--color-panel-alt) 40%, transparent);
 }
 
 .status {
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
+  letter-spacing: 0.02em;
+  font-weight: 600;
   border-radius: var(--radius-pill);
-  padding: var(--space-1) var(--space-5);
+  padding: 3px var(--space-5);
+  border: 1px solid transparent;
 }
 
 .st-new {
   color: var(--color-muted);
   background: var(--color-panel-alt);
+  border-color: var(--color-line);
 }
 
 .st-learning {
   color: var(--color-warn);
-  background: color-mix(in srgb, var(--color-warn) 15%, transparent);
+  background: color-mix(in srgb, var(--color-warn) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-warn) 30%, transparent);
 }
 
 .st-due {
@@ -43,7 +53,8 @@
 
 .st-done {
   color: var(--color-ok);
-  background: color-mix(in srgb, var(--color-ok) 15%, transparent);
+  background: color-mix(in srgb, var(--color-ok) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-ok) 30%, transparent);
 }
 
 .verse-detail {
@@ -81,12 +92,16 @@
   color: var(--color-text);
   font-size: var(--text-sm2);
   cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .col-tab.active {
   border-color: var(--color-accent);
   color: var(--color-accent);
   font-weight: 700;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
 }
 
 .col-row {
@@ -98,8 +113,14 @@
   border: none;
   color: var(--color-text);
   font: inherit;
-  padding: 7px 0;
+  padding: 10px 4px;
+  border-radius: var(--radius);
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.col-row:hover {
+  background-color: color-mix(in srgb, var(--color-panel-alt) 60%, transparent);
 }
 
 .col-label {

@@ -1,7 +1,14 @@
 import { PROGRESS_ROWS } from '../app/queries'
 import { collectionOf, VERSE_BY_ID, VERSES } from '../data/verses'
 import { stepOrdinal } from '../domain/ladder'
-import { type LearnTarget, NewVersePanel, ProgressPanel, TodayReviewPanel } from './home/panels'
+import {
+  type LearnTarget,
+  NewVersePanel,
+  ProgressPanel,
+  RECALIBRATE_DUE_THRESHOLD,
+  RecalibrateBanner,
+  TodayReviewPanel,
+} from './home/panels'
 import { useHomeData } from './hooks'
 
 /** 컨테이너: 데이터를 훅에서 받아 프레젠테이션 컴포넌트가 쓸 모양으로만 다듬는다 */
@@ -9,10 +16,12 @@ export function Home({
   onReview,
   onLearn,
   onBrowse,
+  onRecalibrate,
 }: {
   onReview: () => void
   onLearn: (verseId: string) => void
   onBrowse: () => void
+  onRecalibrate: () => void
 }) {
   const data = useHomeData()
   if (!data) return <p className="muted">불러오는 중…</p>
@@ -38,6 +47,7 @@ export function Home({
 
   return (
     <div>
+      {data.due >= RECALIBRATE_DUE_THRESHOLD && <RecalibrateBanner onOpen={onRecalibrate} />}
       <TodayReviewPanel
         due={data.due}
         dueVerses={data.dueVerses}
