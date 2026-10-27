@@ -1,35 +1,42 @@
 /* 하단 내비게이션 */
 .bottom-nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: calc(var(--layout-max) - 16px);
   display: flex;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-4) var(--space-8) calc(10px + env(safe-area-inset-bottom));
+  justify-content: space-around;
+  gap: var(--space-1);
+  padding: 6px;
   background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--color-line);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-line);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 25%), 0 1px 3px rgb(0 0 0 / 15%);
+  z-index: 100;
 }
 
 .bottom-nav a {
   flex: 1;
-  max-width: 132px;
-  /* 탭 전체가 누를 수 있는 면이 되도록 — 텍스트 폭만큼만 잡히면 14px까지 좁아진다 */
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-5) 0;
-  border-radius: var(--radius);
+  padding: 10px 0;
+  border-radius: 14px;
   color: var(--color-muted);
-  font-size: var(--text-base);
+  font-size: 0.92rem;
+  font-weight: 500;
   text-decoration: none;
   cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .bottom-nav a.active {
   color: var(--color-accent);
   font-weight: 700;
   background: var(--color-panel);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
 }
