@@ -36,7 +36,9 @@
   padding: var(--space-4) 0;
   color: var(--color-text);
   cursor: pointer;
-  transition: transform 0.1s ease, border-color 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    border-color 0.15s ease;
 }
 
 .series-cell:active {

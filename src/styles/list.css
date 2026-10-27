@@ -92,7 +92,9 @@
   color: var(--color-text);
   font-size: var(--text-sm2);
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.1s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.1s ease;
 }
 
 .col-tab.active {

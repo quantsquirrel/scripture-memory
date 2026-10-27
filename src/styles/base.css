@@ -114,7 +114,9 @@ h3 {
   letter-spacing: -0.012em;
   word-break: keep-all;
   margin: var(--space-6) 0;
-  font-feature-settings: 'palt' 1, 'liga' 1;
+  font-feature-settings:
+    'palt' 1,
+    'liga' 1;
 }
 
 .chip {
