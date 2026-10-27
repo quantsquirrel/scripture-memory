@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { bumpRevision, getRevision, notifying, subscribeRevision } from '../src/app/revision'
 import { parseHash, type Route, TABS, toHash } from '../src/views/router'
+import { installHint } from '../src/views/usePwaInstall'
 
 describe('hash 라우팅', () => {
   const routes: Route[] = [
@@ -99,5 +100,20 @@ describe('저장소 리비전 알림 (리마운트 대체)', () => {
   it('인자와 반환값을 그대로 통과시킨다', async () => {
     const wrapped = notifying((a: number, b: number) => Promise.resolve(a + b))
     await expect(wrapped(2, 3)).resolves.toBe(5)
+  })
+})
+
+describe('홈 화면 설치 안내', () => {
+  const base = { standalone: false, ios: false, canPrompt: false, dismissed: false }
+
+  it('설치 이벤트가 있으면 버튼, iOS면 공유 메뉴 안내, 둘 다 아니면 없다', () => {
+    expect(installHint({ ...base, canPrompt: true })).toBe('prompt')
+    expect(installHint({ ...base, ios: true })).toBe('ios')
+    expect(installHint(base)).toBeNull()
+  })
+
+  it('이미 설치했거나 닫았으면 보이지 않는다', () => {
+    expect(installHint({ ...base, canPrompt: true, standalone: true })).toBeNull()
+    expect(installHint({ ...base, ios: true, dismissed: true })).toBeNull()
   })
 })

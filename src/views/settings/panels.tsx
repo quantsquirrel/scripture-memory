@@ -1,6 +1,8 @@
-import type { RefObject } from 'react'
+import { type RefObject, useEffect, useState } from 'react'
 
 import type { Theme } from '../../adapters/theme'
+import type { Pairing } from '../../app/pairing'
+import { CODE_TTL_MS, formatCode, normalizeCode } from '../../domain/pairingCode'
 
 const THEME_OPTIONS: readonly [Theme, string][] = [
   ['auto', '자동'],
@@ -92,6 +94,129 @@ export function GoalPanel({
   )
 }
 
+/** 남은 초. 새 코드가 오면 첫 틱 전까지는 TTL로 눌러 둔다 (이전 시각이 남아 있어서). */
+function useSecondsLeft(until: number | null): number {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (until === null) return
+    const id = setInterval(() => {
+      setNow(Date.now())
+    }, 1000)
+    return () => {
+      clearInterval(id)
+    }
+  }, [until])
+  if (until === null) return 0
+  return Math.ceil(Math.max(0, Math.min(CODE_TTL_MS, until - now)) / 1000)
+}
+
+const mmss = (s: number): string => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+export function PairingPanel({
+  enabled,
+  pairing,
+  busy,
+  input,
+  message,
+  onCreate,
+  onCopy,
+  onInput,
+  onApply,
+}: {
+  enabled: boolean
+  pairing: Pairing | null
+  busy: 'create' | 'apply' | null
+  input: string
+  message: string
+  onCreate: () => void
+  onCopy: () => void
+  onInput: (v: string) => void
+  onApply: () => void
+}) {
+  const left = useSecondsLeft(pairing?.expiresAt ?? null)
+  return (
+    <section className="panel">
+      <h2>간편 기기 연동 (6자리 코드)</h2>
+      <p className="muted small">
+        계정 없이 코드 하나로 다른 기기(맥·윈도우·아이폰·갤럭시)의 암송 기록을 가져옵니다.
+      </p>
+      {!enabled && (
+        <p className="muted small">
+          이 빌드에는 연동 서버 주소가 설정되지 않아 쓸 수 없습니다.
+        </p>
+      )}
+
+      <h3>내 기기 코드 만들기</h3>
+      {pairing && left > 0 && (
+        <div className="pair-code-box">
+          <output
+            className="pair-code"
+            aria-label={`연동 코드 ${pairing.code.split('').join(' ')}`}
+          >
+            {formatCode(pairing.code)}
+          </output>
+          <p className="muted small">{mmss(left)} 뒤 만료 · 한 번만 쓸 수 있습니다</p>
+          <button className="btn" onClick={onCopy}>
+            코드 복사
+          </button>
+        </div>
+      )}
+      {pairing && left === 0 && (
+        <p className="muted small">코드가 만료되었습니다. 새로 만들어 주세요.</p>
+      )}
+      <button
+        className="btn btn-primary"
+        disabled={!enabled || busy !== null}
+        aria-busy={busy === 'create'}
+        onClick={onCreate}
+      >
+        {busy === 'create'
+          ? '코드 만드는 중…'
+          : pairing
+            ? '새 코드 만들기'
+            : '내 기기 코드 만들기'}
+      </button>
+
+      <h3>다른 기기 코드 입력</h3>
+      <label className="muted small" htmlFor="pair-input">
+        다른 기기에 표시된 코드
+      </label>
+      <input
+        id="pair-input"
+        className="ref-input pair-input"
+        placeholder="ABC-DEF"
+        maxLength={7}
+        value={input}
+        onChange={(e) => {
+          onInput(e.target.value.toUpperCase())
+        }}
+        autoCapitalize="characters"
+        autoComplete="off"
+        autoCorrect="off"
+        spellCheck={false}
+      />
+      <button
+        className="btn btn-primary"
+        disabled={!enabled || busy !== null || normalizeCode(input) === null}
+        aria-busy={busy === 'apply'}
+        onClick={onApply}
+      >
+        {busy === 'apply' ? '연동 중…' : '연동하기'}
+      </button>
+      {message && (
+        <p className="muted small" role="status">
+          {message}
+        </p>
+      )}
+      <p className="muted small">
+        코드를 입력한 기기에만 합쳐집니다 — 복습 기록은 합집합, 카드·학습 상태는 더 진행된
+        쪽으로. 양쪽을 똑같이 맞추려면 반대 방향으로도 한 번 더 하세요. 코드를 만든 뒤에 한
+        복습은 그 코드에 들어가지 않습니다.
+      </p>
+    </section>
+  )
+}
+
 export function SyncPanel({
   token,
   gistId,
@@ -110,8 +235,8 @@ export function SyncPanel({
   onSync: () => void
 }) {
   return (
-    <section className="panel">
-      <h2>기기 간 동기화 (GitHub Gist)</h2>
+    <details className="tech-details">
+      <summary>고급: GitHub Gist 동기화 (개발자용)</summary>
       <label className="muted small" htmlFor="sync-token">
         GitHub 토큰 (gist 권한만)
       </label>
@@ -154,7 +279,7 @@ export function SyncPanel({
         복습 기록은 합집합으로, 카드·학습 상태는 더 진행된 쪽으로 병합됩니다. 토큰은 이
         기기(IndexedDB)에만 저장됩니다. 공부 시작 전과 후에 한 번씩 눌러 주세요.
       </p>
-    </section>
+    </details>
   )
 }
 

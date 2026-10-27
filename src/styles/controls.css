@@ -86,3 +86,45 @@
 .rate.suggested {
   outline: 2px solid var(--color-accent);
 }
+
+/* 홈 화면 설치 안내 — 헤더 아래 한 줄, 닫으면 다시 나오지 않는다 */
+.install-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-8);
+  margin-bottom: var(--space-8);
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+}
+
+.install-banner p {
+  margin: 0;
+}
+
+/* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게 (강조 숫자와 같은 accent/panel 쌍) */
+.pair-code-box {
+  text-align: center;
+  margin-bottom: var(--space-6);
+}
+
+.pair-code {
+  display: block;
+  font-size: calc(var(--text-3xl) * 1.5);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.16em;
+  color: var(--color-accent);
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.pair-input {
+  letter-spacing: 0.12em;
+}
+
+.install-banner .btn {
+  width: auto;
+  margin-top: 0;
+}

@@ -232,6 +232,21 @@ export async function loadReviewQueue(
   return orderQueue(source.filter((c) => isReviewable(c.verseId)))
 }
 
+/**
+ * 큐에 든 카드 한 장을 저장소에서 다시 읽는다 — 채점이 StaleCardError로 거절됐을 때.
+ * 그 사이 다른 곳에서 복습돼 learn-ahead 창 밖으로 밀려났거나 사라졌으면 null.
+ */
+export async function reloadQueuedCard(
+  store: Store,
+  key: string,
+  now: Date = new Date(),
+): Promise<StoredCard | null> {
+  const fresh = await store.cards.get(key)
+  if (!fresh) return null
+  const horizon = new Date(now.getTime() + LEARN_AHEAD_MS).toISOString()
+  return fresh.card.due <= horizon ? fresh : null
+}
+
 export interface SettingsData {
   reviews: number
   graduated: number

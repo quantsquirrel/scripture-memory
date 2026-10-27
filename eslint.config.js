@@ -67,6 +67,13 @@ export default defineConfig(
     extends: [jsxA11y.flatConfigs.strict],
   },
 
+  // 연동 릴레이 (Cloudflare Workers — 서비스 워커 전역)
+  {
+    files: ['worker/**/*.ts'],
+    languageOptions: { globals: globals.serviceworker },
+    ...importSort,
+  },
+
   // 테스트·빌드 설정 (노드 전역)
   {
     files: [

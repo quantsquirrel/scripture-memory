@@ -112,6 +112,25 @@ export interface RatedCard {
   readonly card: StoredCard
   /** 같은 트랜잭션에 기록될 증거 */
   readonly entry: Omit<ReviewEntry, 'id'>
+  /** 채점 기준이 된 카드 상태 — 저장된 카드가 이것과 같을 때만 커밋된다 */
+  readonly base: SerializedCard
+}
+
+/**
+ * 채점 기준이 된 카드가 저장소에서 이미 바뀌었다. 커밋하지 않았으므로 카드를
+ * 다시 읽어 다시 출제해야 한다 — 새 상태에 옛 증거를 얹으면 reps로 정하는
+ * 복습 모드(policy.ts)가 어긋나 타이핑 감사를 건너뛸 수 있다.
+ */
+export class StaleCardError extends Error {
+  constructor(readonly key: string) {
+    super(`다른 탭이나 기기의 동기화로 카드가 바뀌었습니다: ${key}`)
+    this.name = 'StaleCardError'
+  }
+}
+
+/** 같은 일정 상태인가. 채점마다 reps와 last_review가 바뀌므로 둘이 버전 구실을 한다. */
+export function isSameSchedule(a: SerializedCard, b: SerializedCard): boolean {
+  return a.reps === b.reps && a.last_review === b.last_review && a.due === b.due
 }
 
 /**
@@ -157,6 +176,7 @@ export function rateCard(
       peeks: evidence.peeks,
       ts: now.toISOString(),
     },
+    base: sc.card,
   }
 }
 

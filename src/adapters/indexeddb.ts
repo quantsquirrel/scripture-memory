@@ -8,7 +8,14 @@ import {
   type StoredCard,
 } from '../domain/card'
 import { type LadderStep, type LearnProgress, stepFromLegacy } from '../domain/ladder'
-import { assertRated, newCard, type RatedCard, State } from '../domain/scheduler'
+import {
+  assertRated,
+  isSameSchedule,
+  newCard,
+  type RatedCard,
+  StaleCardError,
+  State,
+} from '../domain/scheduler'
 import {
   type CardRepository,
   type ExportBundle,
@@ -159,6 +166,10 @@ class IdbCards implements CardRepository {
     assertRated(rated)
     const d = await openTmsDb()
     const tx = d.transaction(['cards', 'reviews'], 'readwrite')
+    const stored = await tx.objectStore('cards').get(rated.card.key)
+    if (!stored || !isSameSchedule(stored.card, rated.base)) {
+      throw new StaleCardError(rated.card.key)
+    }
     // 증거를 먼저 쓴다. 두 번째 쓰기가 동기적으로 던지면 IndexedDB는 트랜잭션을
     // 자동으로 되돌리지 않으므로, 순서를 뒤집으면 카드만 갱신되고 증거가 없는
     // 상태로 커밋될 수 있다. 증거가 먼저면 실패 시 카드가 그대로 남는다.
@@ -241,6 +252,8 @@ class IdbSettings implements SettingsStore {
   setSyncGistId = (v: string): Promise<void> => this.write('syncGistId', v)
   lastSyncAt = (): Promise<string | undefined> => this.read('lastSyncAt', isString)
   setLastSyncAt = (v: string): Promise<void> => this.write('lastSyncAt', v)
+  syncDeviceId = (): Promise<string | undefined> => this.read('syncDeviceId', isString)
+  setSyncDeviceId = (v: string): Promise<void> => this.write('syncDeviceId', v)
   qtPosition = (): Promise<string | undefined> => this.read('qtPosition', isString)
   setQtPosition = (v: string): Promise<void> => this.write('qtPosition', v)
   qtPositionDate = (): Promise<string | undefined> => this.read('qtPositionDate', isIsoDate)
@@ -310,6 +323,33 @@ class IdbStore implements Store {
     }
     for (const l of bundle.learning) await tx.objectStore('learning').put(l)
     await tx.done
+  }
+
+  async mergeAll(merge: (local: ExportBundle) => ExportBundle): Promise<ExportBundle> {
+    const d = await openTmsDb()
+    const tx = d.transaction(['cards', 'reviews', 'learning'], 'readwrite')
+    const cards = tx.objectStore('cards')
+    const reviews = tx.objectStore('reviews')
+    const learning = tx.objectStore('learning')
+    const merged = merge({
+      app: 'scripture-memory',
+      version: SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      cards: await cards.getAll(),
+      reviews: await reviews.getAll(),
+      learning: await learning.getAll(),
+    })
+    await cards.clear()
+    await reviews.clear()
+    await learning.clear()
+    for (const c of merged.cards) await cards.put(c)
+    for (const r of merged.reviews) {
+      const { id: _id, ...rest } = r
+      await reviews.add(rest)
+    }
+    for (const l of merged.learning) await learning.put(l)
+    await tx.done
+    return merged
   }
 
   async reset(): Promise<void> {

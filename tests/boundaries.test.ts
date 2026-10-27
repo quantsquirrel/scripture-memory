@@ -135,8 +135,9 @@ describe('경계 1 — 증거 없는 등급 적용 금지', () => {
   it('커밋은 증거를 먼저 쓴다 (두 번째 쓰기 실패 시 카드가 남지 않게)', () => {
     const src = read('src/adapters/indexeddb.ts')
     const body = src.slice(src.indexOf('async commitRating'))
-    const reviewsAt = body.indexOf("objectStore('reviews')")
-    const cardsAt = body.indexOf("objectStore('cards')")
+    // 기준 상태 확인을 위한 카드 읽기는 쓰기가 아니다 — 두 쓰기의 순서만 본다
+    const reviewsAt = body.indexOf("objectStore('reviews').add(rated.entry)")
+    const cardsAt = body.indexOf("objectStore('cards').put(rated.card)")
     expect(reviewsAt).toBeGreaterThanOrEqual(0)
     expect(cardsAt).toBeGreaterThanOrEqual(0)
     expect(reviewsAt, '증거 쓰기가 카드 쓰기보다 앞에 있어야 한다').toBeLessThan(cardsAt)
@@ -374,6 +375,34 @@ describe('경계 4 — 오프라인 완결', () => {
     // 유일한 연결점은 동적 import여서 별도 청크로 갈라진다
     const sync = read('src/app/sync.ts')
     expect(sync).toMatch(/await import\('\.\.\/adapters\/gist'\)/)
+  })
+
+  it('6자리 코드 연동 릴레이도 선택 기능이다 (동적 import로만 닿는다)', () => {
+    expect(read('src/adapters/pairing.ts')).toContain('fetch(')
+    // 화면이 코드 규칙을 쓰려고 어댑터를 끌어오면 네트워크 코드가 메인 번들에 섞인다 —
+    // 규칙은 domain/pairingCode.ts에 있다.
+    for (const rel of [
+      'src/app/index.ts',
+      'src/app/review.ts',
+      'src/app/queries.ts',
+      'src/app/revision.ts',
+      'src/app/pairing.ts',
+      'src/domain/pairingCode.ts',
+      'src/views/hooks.ts',
+      'src/views/App.tsx',
+      'src/views/Settings.tsx',
+      'src/views/settings/panels.tsx',
+    ]) {
+      const src = read(rel)
+      expect(src, `${rel}가 연동 어댑터를 정적으로 import한다`).not.toMatch(
+        /^import (?!type ).*adapters\/(pairing|gist)'/m,
+      )
+      for (const net of ['fetch(', 'XMLHttpRequest', 'WebSocket']) {
+        expect(src, `${rel}에 ${net}가 생겼다`).not.toContain(net)
+      }
+    }
+    const app = read('src/app/pairing.ts')
+    expect(app.match(/await import\('\.\.\/adapters\/pairing'\)/g)).toHaveLength(2)
   })
 
   it('학습·복습·export 전 과정이 저장소만으로 끝난다 (네트워크 어댑터 없이)', async () => {
