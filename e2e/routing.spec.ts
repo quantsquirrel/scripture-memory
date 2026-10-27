@@ -30,19 +30,21 @@ test.describe('hash 라우팅', () => {
   })
 
   test('딥링크로 바로 들어갈 수 있고 새로고침해도 같은 화면이다', async ({ page }) => {
-    await page.goto(`${BASE}#/meditate`)
-    await expect(page.getByRole('heading', { name: '오늘 읽은 말씀' })).toBeVisible()
+    await page.goto(`${BASE}#/settings`)
+    await expect(page.getByRole('heading', { name: '화면 테마' })).toBeVisible()
 
     await page.reload()
-    await expect(page).toHaveURL(/#\/meditate$/)
-    await expect(page.getByRole('heading', { name: '오늘 읽은 말씀' })).toBeVisible()
+    await expect(page).toHaveURL(/#\/settings$/)
+    await expect(page.getByRole('heading', { name: '화면 테마' })).toBeVisible()
   })
 
-  test('옛 #/stats 링크도 묵상 화면을 연다 (탭 이름이 바뀌기 전 저장한 링크)', async ({
+  test('없어진 묵상·돌아보기 링크는 홈을 연다 (저장해 둔 링크가 빈 화면이 되지 않게)', async ({
     page,
   }) => {
-    await page.goto(`${BASE}#/stats`)
-    await expect(page.getByRole('heading', { name: '오늘 읽은 말씀' })).toBeVisible()
+    for (const hash of ['#/meditate', '#/stats']) {
+      await page.goto(`${BASE}${hash}`)
+      await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
+    }
   })
 
   test('구절 딥링크가 학습 화면을 열고 새로고침을 견딘다', async ({ page }) => {

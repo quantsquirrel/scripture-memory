@@ -39,7 +39,7 @@ async function measureTargets(page: import('@playwright/test').Page) {
 }
 
 test.describe('터치 타깃 44×44px', () => {
-  for (const route of ['home', 'browse', 'meditate', 'settings'] as const) {
+  for (const route of ['home', 'browse', 'settings'] as const) {
     test(`${route} 화면의 모든 대화형 요소가 44px 이상`, async ({ page }) => {
       await page.goto(`${BASE}#/${route}`)
       await expect(page.locator('nav.bottom-nav')).toBeVisible()
@@ -125,10 +125,20 @@ test.describe('키보드 전용 조작', () => {
   test('하단 탭이 키보드로 이동 가능한 링크다', async ({ page }) => {
     await page.goto(`${BASE}#/home`)
     const tabs = page.locator('nav.bottom-nav a')
-    await expect(tabs).toHaveCount(5)
-    for (let i = 0; i < 5; i++) {
+    await expect(tabs).toHaveCount(4)
+    for (let i = 0; i < 4; i++) {
       await expect(tabs.nth(i)).toHaveAttribute('href', /#\//)
     }
+  })
+
+  test('아이콘만 있는 하단 탭도 이름으로 찾을 수 있다', async ({ page }) => {
+    await page.goto(`${BASE}#/home`)
+    const nav = page.locator('nav.bottom-nav')
+    for (const name of ['홈', '복습', '목록', '설정']) {
+      await expect(nav.getByRole('link', { name })).toBeVisible()
+    }
+    // 글자는 보이지 않고 그림만 보인다
+    await expect(nav).not.toContainText('복습')
   })
 })
 

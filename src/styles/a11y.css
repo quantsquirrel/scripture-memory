@@ -36,11 +36,6 @@
   min-height: var(--touch-min);
 }
 
-/* 진행률 행은 누를 수 있는 대상이므로 높이를 확보한다 (마음 밭의 정적 행은 제외) */
-.col-row:not(.col-row-static) {
-  min-height: var(--touch-min);
-}
-
 /* 첫글자 보드의 어절 버튼은 본문 흐름을 유지해야 해서 시각 크기를 키울 수 없다.
  * 대신 누를 수 있는 영역을 투명하게 넓힌다. */
 .fl-word {

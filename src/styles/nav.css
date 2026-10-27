@@ -38,6 +38,11 @@
     background 0.15s ease;
 }
 
+.bottom-nav .tab-icon {
+  width: 24px;
+  height: 24px;
+}
+
 .bottom-nav a.active {
   color: var(--color-accent);
   font-weight: 700;

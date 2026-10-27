@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 
-import { loadMeditation, store } from '../app'
-import type { MeditationData } from '../app/meditation'
+import { store } from '../app'
 import {
   type BrowseData,
   type HomeData,
@@ -9,19 +8,15 @@ import {
   loadHome,
   loadReviewQueue,
   loadSettings,
-  loadStats,
   reloadQueuedCard,
   type SettingsData,
-  type StatsData,
 } from '../app/queries'
 import { loadRecalibrateUnits, type RecalibrateUnit } from '../app/recalibrate'
 import { openLadder } from '../app/review'
 import { getRevision, subscribeRevision } from '../app/revision'
-import { loadFullText } from '../data/fullText'
-import { VERSE_BY_ID, VERSE_PASSAGES } from '../data/verses'
+import { VERSE_BY_ID } from '../data/verses'
 import type { StoredCard } from '../domain/card'
 import type { LadderStep } from '../domain/ladder'
-import { type FullText, type Passage, textOf } from '../domain/scripture'
 
 /**
  * 저장소 리비전 구독. 쓰기가 끝나면 숫자가 올라가고, 이 훅을 쓰는 뷰만
@@ -50,64 +45,6 @@ export function useHomeData(): HomeData | null {
     }
   }, [revision])
   return data
-}
-
-export function useStatsSummary(): StatsData | null {
-  const revision = useRevision()
-  const [data, setData] = useState<StatsData | null>(null)
-  useEffect(() => {
-    let alive = true
-    void loadStats(store).then((v) => {
-      if (alive) setData(v)
-    })
-    return () => {
-      alive = false
-    }
-  }, [revision])
-  return data
-}
-
-/**
- * 오늘의 묵상. 리비전을 구독하므로 QT 본문을 고쳐 적으면 곧바로 다시 고른다.
- */
-export function useMeditation(): MeditationData | null {
-  const revision = useRevision()
-  const [data, setData] = useState<MeditationData | null>(null)
-  useEffect(() => {
-    let alive = true
-    void loadMeditation().then((v) => {
-      if (alive) setData(v)
-    })
-    return () => {
-      alive = false
-    }
-  }, [revision])
-  return data
-}
-
-/**
- * 장절 표기 → 본문. 495구절이 먼저이고 전문이 나중이다.
- *
- * 전문(4.5MB)을 기다리지 않고 곧바로 쓸 수 있는 조회기를 돌려준다 — 그동안에도
- * 495에 있는 자리는 본문이 나오고, 전문이 도착하면 나머지가 채워진다. 묵상
- * 화면의 첫 페인트를 4.5MB 파싱 뒤로 미루지 않기 위한 것이므로, 이걸
- * `loadMeditation()`의 Promise.all에 끼워 넣지 말 것.
- */
-export function useVerseTexts(): (label: string) => Passage | null {
-  const [full, setFull] = useState<FullText | null>(null)
-  useEffect(() => {
-    let alive = true
-    void loadFullText().then((t) => {
-      if (alive) setFull(t)
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
-  return useMemo(
-    () => (label: string) => textOf({ corpus: VERSE_PASSAGES, full }, label),
-    [full],
-  )
 }
 
 export function useBrowseData(): BrowseData | null {
