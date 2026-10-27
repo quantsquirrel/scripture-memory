@@ -11,7 +11,6 @@
   font-size: var(--text-base);
   cursor: pointer;
   text-align: center;
-  transition: transform 0.12s ease, filter 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .btn:active {
@@ -28,7 +27,6 @@
   border-color: var(--color-accent);
   color: var(--color-accent-text);
   font-weight: 700;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .btn-danger {
@@ -44,7 +42,6 @@
   font-size: var(--text-base);
   padding: var(--space-3) var(--space-2);
   cursor: pointer;
-  transition: color 0.15s ease;
 }
 
 .btn-row {

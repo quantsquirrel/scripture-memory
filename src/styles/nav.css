@@ -9,10 +9,8 @@
   gap: var(--space-2);
   padding: var(--space-4) var(--space-8) calc(10px + env(safe-area-inset-bottom));
   background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
   border-top: 1px solid var(--color-line);
-  box-shadow: var(--shadow-nav);
 }
 
 .bottom-nav a {
@@ -28,7 +26,6 @@
   font-size: var(--text-base);
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .bottom-nav a.active {
