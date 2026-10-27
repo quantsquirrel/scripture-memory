@@ -6,6 +6,7 @@ dev-dist/
 .playwright-mcp/
 *.png
 !public/icons/*.png
+!public/*.png
 .claude/
 .omo/
 __pycache__/
