@@ -13,6 +13,7 @@ import {
   type SettingsData,
   type StatsData,
 } from '../app/queries'
+import { loadRecalibrateUnits, type RecalibrateUnit } from '../app/recalibrate'
 import { openLadder } from '../app/review'
 import { getRevision, subscribeRevision } from '../app/revision'
 import { loadFullText } from '../data/fullText'
@@ -129,6 +130,21 @@ export function useSettingsData(): SettingsData | null {
   useEffect(() => {
     let alive = true
     void loadSettings(store).then((v) => {
+      if (alive) setData(v)
+    })
+    return () => {
+      alive = false
+    }
+  }, [revision])
+  return data
+}
+
+export function useRecalibrateUnits(): RecalibrateUnit[] | null {
+  const revision = useRevision()
+  const [data, setData] = useState<RecalibrateUnit[] | null>(null)
+  useEffect(() => {
+    let alive = true
+    void loadRecalibrateUnits(store).then((v) => {
       if (alive) setData(v)
     })
     return () => {

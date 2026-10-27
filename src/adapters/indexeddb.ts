@@ -1,6 +1,12 @@
 import { type DBSchema, type IDBPDatabase, openDB } from 'idb'
 
-import { cardKey, type Direction, type ReviewEntry, type StoredCard } from '../domain/card'
+import {
+  cardKey,
+  type Direction,
+  DIRECTIONS,
+  type ReviewEntry,
+  type StoredCard,
+} from '../domain/card'
 import { type LadderStep, type LearnProgress, stepFromLegacy } from '../domain/ladder'
 import { assertRated, newCard, type RatedCard, State } from '../domain/scheduler'
 import {
@@ -265,6 +271,15 @@ class IdbStore implements Store {
       step: 'graduated',
       updatedAt: now.toISOString(),
     })
+    await tx.done
+  }
+
+  async demoteToLadder(verseId: string, step: LadderStep, now: Date): Promise<void> {
+    const d = await openTmsDb()
+    const tx = d.transaction(['cards', 'learning'], 'readwrite')
+    const cards = tx.objectStore('cards')
+    for (const dir of DIRECTIONS) await cards.delete(cardKey(verseId, dir))
+    await tx.objectStore('learning').put({ verseId, step, updatedAt: now.toISOString() })
     await tx.done
   }
 

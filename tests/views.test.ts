@@ -12,6 +12,7 @@ describe('hash 라우팅', () => {
     { name: 'browse' },
     { name: 'meditate' },
     { name: 'settings' },
+    { name: 'recalibrate' },
     { name: 'learn', verseId: 'AS1a' },
   ]
 
