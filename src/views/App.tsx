@@ -1,5 +1,6 @@
 import { Browse } from './Browse'
 import { Home } from './Home'
+import { InstallBanner } from './InstallBanner'
 import { Learn } from './Learn'
 import { Meditate } from './Meditate'
 import { Recalibrate } from './Recalibrate'
@@ -21,6 +22,8 @@ export default function App() {
         </h1>
         <span className="muted small">말씀암송 · 개역한글</span>
       </header>
+
+      <InstallBanner />
 
       {/*
         이전에는 <main key={epoch}>로 뷰 전체를 강제 리마운트해 데이터를 갱신했다.

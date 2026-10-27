@@ -11,9 +11,23 @@ import {
   setSyncGistId as persistSyncGistId,
   setSyncToken as persistSyncToken,
 } from '../app'
+import {
+  applyPairingCode,
+  generatePairingCode,
+  type Pairing,
+  pairingRelay,
+} from '../app/pairing'
 import { syncNow } from '../app/sync'
+import { formatCode } from '../domain/pairingCode'
 import { useSettingsData } from './hooks'
-import { AboutPanel, DataPanel, GoalPanel, SyncPanel, ThemePanel } from './settings/panels'
+import {
+  AboutPanel,
+  DataPanel,
+  GoalPanel,
+  PairingPanel,
+  SyncPanel,
+  ThemePanel,
+} from './settings/panels'
 
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
@@ -25,6 +39,10 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const [token, setToken] = useState<string | null>(null)
   const [gistId, setGistId] = useState<string | null>(null)
   const [theme, setThemeState] = useState<Theme>(() => getTheme())
+  const [pairing, setPairing] = useState<Pairing | null>(null)
+  const [pairBusy, setPairBusy] = useState<'create' | 'apply' | null>(null)
+  const [pairInput, setPairInput] = useState('')
+  const [pairMsg, setPairMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   if (!data) return <p className="muted">불러오는 중…</p>
@@ -56,6 +74,42 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
       setSyncMsg(`실패: ${message(e)}`)
     } finally {
       setSyncing(false)
+    }
+  }
+
+  const doCreatePairing = async () => {
+    setPairBusy('create')
+    setPairMsg('')
+    try {
+      setPairing(await generatePairingCode())
+    } catch (e) {
+      setPairMsg(`코드 만들기 실패: ${message(e)}`)
+    } finally {
+      setPairBusy(null)
+    }
+  }
+
+  const doCopyPairing = async () => {
+    if (!pairing) return
+    try {
+      await navigator.clipboard.writeText(formatCode(pairing.code))
+      setPairMsg('코드를 복사했습니다.')
+    } catch {
+      setPairMsg('복사하지 못했습니다. 코드를 직접 옮겨 적어 주세요.')
+    }
+  }
+
+  const doApplyPairing = async () => {
+    setPairBusy('apply')
+    setPairMsg('다른 기기의 기록을 가져오는 중…')
+    try {
+      const r = await applyPairingCode(pairInput)
+      setPairInput('')
+      setPairMsg(`연동 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`)
+    } catch (e) {
+      setPairMsg(`연동 실패: ${message(e)}`)
+    } finally {
+      setPairBusy(null)
     }
   }
 
@@ -109,6 +163,18 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
         bufferDays={data.bufferDays}
         onGoalDate={(d) => void saveGoalDate(d)}
         onBufferDays={(n) => void saveBuffer(n)}
+      />
+
+      <PairingPanel
+        enabled={pairingRelay() !== null}
+        pairing={pairing}
+        busy={pairBusy}
+        input={pairInput}
+        message={pairMsg}
+        onCreate={() => void doCreatePairing()}
+        onCopy={() => void doCopyPairing()}
+        onInput={setPairInput}
+        onApply={() => void doApplyPairing()}
       />
 
       <SyncPanel

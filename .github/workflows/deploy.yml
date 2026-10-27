@@ -29,6 +29,9 @@ jobs:
       - run: npm run coverage
       - run: npm run typecheck
       - run: npm run build
+        env:
+          # 6자리 코드 연동 릴레이 주소 (저장소 변수). 비어 있으면 연동 기능이 꺼진 채 빌드된다.
+          VITE_PAIRING_RELAY_URL: ${{ vars.PAIRING_RELAY_URL }}
       - uses: actions/configure-pages@v6
         with:
           enablement: true
