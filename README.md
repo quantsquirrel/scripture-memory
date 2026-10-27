@@ -6,7 +6,7 @@ with an emphasis on both **word-perfect recall** and **long-term retention**.
 - **495 verses included**: Five Assurances (5) → Guidelines for Christian Living (8) →
   Topical Memory System (60) → The Disciple's Path, DEP (242) →
   Topical Scripture Memory Series (180).
-- **315 verses in the goal scope**: Target-date pacing and exam readiness count only
+- **315 verses in the goal scope**: Target-date pacing counts only
   the curriculum through DEP242 (5+8+60+242). The 180-verse extension is excluded
   from the goal and used for maintenance review
   (`src/domain/goal.ts`, `GOAL_VERSE_COUNT`). Records stay in the browser's IndexedDB,
@@ -78,16 +78,6 @@ records on the device without requiring an account.
   collection → section (main heading) → group → topic (title) → reference → verse text.
   Existing IDs for the 60-verse collection (`A1a` through `E6b`) are preserved for
   compatibility with user data.
-- **Full Bible text:** `src/data/fullText.json` contains the same translation's
-  66 books, 1,189 chapters, and 31,102 verses (4.5 MB, acquired August 28, 2026).
-  This is **display-only** text for expanding reference chains in the meditation
-  tab. Where entries overlap, the 495-verse dataset always takes precedence as
-  the canonical source for grading and learning. Provenance and processing details
-  are in `src/data/fullText.LICENSE.txt`. Moral rights do not expire, so historical
-  spelling and punctuation are retained.
-  The full text is accessed only through a dynamic import and precached in full
-  by the service worker. This increases the initial installation transfer from
-  about 384 KiB to about 1.25 MiB (gzip); subsequent reads use the cache.
 
 ## Development
 
@@ -121,7 +111,7 @@ src/
     grading.ts     Character-level LCS diff grading and rating mapping
     ref.ts         Reference-entry parsing and grading
     policy.ts      Review-mode selection and periodic typing audits
-    stats.ts       Statistics; goal.ts handles goal pacing
+    goal.ts        Goal-date pacing
   ports/       Storage interfaces (CardRepository / ReviewLog / … / Store)
   adapters/    indexeddb (v2 + migrations), memory (tests), gist, theme
   app/         Use cases; submitReview is the only path for applying a rating

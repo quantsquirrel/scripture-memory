@@ -1,14 +1,10 @@
 import { collectionOf, COLLECTIONS, VERSES } from '../data/verses'
-import { DIRECTIONS, type StoredCard } from './card'
 import { required } from './invariant'
 import { isGraduated, type LearnProgress } from './ladder'
-import { retrievabilityAt, State } from './scheduler'
 
 export const DEFAULT_GOAL_DATE = '2026-08-26'
 /** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
 export const DEFAULT_REVIEW_BUFFER_DAYS = 7
-/** 시험 준비 판정 기준: 목표일 예측 기억률이 이 값 이상이면 준비된 구절로 센다 */
-export const EXAM_RETENTION = 0.95
 
 /** 목표 범위: DEP242 완결까지. 180구절 확장은 목표일 페이싱에 포함하지 않는다. */
 const DEP_ORDER = required(
@@ -90,40 +86,4 @@ export function computeGoal(
     aheadDays,
     past,
   }
-}
-
-export interface ExamReadiness {
-  /** 시험일까지 추가 복습이 없어도 기억률 ≥ EXAM_RETENTION으로 예측되는 구절 수 */
-  ready: number
-  total: number
-}
-
-/**
- * 시험 준비도: 목표 범위(DEP242까지) 구절 중, 3방향 카드가 모두 존재하고
- * 각 카드의 시험일 예측 기억률(현재 상태 기준, 추가 복습 없음 가정)이
- * EXAM_RETENTION 이상인 구절 수.
- */
-export function computeReadiness(
-  cards: StoredCard[],
-  goalDate: string,
-  now: Date = new Date(),
-): ExamReadiness {
-  const exam = new Date(`${goalDate}T23:59:59`)
-  const at = exam.getTime() > now.getTime() ? exam : now
-  const byVerse = new Map<string, StoredCard[]>()
-  for (const c of cards) {
-    if (!GOAL_VERSE_IDS.has(c.verseId)) continue
-    const arr = byVerse.get(c.verseId) ?? []
-    arr.push(c)
-    byVerse.set(c.verseId, arr)
-  }
-  let ready = 0
-  for (const vc of byVerse.values()) {
-    if (vc.length < DIRECTIONS.length) continue
-    const ok = vc.every(
-      (c) => c.card.state !== State.New && retrievabilityAt(c.card, at) >= EXAM_RETENTION,
-    )
-    if (ok) ready++
-  }
-  return { ready, total: GOAL_VERSE_COUNT }
 }

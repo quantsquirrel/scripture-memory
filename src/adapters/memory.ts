@@ -107,12 +107,6 @@ export class MemoryStore implements Store {
     setLastSyncAt: (v) => this.writeSetting('lastSyncAt', v),
     syncDeviceId: () => this.readSetting('syncDeviceId', (v) => typeof v === 'string'),
     setSyncDeviceId: (v) => this.writeSetting('syncDeviceId', v),
-    qtPosition: () => this.readSetting('qtPosition', (v) => typeof v === 'string'),
-    setQtPosition: (v) => this.writeSetting('qtPosition', v),
-    qtPositionDate: () => this.readSetting('qtPositionDate', (v) => typeof v === 'string'),
-    setQtPositionDate: (v) => this.writeSetting('qtPositionDate', v),
-    meditationLog: () => this.readSetting('meditationLog', (v) => typeof v === 'string'),
-    setMeditationLog: (v) => this.writeSetting('meditationLog', v),
   }
 
   private readSetting<T>(key: string, ok: (v: unknown) => boolean): Promise<T | undefined> {

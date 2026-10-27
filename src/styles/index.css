@@ -19,7 +19,5 @@
 @import './controls.css';
 @import './progress.css';
 @import './list.css';
-@import './charts.css';
-@import './stats.css';
-@import './meditate.css';
+@import './details.css';
 @import './a11y.css';

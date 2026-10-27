@@ -160,8 +160,7 @@ export function ProgressPanel({
         />
       </div>
       <p className="muted small">
-        전체 {overall.done}/{overall.total} 구절 암송 중 — 묵상·마음 밭·훈련 지표는 돌아보기
-        탭에서
+        전체 {overall.done}/{overall.total} 구절 암송 중
       </p>
       {rows.map((row) => (
         <button key={row.key} className="col-row" onClick={onOpen}>

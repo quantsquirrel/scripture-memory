@@ -2,11 +2,11 @@ import { Browse } from './Browse'
 import { Home } from './Home'
 import { InstallBanner } from './InstallBanner'
 import { Learn } from './Learn'
-import { Meditate } from './Meditate'
 import { Recalibrate } from './Recalibrate'
 import { Review } from './Review'
 import { type Route, TABS, toHash, useRoute } from './router'
 import { Settings } from './Settings'
+import { TabIcon } from './TabIcon'
 
 export default function App() {
   const { route, navigate } = useRoute()
@@ -40,11 +40,13 @@ export default function App() {
           return (
             <a
               key={tab.name}
-              href={toHash({ name: tab.name } as Route)}
+              href={toHash({ name: tab.name })}
               className={current ? 'active' : ''}
               aria-current={current ? 'page' : undefined}
+              aria-label={tab.label}
+              title={tab.label}
             >
-              {tab.label}
+              <TabIcon name={tab.name} />
             </a>
           )
         })}
@@ -107,8 +109,6 @@ function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) =
           }}
         />
       )
-    case 'meditate':
-      return <Meditate />
     case 'settings':
       return (
         <Settings

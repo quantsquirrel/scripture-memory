@@ -14,7 +14,6 @@ import {
   retrievabilityAt,
   toState,
 } from '../src/domain/scheduler'
-import { dailyPick, dueForecast, reviewHistory } from '../src/domain/stats'
 
 describe('firstLetterWords', () => {
   it('어절별 첫 글자만 힌트로 주고 원문 어절을 보존한다', () => {
@@ -197,28 +196,5 @@ describe('장절 파서 거부 경로', () => {
   it('빈 절 항목은 건너뛰고 남은 절로 판정한다', () => {
     expect(required(parseRef('빌 4:6,,7')).verses).toEqual([6, 7])
     expect(parseRef('빌 4:,')).toBeNull()
-  })
-})
-
-describe('통계 경계 분기', () => {
-  it('dueForecast는 days=0이면 평균 0', () => {
-    expect(dueForecast([], 0, new Date('2026-07-31T12:00:00+09:00'))).toEqual({
-      counts: [],
-      tomorrow: 0,
-      avgPerDay: 0,
-    })
-  })
-
-  it('reviewHistory는 days=0이면 평균 0이고 창이 비어 있다', () => {
-    const h = reviewHistory([], 0, new Date('2026-07-31T12:00:00+09:00'))
-    expect(h.counts).toEqual([])
-    expect(h.avgPerDay).toBe(0)
-    expect(h.streak).toBe(0)
-  })
-
-  it('dailyPick은 항목이 하나면 매일 같은 것을 준다', () => {
-    const items = ['only']
-    expect(dailyPick(items, new Date('2026-07-31T00:10:00+09:00'))).toBe('only')
-    expect(dailyPick(items, new Date('2026-08-05T23:50:00+09:00'))).toBe('only')
   })
 })
