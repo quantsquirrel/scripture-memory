@@ -98,6 +98,13 @@ export interface Store {
    * 두 스토어를 한 트랜잭션으로 처리한다. 기존 카드의 FSRS 상태는 덮어쓰지 않는다.
    */
   graduate(verseId: string, directions: readonly Direction[], now: Date): Promise<void>
+  /**
+   * 사다리 강등: 구절의 3방향 카드를 지우고 진행 상태를 step으로 —
+   * 두 스토어를 한 트랜잭션으로 처리한다. 등급을 매기지 않으므로 증거도 쓰지 않으며,
+   * 이미 남은 복습 기록(ReviewEntry)은 지우지 않는다. 카드가 다시 생기는 길은
+   * 사다리를 재통과한 뒤의 graduate()뿐이다.
+   */
+  demoteToLadder(verseId: string, step: LadderStep, now: Date): Promise<void>
   exportAll(now?: Date): Promise<ExportBundle>
   /** v1·v2 번들을 모두 받는다 (v1은 마이그레이션해서 적용) */
   importAll(input: unknown): Promise<void>

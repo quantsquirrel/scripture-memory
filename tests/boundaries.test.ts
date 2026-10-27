@@ -332,6 +332,7 @@ describe('경계 4 — 오프라인 완결', () => {
       'src/app/review.ts',
       'src/app/queries.ts',
       'src/app/meditation.ts',
+      'src/app/recalibrate.ts',
       'src/domain/meditation.ts',
       'src/domain/qt.ts',
       'src/adapters/indexeddb.ts',

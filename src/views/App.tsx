@@ -2,6 +2,7 @@ import { Browse } from './Browse'
 import { Home } from './Home'
 import { Learn } from './Learn'
 import { Meditate } from './Meditate'
+import { Recalibrate } from './Recalibrate'
 import { Review } from './Review'
 import { type Route, TABS, toHash, useRoute } from './router'
 import { Settings } from './Settings'
@@ -63,6 +64,9 @@ function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) =
           onBrowse={() => {
             navigate({ name: 'browse' })
           }}
+          onRecalibrate={() => {
+            navigate({ name: 'recalibrate' })
+          }}
         />
       )
     case 'review':
@@ -103,6 +107,20 @@ function ViewFor({ route, navigate }: { route: Route; navigate: (route: Route) =
     case 'meditate':
       return <Meditate />
     case 'settings':
-      return <Settings />
+      return (
+        <Settings
+          onRecalibrate={() => {
+            navigate({ name: 'recalibrate' })
+          }}
+        />
+      )
+    case 'recalibrate':
+      return (
+        <Recalibrate
+          onExit={() => {
+            navigate({ name: 'home' })
+          }}
+        />
+      )
   }
 }

@@ -17,7 +17,7 @@ import { AboutPanel, DataPanel, GoalPanel, SyncPanel, ThemePanel } from './setti
 
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
-export function Settings() {
+export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const data = useSettingsData()
   const [msg, setMsg] = useState('')
   const [syncMsg, setSyncMsg] = useState('')
@@ -132,6 +132,7 @@ export function Settings() {
         onExport={() => void doExport()}
         onImport={(f) => void doImport(f)}
         onReset={() => void doReset()}
+        onRecalibrate={onRecalibrate}
       />
 
       <AboutPanel />
