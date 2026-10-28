@@ -14,10 +14,20 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        {/* 워드마크: i의 점이 등불(악센트 금색) — DESIGN.md Overview의 시각 은유 */}
+        {/* 워드마크: i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다 — DESIGN.md Overview의 시각 은유 */}
         <h1 className="brand" aria-label="Ivan">
-          <span aria-hidden="true">
-            <span className="brand-i">ı</span>van
+          <span aria-hidden="true" className="brand-wordmark">
+            <svg
+              className="brand-i-icon"
+              viewBox="0 0 10 24"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="5" cy="4.5" r="3" fill="var(--color-accent)" />
+              <circle cx="5" cy="4.5" r="5.5" fill="var(--color-accent)" opacity="0.25" />
+              <rect x="3.2" y="10.5" width="3.6" height="13.5" rx="1.8" fill="currentColor" />
+            </svg>
+            <span className="brand-tail">van</span>
           </span>
         </h1>
         <span className="muted small">말씀암송 · 개역한글</span>

@@ -14,14 +14,15 @@ body {
 .app {
   max-width: var(--layout-max);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-8) calc(96px + env(safe-area-inset-bottom));
+  padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-8)
+    calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
 .app-header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: var(--space-4) var(--space-1) var(--space-6);
+  padding: var(--space-4) 0 var(--space-5);
   border-bottom: 1px solid var(--color-line);
   margin-bottom: var(--space-8);
 }
@@ -32,26 +33,33 @@ body {
   letter-spacing: 0.04em;
 }
 
-/* Ivan 워드마크 — 소문자 ıvan 위에 금색 점(등불)을 올린다 */
+/* Ivan 워드마크 — i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다 */
 .brand {
-  letter-spacing: 0.08em;
+  margin: 0;
+  line-height: 1;
 }
 
-.brand-i {
-  position: relative;
+.brand-wordmark {
+  display: inline-flex;
+  align-items: baseline;
+  font-size: var(--text-xl);
+  line-height: 1;
+  color: var(--color-text);
 }
 
-.brand-i::after {
-  content: '';
-  position: absolute;
-  top: 0.06em;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0.18em;
-  height: 0.18em;
-  border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: 0 0 6px color-mix(in srgb, var(--color-accent) 60%, transparent);
+.brand-i-icon {
+  width: 0.38em;
+  height: 1.05em;
+  display: inline-block;
+  vertical-align: -0.15em;
+  margin-right: 0.04em;
+  flex-shrink: 0;
+}
+
+.brand-tail {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 h2 {
