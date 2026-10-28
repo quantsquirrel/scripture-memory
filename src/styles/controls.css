@@ -11,7 +11,11 @@
 }
 
 .seg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 9px var(--space-2);
+  word-break: keep-all;
   border-radius: calc(var(--radius) - 2px);
   border: none;
   background: transparent;
@@ -112,10 +116,13 @@
 
 .pair-code {
   display: block;
-  font-size: calc(var(--text-3xl) * 1.5);
+  font-size: clamp(var(--text-3xl), 10vw, calc(var(--text-3xl) * 1.5));
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.16em;
+  /* 마지막 글자 뒤 자간만큼 왼쪽을 채워 시각적 중앙을 맞춘다 */
+  padding-left: 0.16em;
+  white-space: nowrap;
   color: var(--color-accent);
   margin: var(--space-4) 0 var(--space-2);
 }

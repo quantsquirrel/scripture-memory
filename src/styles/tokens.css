@@ -110,6 +110,8 @@
   --layout-max: 560px;
   /* 손가락으로 정확히 누를 수 있는 최소 크기 (WCAG 2.2 Target Size 최소 24, 권장 44) */
   --touch-min: 44px;
+  /* 화면당 하나뿐인 주 행동(btn-primary)은 한 손 엄지로 더 확실히 */
+  --touch-primary: 48px;
 }
 
 /* 자동 모드(data-theme 미지정)에서 OS가 라이트일 때만 라이트 팔레트로 */

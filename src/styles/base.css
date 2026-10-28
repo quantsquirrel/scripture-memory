@@ -145,11 +145,50 @@ h3 {
   font-weight: 700;
 }
 
+/* 큰 숫자 아래 한 줄로 내려 지표 문구가 숫자 옆에서 쪼개지지 않게 한다 */
+.goal-meta {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--text-sm2);
+  line-height: var(--leading-normal);
+}
+
 /* 모바일(폭 768px 이하)에서는 상단 헤더(ivan 워드마크·보조 텍스트·가로선)를 숨긴다.
    .app의 상단 패딩(calc(var(--space-6) + safe-area-inset-top))은 그대로 유지되어
    노치/상태표시줄 아래에서 본문 콘텐츠가 자연스럽게 시작한다. */
 @media (max-width: 768px) {
   .app-header {
     display: none;
+  }
+}
+
+/* ── 모바일 (한 손 파지) ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  h2,
+  p,
+  label,
+  .btn,
+  .callout,
+  .chip,
+  .col-label {
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
+  .panel {
+    margin-bottom: var(--space-7);
+  }
+}
+
+/* iPhone SE(375px) 이하 — 본문 폭을 위해 바깥·안쪽 여백을 한 단계 줄인다 */
+@media (max-width: 380px) {
+  .app {
+    padding-left: var(--space-6);
+    padding-right: var(--space-6);
+  }
+
+  .panel {
+    padding: var(--space-7);
+    margin-bottom: var(--space-6);
   }
 }

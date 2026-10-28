@@ -32,8 +32,13 @@
 .verse-row,
 .col-row,
 .tech-details summary,
-.btn {
+.btn,
+.ref-input {
   min-height: var(--touch-min);
+}
+
+.btn-primary {
+  min-height: var(--touch-primary);
 }
 
 /* 첫글자 보드의 어절 버튼은 본문 흐름을 유지해야 해서 시각 크기를 키울 수 없다.
