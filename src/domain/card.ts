@@ -5,12 +5,6 @@ export type Direction = 'topic' | 'ref' | 'text'
 /** 졸업 시 생성되는 3방향. 순서는 카드 생성 순서이자 표시 순서의 정본이다. */
 export const DIRECTIONS: readonly Direction[] = ['topic', 'ref', 'text']
 
-export const DIRECTION_LABEL: Record<Direction, string> = {
-  topic: '주제 → 말씀',
-  ref: '장절 → 말씀',
-  text: '말씀 → 장절',
-}
-
 /** IndexedDB·export에 그대로 들어가는 FSRS 카드의 영속 형태 */
 export interface SerializedCard {
   due: string
