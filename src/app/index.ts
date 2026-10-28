@@ -1,6 +1,6 @@
 import { idbStore } from '../adapters/indexeddb'
-import type { ReviewEntry, ReviewEvidence, StoredCard } from '../domain/card'
-import type { LadderCommand, LadderOutcome, LadderStep, LearnProgress } from '../domain/ladder'
+import type { ReviewEvidence, StoredCard } from '../domain/card'
+import type { LadderCommand, LadderOutcome, LearnProgress } from '../domain/ladder'
 import type { ExportBundle, SettingsStore, Store } from '../ports/repositories'
 import * as review from './review'
 import { notifying } from './revision'
@@ -20,7 +20,7 @@ import { notifying } from './revision'
  */
 export const store: Store = idbStore
 
-export const settings: SettingsStore = store.settings
+const settings: SettingsStore = store.settings
 
 export const dueCards = (now: Date = new Date()): Promise<StoredCard[]> => store.cards.due(now)
 
@@ -32,13 +32,6 @@ export const upcomingLearningCards = (
 export const nextDueAt = (): Promise<string | null> => store.cards.nextDueAt()
 
 export const getAllCards = (): Promise<StoredCard[]> => store.cards.all()
-
-export const reviewsSince = (sinceIso: string): Promise<ReviewEntry[]> =>
-  store.reviews.since(sinceIso)
-
-export const allReviews = (): Promise<ReviewEntry[]> => store.reviews.all()
-
-export const reviewCount = (): Promise<number> => store.reviews.count()
 
 export const getLearning = (verseId: string): Promise<LearnProgress | undefined> =>
   store.learning.get(verseId)
@@ -57,24 +50,16 @@ export const submitReview = notifying(
     review.submitReview(store, card, evidence, now),
 )
 
-export const openLadder = (verseId: string): Promise<LadderStep> =>
-  review.openLadder(store, verseId)
-
 export const runLadder = notifying(
   (verseId: string, cmd: LadderCommand, now?: Date): Promise<LadderOutcome> =>
     review.runLadder(store, verseId, cmd, now),
 )
 
 // 설정 접근자 — 포트의 메서드를 뷰가 쓰는 이름으로 얇게 묶어 둔다
-export const getGoalDate = (): Promise<string | undefined> => settings.goalDate()
 export const setGoalDate = notifying((v: string): Promise<void> => settings.setGoalDate(v))
-export const getGoalBufferDays = (): Promise<number | undefined> => settings.goalBufferDays()
 export const setGoalBufferDays = notifying((v: number): Promise<void> =>
   settings.setGoalBufferDays(v),
 )
-export const getSyncToken = (): Promise<string | undefined> => settings.syncToken()
 export const setSyncToken = notifying((v: string): Promise<void> => settings.setSyncToken(v))
-export const getSyncGistId = (): Promise<string | undefined> => settings.syncGistId()
 export const setSyncGistId = notifying((v: string): Promise<void> => settings.setSyncGistId(v))
-export const getLastSyncAt = (): Promise<string | undefined> => settings.lastSyncAt()
 export const setLastSyncAt = notifying((v: string): Promise<void> => settings.setLastSyncAt(v))
