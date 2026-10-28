@@ -96,7 +96,7 @@ export function NewVersePanel({
       {!goal.past && goal.remaining > 0 && (
         <p>
           <strong className="big-number">D-{goal.daysLeft}</strong>{' '}
-          <span className="muted">
+          <span className="muted goal-meta">
             {goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은 {goal.remaining}
             구절 · 하루 {goal.requiredPace.toFixed(1)}구절 필요
             {goal.todayNew > 0 && ` · 오늘 ${goal.todayNew}구절`}

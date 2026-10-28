@@ -1,7 +1,8 @@
 /* 하단 내비게이션 */
 .bottom-nav {
   position: fixed;
-  bottom: 12px;
+  /* 홈 인디케이터가 있는 기기에서는 인디케이터 위로 띄운다 */
+  bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 24px);
@@ -39,6 +40,8 @@
 }
 
 .bottom-nav .tab-icon {
+  display: block;
+  flex-shrink: 0;
   width: 24px;
   height: 24px;
 }
