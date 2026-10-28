@@ -1,5 +1,5 @@
 import { collectionOf, sectionOf, sectionsOf, VERSES } from '../data/verses'
-import type { ReviewEntry, StoredCard } from '../domain/card'
+import type { StoredCard } from '../domain/card'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
@@ -178,5 +178,3 @@ export async function loadSettings(store: Store): Promise<SettingsData> {
     lastSyncAt,
   }
 }
-
-export type { ReviewEntry }
