@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import type { TabName } from './router'
 
 /**
- * 하단 탭 아이콘. 글자 대신 그림만 보이므로 이름은 링크의 aria-label이 맡고,
- * 그림 자체는 스크린리더에서 숨긴다. 색은 currentColor라 활성 탭의 accent를
+ * 탭 아이콘. 모바일 독에서는 그림만 보이므로 이름은 링크의 aria-label이 맡고
+ * (PC에서는 이름이 옆에 함께 보인다), 그림 자체는 스크린리더에서 숨긴다. 색은 currentColor라 활성 탭의 accent를
  * 그대로 따른다.
  */
 const PATHS: Record<TabName, ReactNode> = {

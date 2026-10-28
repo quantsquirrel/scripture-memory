@@ -142,3 +142,9 @@
   margin: var(--space-7) 0 var(--space-1);
   text-transform: none;
 }
+
+@media (hover: hover) {
+  .col-tab:not(.active):hover {
+    background: var(--color-panel-alt);
+  }
+}

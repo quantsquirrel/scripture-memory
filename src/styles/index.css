@@ -9,6 +9,11 @@
  * 그 외        컴포넌트별 스타일
  * a11y.css    포커스·터치 타깃·움직임·고대비 보정 (마지막에 적용)
  */
+/* 글꼴은 저장소에 함께 싣는다 — 이름만 적어 두면 기기에 설치된 글꼴이 대신 나와
+   iPhone(Apple SD Gothic Neo)과 Windows PC(맑은 고딕·바탕)의 모양이 달라졌다.
+   둘 다 unicode-range 조각이라 화면에 나온 글자의 조각만 받는다. */
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+@import '@fontsource/noto-serif-kr/400.css';
 @import './tokens.css';
 @import './base.css';
 @import './buttons.css';

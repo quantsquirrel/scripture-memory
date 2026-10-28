@@ -9,6 +9,38 @@ body {
   font-family: var(--font-sans);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  /* 한국어는 어절 단위로 줄을 바꾼다 — 폭과 무관하게. 640px 이하에만 걸려 있어
+     PC에서는 "계/산하고"처럼 어절 중간이 끊겼다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/*
+ * iOS 홈 화면 앱은 apple-mobile-web-app-status-bar-style이 black-translucent라
+ * 상태바 글씨가 테마와 무관하게 흰색이다. 라이트 테마의 베이지 배경 위에서는
+ * 시계·배터리가 사라지므로 상태바 자리(safe-area-inset-top)에만 어두운 띠를 깐다.
+ * 브라우저 탭이나 상단 inset이 없는 기기에서는 높이가 0이라 보이지 않는다.
+ */
+@media (display-mode: standalone) {
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--color-status-scrim);
+    z-index: 200;
+    pointer-events: none;
+  }
+}
+
+/* 폼 컨트롤은 기본값이 시스템 글꼴(Chromium은 Arial)이라 본문 글꼴을 따로 물려줘야 한다 */
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
 .app {
@@ -18,13 +50,33 @@ body {
     calc(96px + env(safe-area-inset-bottom, 0px));
 }
 
+/* 모바일 헤더: 지금 화면의 이름 한 줄. 워드마크·보조 문구·가로선은 PC에만 */
 .app-header {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: var(--space-4) 0 var(--space-5);
-  border-bottom: 1px solid var(--color-line);
-  margin-bottom: var(--space-8);
+  align-items: center;
+  padding: var(--space-2) var(--space-1) var(--space-5);
+}
+
+/* 워드마크는 눈에서만 감춘다 — 앱 이름 h1은 스크린리더에 남아 모든 화면의 첫 제목이 된다
+   (display: none이면 모바일 화면에 h1이 하나도 없다). 감추는 방식은 a11y.css의 .sr-only와 같다. */
+.brand {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.brand-sub {
+  display: none;
+}
+
+.screen-title {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .app-header h1 {
@@ -99,7 +151,8 @@ h3 {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: var(--space-8);
-  margin-bottom: var(--space-8);
+  /* 카드 사이 14px (DESIGN.md Layout) — 전에는 640px 이하에서만 14px이었다 */
+  margin-bottom: var(--space-7);
   box-shadow: var(--shadow-nav);
   position: relative;
   overflow: hidden;
@@ -153,30 +206,40 @@ h3 {
   line-height: var(--leading-normal);
 }
 
-/* 모바일(폭 768px 이하)에서는 상단 헤더(ivan 워드마크·보조 텍스트·가로선)를 숨긴다.
-   .app의 상단 패딩(calc(var(--space-6) + safe-area-inset-top))은 그대로 유지되어
-   노치/상태표시줄 아래에서 본문 콘텐츠가 자연스럽게 시작한다. */
-@media (max-width: 768px) {
+/* ── PC (769px 이상) ─────────────────────────────────────────
+ * 레이아웃 기준선은 이것 하나다(그 아래는 모두 모바일). 헤더에 워드마크와
+ * 탭을 한 줄로 두고, 스크롤해도 탭에 닿도록 위에 붙인다.
+ */
+@media (min-width: 769px) {
+  .app {
+    padding-bottom: var(--space-12);
+  }
+
   .app-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    gap: var(--space-5);
+    padding: var(--space-4) 0;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-line);
+    margin-bottom: var(--space-8);
+  }
+
+  .brand {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .brand-sub {
+    display: inline;
+  }
+
+  .screen-title {
     display: none;
-  }
-}
-
-/* ── 모바일 (한 손 파지) ─────────────────────────────────────── */
-@media (max-width: 640px) {
-  h2,
-  p,
-  label,
-  .btn,
-  .callout,
-  .chip,
-  .col-label {
-    word-break: keep-all;
-    overflow-wrap: break-word;
-  }
-
-  .panel {
-    margin-bottom: var(--space-7);
   }
 }
 

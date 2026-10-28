@@ -61,6 +61,8 @@
   --color-ok: var(--palette-dark-ok);
   --color-warn: var(--palette-dark-warn);
   --color-bad: var(--palette-dark-bad);
+  /* iOS 홈 화면 앱의 상태바 뒤에 까는 색. 상태바 글씨가 늘 흰색이라 다크에서는 필요 없다 */
+  --color-status-scrim: transparent;
 
   /* ── 간격 (4px 스케일) ──────────────────────────────────── */
   --space-1: 2px;
@@ -76,8 +78,8 @@
 
   /* ── 타이포 ─────────────────────────────────────────────── */
   --font-sans:
-    'Pretendard', 'Apple SD Gothic Neo', -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    'Noto Sans KR', sans-serif;
+    'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   --font-serif: 'Noto Serif KR', ui-serif, 'Apple SD Gothic Neo', serif;
   --text-xs: 0.72rem;
   --text-sm: 0.8rem;
@@ -131,6 +133,7 @@
     --color-ok: var(--palette-light-ok);
     --color-warn: var(--palette-light-warn);
     --color-bad: var(--palette-light-bad);
+    --color-status-scrim: var(--palette-light-text);
   }
 }
 
@@ -150,6 +153,7 @@
   --color-ok: var(--palette-light-ok);
   --color-warn: var(--palette-light-warn);
   --color-bad: var(--palette-light-bad);
+  --color-status-scrim: var(--palette-light-text);
 }
 
 /* 다크 강제 선택 — 기본값과 같지만 명시해 두면 OS가 라이트여도 확실히 다크다 */

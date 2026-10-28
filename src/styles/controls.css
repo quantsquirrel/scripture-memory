@@ -135,3 +135,13 @@
   width: auto;
   margin-top: 0;
 }
+
+@media (hover: hover) {
+  .seg:not(.active):hover {
+    color: var(--color-text);
+  }
+
+  .rate:hover {
+    border-color: var(--color-accent);
+  }
+}
