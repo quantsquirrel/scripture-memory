@@ -7,6 +7,11 @@ import { expect, test } from '@playwright/test'
 const BASE = '/scripture-memory/'
 const TOUCH_MIN = 44
 
+/** base.css·nav.css의 레이아웃 기준선(769px 이상이 PC)과 같은 값 */
+function isDesktop(page: import('@playwright/test').Page): boolean {
+  return (page.viewportSize()?.width ?? 0) >= 769
+}
+
 /** 화면에 보이는 모든 대화형 요소의 실제 렌더 크기를 잰다 */
 async function measureTargets(page: import('@playwright/test').Page) {
   return page.evaluate((min) => {
@@ -42,7 +47,7 @@ test.describe('터치 타깃 44×44px', () => {
   for (const route of ['home', 'browse', 'settings'] as const) {
     test(`${route} 화면의 모든 대화형 요소가 44px 이상`, async ({ page }) => {
       await page.goto(`${BASE}#/${route}`)
-      await expect(page.locator('nav.bottom-nav')).toBeVisible()
+      await expect(page.locator('nav.tab-nav')).toBeVisible()
       const { checked, small } = await measureTargets(page)
       expect(checked).toBeGreaterThan(3)
       expect(small, `작은 타깃: ${JSON.stringify(small)}`).toEqual([])
@@ -122,23 +127,24 @@ test.describe('키보드 전용 조작', () => {
     expect(parseFloat(outline?.width ?? '0')).toBeGreaterThanOrEqual(2)
   })
 
-  test('하단 탭이 키보드로 이동 가능한 링크다', async ({ page }) => {
+  test('탭이 키보드로 이동 가능한 링크다', async ({ page }) => {
     await page.goto(`${BASE}#/home`)
-    const tabs = page.locator('nav.bottom-nav a')
+    const tabs = page.locator('nav.tab-nav a')
     await expect(tabs).toHaveCount(4)
     for (let i = 0; i < 4; i++) {
       await expect(tabs.nth(i)).toHaveAttribute('href', /#\//)
     }
   })
 
-  test('아이콘만 있는 하단 탭도 이름으로 찾을 수 있다', async ({ page }) => {
+  test('탭은 이름으로 찾을 수 있고, 이름 글자는 PC에서만 보인다', async ({ page }) => {
     await page.goto(`${BASE}#/home`)
-    const nav = page.locator('nav.bottom-nav')
+    const nav = page.locator('nav.tab-nav')
     for (const name of ['홈', '복습', '목록', '설정']) {
       await expect(nav.getByRole('link', { name })).toBeVisible()
     }
-    // 글자는 보이지 않고 그림만 보인다
-    await expect(nav).not.toContainText('복습')
+    const label = nav.locator('.tab-label').first()
+    if (isDesktop(page)) await expect(label).toBeVisible()
+    else await expect(label).toBeHidden()
   })
 })
 
@@ -212,5 +218,41 @@ test.describe('테마 토큰 전환', () => {
       'aria-pressed',
       'true',
     )
+  })
+})
+
+test.describe('PC·모바일 일관성', () => {
+  test('어느 폭에서든 지금 화면을 글자로 알 수 있다', async ({ page }) => {
+    await page.goto(`${BASE}#/browse`)
+    if (isDesktop(page)) {
+      // PC: 워드마크 옆 탭의 이름 글자가 현재 화면을 표시한다
+      await expect(page.locator('nav.tab-nav a[aria-current="page"]')).toHaveText('목록')
+      await expect(page.locator('.screen-title')).toBeHidden()
+    } else {
+      // 모바일: 탭이 그림뿐이라 헤더에 화면 이름을 보인다
+      await expect(page.locator('.screen-title')).toHaveText('목록')
+    }
+  })
+
+  test('버튼이 본문과 같은 글꼴을 쓴다', async ({ page }) => {
+    await page.goto(`${BASE}#/browse`)
+    const fontOf = (selector: string) =>
+      page
+        .locator(selector)
+        .first()
+        .evaluate((el) => getComputedStyle(el).fontFamily)
+    expect(await fontOf('.col-tab')).toBe(await fontOf('body'))
+  })
+
+  test('한국어 줄바꿈이 폭과 무관하게 어절 단위다', async ({ page }) => {
+    await page.goto(`${BASE}#/settings`)
+    // "불러오는 중…" 문단은 곧 사라져 계산 스타일이 비므로 본문이 뜬 뒤에 잰다
+    await expect(page.getByRole('heading', { name: '화면 테마' })).toBeVisible()
+    const wordBreak = await page
+      // 닫힌 <details> 안의 문단은 렌더되지 않아 계산 스타일이 비어 있다
+      .locator('main p:visible')
+      .first()
+      .evaluate((el) => getComputedStyle(el).wordBreak)
+    expect(wordBreak).toBe('keep-all')
   })
 })

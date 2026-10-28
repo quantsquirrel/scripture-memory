@@ -26,6 +26,22 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icons/apple-touch-icon.png'],
+      workbox: {
+        // 글꼴 조각(Pretendard 92개 3.0MB + Noto Serif KR 125개 4.3MB)은 precache하지
+        // 않는다 — 설치 때 7MB를 받게 된다. 화면에 나온 글자의 조각만 처음 볼 때
+        // 받아 두고 그 뒤로는 오프라인에서도 캐시에서 읽는다. 아직 못 받은 조각은
+        // 기기 글꼴로 대신 그려질 뿐이라 핵심 기능의 네트워크 의존이 아니다(경계 4).
+        runtimeCaching: [
+          {
+            urlPattern: /\.woff2$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts',
+              expiration: { maxEntries: 250 },
+            },
+          },
+        ],
+      },
       manifest: {
         name: 'Ivan',
         short_name: 'Ivan',

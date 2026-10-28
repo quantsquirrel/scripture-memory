@@ -64,3 +64,18 @@
 .btn-row .btn {
   flex: 1;
 }
+
+/* 마우스·트랙패드에서만 — 터치 기기에서는 누른 뒤 hover가 남아 눌린 것처럼 보인다 */
+@media (hover: hover) {
+  .btn:not(:disabled, .btn-danger):hover {
+    border-color: var(--color-accent);
+  }
+
+  .btn-primary:not(:disabled):hover {
+    filter: brightness(1.06);
+  }
+
+  .btn-ghost:hover {
+    color: var(--color-text);
+  }
+}

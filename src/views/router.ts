@@ -20,15 +20,22 @@ export type Route =
 
 export type RouteName = Route['name']
 
-/** 하단 탭에 노출되는 경로 */
+/** 화면 이름 — 모바일 헤더의 제목이자 탭 이름 */
+export const SCREEN_TITLES: Record<RouteName, string> = {
+  home: '홈',
+  review: '복습',
+  learn: '새 구절 학습',
+  browse: '목록',
+  settings: '설정',
+  recalibrate: '말씀 상태 개정',
+}
+
+/** 탭에 노출되는 경로 */
 export type TabName = Extract<RouteName, 'home' | 'review' | 'browse' | 'settings'>
 
-export const TABS: readonly { name: TabName; label: string }[] = [
-  { name: 'home', label: '홈' },
-  { name: 'review', label: '복습' },
-  { name: 'browse', label: '목록' },
-  { name: 'settings', label: '설정' },
-]
+export const TABS: readonly { name: TabName; label: string }[] = (
+  ['home', 'review', 'browse', 'settings'] as const
+).map((name) => ({ name, label: SCREEN_TITLES[name] }))
 
 export function toHash(route: Route): string {
   return route.name === 'learn'

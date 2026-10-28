@@ -1,5 +1,11 @@
-/* 하단 내비게이션 */
-.bottom-nav {
+/*
+ * 주요 화면 탭.
+ *
+ * 모바일(기본): 화면 아래 떠 있는 아이콘 독 — 엄지가 닿는 자리.
+ * PC(769px 이상): 헤더 오른쪽의 아이콘+이름 탭 — 마우스는 위에서 시작하고,
+ * 짧은 화면에서 본문(위)과 독(맨 아래) 사이가 600px 넘게 벌어지던 것을 없앤다.
+ */
+.tab-nav {
   position: fixed;
   /* 홈 인디케이터가 있는 기기에서는 인디케이터 위로 띄운다 */
   bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
@@ -22,11 +28,12 @@
   z-index: 100;
 }
 
-.bottom-nav a {
+.tab-nav a {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
   padding: 10px 0;
   border-radius: 14px;
   color: var(--color-muted);
@@ -39,16 +46,62 @@
     background 0.15s ease;
 }
 
-.bottom-nav .tab-icon {
+.tab-nav .tab-icon {
   display: block;
   flex-shrink: 0;
   width: 24px;
   height: 24px;
 }
 
-.bottom-nav a.active {
+/* 모바일 독은 그림만 — 이름은 링크의 aria-label이 맡는다 */
+.tab-label {
+  display: none;
+}
+
+.tab-nav a.active {
   color: var(--color-accent);
   font-weight: 700;
   background: var(--color-panel);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+
+@media (hover: hover) {
+  .tab-nav a:not(.active):hover {
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-panel) 60%, transparent);
+  }
+}
+
+@media (min-width: 769px) {
+  .tab-nav {
+    position: static;
+    transform: none;
+    width: auto;
+    max-width: none;
+    margin-left: auto;
+    gap: var(--space-2);
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .tab-nav a {
+    flex: none;
+    padding: 0 var(--space-5);
+    border-radius: var(--radius);
+    font-size: var(--text-sm2);
+  }
+
+  .tab-nav .tab-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tab-label {
+    display: inline;
+  }
 }

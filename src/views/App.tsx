@@ -4,7 +4,7 @@ import { InstallBanner } from './InstallBanner'
 import { Learn } from './Learn'
 import { Recalibrate } from './Recalibrate'
 import { Review } from './Review'
-import { type Route, TABS, toHash, useRoute } from './router'
+import { type Route, SCREEN_TITLES, TABS, toHash, useRoute } from './router'
 import { Settings } from './Settings'
 import { TabIcon } from './TabIcon'
 
@@ -30,7 +30,32 @@ export default function App() {
             <span className="brand-tail">van</span>
           </span>
         </h1>
-        <span className="muted small">말씀암송 · 개역한글</span>
+        <span className="brand-sub muted small">말씀암송 · 개역한글</span>
+        {/* 모바일은 워드마크 대신 지금 화면의 이름을 보인다 — 탭이 아이콘뿐이라 글자로 된 위치 단서가 이것 하나다 */}
+        <p className="screen-title">{SCREEN_TITLES[route.name]}</p>
+
+        {/*
+          한 요소가 폭에 따라 자리를 바꾼다: 모바일은 화면 아래 떠 있는 아이콘 독,
+          PC(769px 이상)는 헤더 오른쪽의 아이콘+이름 탭. 헤더 안에 두는 이유는 PC에서
+          워드마크와 한 줄에 놓기 위해서다 — 모바일의 position: fixed는 헤더 위치와 무관하다.
+        */}
+        <nav className="tab-nav" aria-label="주요 화면">
+          {TABS.map((tab) => {
+            const current = route.name === tab.name
+            return (
+              <a
+                key={tab.name}
+                href={toHash({ name: tab.name })}
+                className={current ? 'active' : ''}
+                aria-current={current ? 'page' : undefined}
+                aria-label={tab.label}
+              >
+                <TabIcon name={tab.name} />
+                <span className="tab-label">{tab.label}</span>
+              </a>
+            )
+          })}
+        </nav>
       </header>
 
       <InstallBanner />
@@ -43,24 +68,6 @@ export default function App() {
       <main>
         <ViewFor route={route} navigate={navigate} />
       </main>
-
-      <nav className="bottom-nav" aria-label="주요 화면">
-        {TABS.map((tab) => {
-          const current = route.name === tab.name
-          return (
-            <a
-              key={tab.name}
-              href={toHash({ name: tab.name })}
-              className={current ? 'active' : ''}
-              aria-current={current ? 'page' : undefined}
-              aria-label={tab.label}
-              title={tab.label}
-            >
-              <TabIcon name={tab.name} />
-            </a>
-          )
-        })}
-      </nav>
     </div>
   )
 }
