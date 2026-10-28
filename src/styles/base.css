@@ -144,3 +144,12 @@ h3 {
   color: var(--color-text);
   font-weight: 700;
 }
+
+/* 모바일(폭 768px 이하)에서는 상단 헤더(ivan 워드마크·보조 텍스트·가로선)를 숨긴다.
+   .app의 상단 패딩(calc(var(--space-6) + safe-area-inset-top))은 그대로 유지되어
+   노치/상태표시줄 아래에서 본문 콘텐츠가 자연스럽게 시작한다. */
+@media (max-width: 768px) {
+  .app-header {
+    display: none;
+  }
+}
