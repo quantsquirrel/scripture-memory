@@ -2,8 +2,6 @@ import type { SyncConfig, SyncResult } from '../adapters/gist'
 import { store } from './index'
 import { bumpRevision } from './revision'
 
-export type { SyncConfig, SyncResult }
-
 /**
  * Gist 동기화 (선택 기능).
  *
