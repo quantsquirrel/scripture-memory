@@ -90,9 +90,7 @@
   --text-xl: 1.3rem;
   --text-2xl: 1.45rem;
   --text-3xl: 1.6rem;
-  --leading-tight: 1.3;
   --leading-normal: 1.7;
-  --leading-relaxed: 1.8;
   /* 본문 낭송용 — 한 줄을 눈으로 따라가기 쉽게 넉넉히 */
   --leading-verse: 1.95;
 
@@ -104,7 +102,6 @@
   --radius-pill: 999px;
 
   /* ── 그림자 ─────────────────────────────────────────────── */
-  --shadow-none: none;
   --shadow-nav: 0 -1px 12px rgb(0 0 0 / 22%);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 45%, transparent);
 
