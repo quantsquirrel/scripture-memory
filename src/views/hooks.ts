@@ -23,7 +23,7 @@ import type { LadderStep } from '../domain/ladder'
  * 데이터를 다시 읽는다 — 컴포넌트를 리마운트하지 않으므로 스크롤·입력 상태가
  * 유지된다 (이전 App.tsx의 `<main key={epoch}>` 해킹을 대체).
  */
-export function useRevision(): number {
+function useRevision(): number {
   return useSyncExternalStore(subscribeRevision, getRevision, getRevision)
 }
 
