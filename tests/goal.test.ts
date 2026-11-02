@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { collectionOf, COLLECTIONS, VERSES } from '../src/data/verses'
 import {
   computeGoal,
+  DEFAULT_GOAL_SCOPE,
   DEFAULT_REVIEW_BUFFER_DAYS,
   GOAL_VERSE_COUNT,
+  goalVerseIds,
+  isGoalScope,
   PACE_WINDOW_DAYS,
 } from '../src/domain/goal'
 import { required } from '../src/domain/invariant'
@@ -106,5 +109,44 @@ describe('computeGoal', () => {
     const g = computeGoal('2026-08-20', [], new Date('2026-08-21T08:00:00+09:00'))
     expect(g.past).toBe(true)
     expect(g.requiredPace).toBe(0)
+  })
+})
+
+describe('목표 범위', () => {
+  const now = new Date('2026-10-28T12:00:00+09:00')
+  const all = (ids: Iterable<string>) =>
+    [...ids].map((id) => lp(id, 'graduated', '2026-08-01T10:00:00+09:00'))
+
+  it('범위는 학습 순서상 앞 과정을 모두 포함하는 누적이다', () => {
+    expect(COLLECTIONS.map((c) => goalVerseIds(c.key).size)).toEqual([5, 13, 73, 315, 495])
+  })
+
+  it('기본 범위는 DEP242 완결 — 범위를 넘기지 않으면 지금까지와 같다', () => {
+    const g = computeGoal('2026-12-31', [], now)
+    expect(g.scope).toBe(DEFAULT_GOAL_SCOPE)
+    expect(g.scopeLabel).toBe('DEP242')
+    expect(g.total).toBe(GOAL_VERSE_COUNT)
+  })
+
+  it('DEP242를 마친 뒤 180구절로 넓히면 180구절만 남는다', () => {
+    const learning = all(GOAL_IDS)
+    expect(computeGoal('2026-12-31', learning, now).remaining).toBe(0)
+    const g = computeGoal('2026-12-31', learning, now, DEFAULT_REVIEW_BUFFER_DAYS, 'TMS180')
+    expect(g.scopeLabel).toBe('180구절')
+    expect(g.total).toBe(495)
+    expect(g.remaining).toBe(180)
+    expect(g.requiredPace).toBeCloseTo(180 / g.learnDaysLeft)
+  })
+
+  it('범위를 좁히면 범위 밖 졸업은 세지 않는다', () => {
+    const g = computeGoal('2026-12-31', all(GOAL_IDS.slice(0, 10)), now, 7, 'AS')
+    expect(g.total).toBe(5)
+    expect(g.remaining).toBe(0)
+  })
+
+  it('컬렉션 키가 아닌 값은 범위로 받지 않는다', () => {
+    expect(isGoalScope('TMS180')).toBe(true)
+    expect(isGoalScope('DEP242')).toBe(false)
+    expect(isGoalScope(4)).toBe(false)
   })
 })

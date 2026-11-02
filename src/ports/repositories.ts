@@ -47,6 +47,9 @@ export interface SettingsStore {
   setGoalDate(v: string): Promise<void>
   goalBufferDays(): Promise<number | undefined>
   setGoalBufferDays(v: number): Promise<void>
+  /** 목표 범위 — 이 과정(COLLECTIONS[].key)까지 완결. 없으면 DEP242 */
+  goalScope(): Promise<string | undefined>
+  setGoalScope(v: string): Promise<void>
   syncToken(): Promise<string | undefined>
   setSyncToken(v: string): Promise<void>
   syncGistId(): Promise<string | undefined>

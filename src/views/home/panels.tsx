@@ -97,10 +97,16 @@ export function NewVersePanel({
         <p>
           <strong className="big-number">D-{goal.daysLeft}</strong>{' '}
           <span className="muted goal-meta">
-            {goal.goalDate.slice(5).replace('-', '/')}까지 DEP242 완결 · 남은 {goal.remaining}
-            구절 · 하루 {goal.requiredPace.toFixed(1)}구절 필요
+            {goal.goalDate.slice(5).replace('-', '/')}까지 {goal.scopeLabel} 완결 · 남은{' '}
+            {goal.remaining}구절 · 하루 {goal.requiredPace.toFixed(1)}구절 필요
             {goal.todayNew > 0 && ` · 오늘 ${goal.todayNew}구절`}
           </span>
+        </p>
+      )}
+      {!goal.past && goal.remaining === 0 && (
+        <p className="muted small">
+          목표 범위({goal.scopeLabel}까지)를 모두 외웠습니다 — 설정에서 다음 목표를 정할 수
+          있습니다
         </p>
       )}
       {resume && (

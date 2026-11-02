@@ -2,6 +2,8 @@ import { type RefObject, useEffect, useState } from 'react'
 
 import type { Theme } from '../../adapters/theme'
 import type { Pairing } from '../../app/pairing'
+import { COLLECTIONS } from '../../data/verses'
+import { type GoalInfo, goalVerseIds } from '../../domain/goal'
 import { CODE_TTL_MS, formatCode, normalizeCode } from '../../domain/pairingCode'
 
 const THEME_OPTIONS: readonly [Theme, string][] = [
@@ -43,20 +45,51 @@ export function ThemePanel({
   )
 }
 
+/** 목표 범위 선택지 — 학습 순서상 앞 과정을 모두 포함하는 누적 범위 */
+const GOAL_SCOPE_OPTIONS = COLLECTIONS.map((c) => ({
+  key: c.key,
+  label: `${c.short}까지 (${goalVerseIds(c.key).size}구절)`,
+}))
+
+function goalSummary(goal: GoalInfo): string {
+  if (goal.past)
+    return '목표일이 지났습니다 — 앞으로 올 날짜를 고르면 일일 목표가 다시 켜집니다'
+  if (goal.remaining === 0) return `${goal.scopeLabel}까지 모두 외웠습니다 — 범위를 넓혀 보세요`
+  return `D-${goal.daysLeft} · 남은 ${goal.remaining}/${goal.total}구절 · 하루 ${goal.requiredPace.toFixed(1)}구절 필요`
+}
+
 export function GoalPanel({
-  goalDate,
-  bufferDays,
+  goal,
+  onScope,
   onGoalDate,
   onBufferDays,
 }: {
-  goalDate: string
-  bufferDays: number
+  goal: GoalInfo
+  onScope: (scope: string) => void
   onGoalDate: (d: string) => void
   onBufferDays: (n: number) => void
 }) {
+  const { goalDate, bufferDays } = goal
   return (
     <section className="panel">
-      <h2>암송 목표일</h2>
+      <h2>암송 목표</h2>
+      <label className="muted small" htmlFor="goal-scope">
+        목표 범위
+      </label>
+      <select
+        id="goal-scope"
+        className="ref-input"
+        value={goal.scope}
+        onChange={(e) => {
+          onScope(e.target.value)
+        }}
+      >
+        {GOAL_SCOPE_OPTIONS.map((o) => (
+          <option key={o.key} value={o.key}>
+            {o.label}
+          </option>
+        ))}
+      </select>
       <label className="muted small" htmlFor="goal-date">
         목표일
       </label>
@@ -83,12 +116,13 @@ export function GoalPanel({
           onBufferDays(Number(e.target.value))
         }}
       />
+      <p>{goalSummary(goal)}</p>
       <p className="muted small">
-        목표일은 시험·대회를 준비할 때 쓰는 선택 도구입니다. 시험(목표일)에 암송할 수 있으려면
-        외운 뒤 복습으로 굳힐 시간이 필요하므로, 새 구절 학습은 목표일 {bufferDays}일 전까지
-        끝내는 것으로 일일 목표를 계산하고 남은 기간은 복습만 합니다. 목표일이 지나면 D-day
-        페이싱은 사라지고, FSRS가 복습 간격을 늘려 가는 유지 모드로 돌아갑니다 — 평상시에는
-        목표일 없이 그대로 두면 됩니다.
+        목표 범위는 학습 순서대로 앞 과정을 모두 포함합니다. 목표일은 시험·대회를 준비할 때 쓰는
+        선택 도구입니다. 시험(목표일)에 암송할 수 있으려면 외운 뒤 복습으로 굳힐 시간이
+        필요하므로, 새 구절 학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를
+        계산하고 남은 기간은 복습만 합니다. 목표일이 지나면 D-day 페이싱은 사라지고, FSRS가 복습
+        간격을 늘려 가는 유지 모드로 돌아갑니다 — 평상시에는 목표일 없이 그대로 두면 됩니다.
       </p>
     </section>
   )

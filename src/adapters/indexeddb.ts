@@ -7,6 +7,7 @@ import {
   type ReviewEntry,
   type StoredCard,
 } from '../domain/card'
+import { isGoalScope } from '../domain/goal'
 import { type LadderStep, type LearnProgress, stepFromLegacy } from '../domain/ladder'
 import {
   assertRated,
@@ -246,6 +247,8 @@ class IdbSettings implements SettingsStore {
   goalBufferDays = (): Promise<number | undefined> =>
     this.read('goalBufferDays', isFiniteNumber)
   setGoalBufferDays = (v: number): Promise<void> => this.write('goalBufferDays', v)
+  goalScope = (): Promise<string | undefined> => this.read('goalScope', isGoalScope)
+  setGoalScope = (v: string): Promise<void> => this.write('goalScope', v)
   syncToken = (): Promise<string | undefined> => this.read('syncToken', isString)
   setSyncToken = (v: string): Promise<void> => this.write('syncToken', v)
   syncGistId = (): Promise<string | undefined> => this.read('syncGistId', isString)
