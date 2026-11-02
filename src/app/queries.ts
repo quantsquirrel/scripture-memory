@@ -3,8 +3,10 @@ import type { StoredCard } from '../domain/card'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
+  DEFAULT_GOAL_SCOPE,
   DEFAULT_REVIEW_BUFFER_DAYS,
   type GoalInfo,
+  isGoalScope,
 } from '../domain/goal'
 import { isGraduated, isInProgress, type LearnProgress } from '../domain/ladder'
 import { LEARN_AHEAD_MS, orderQueue } from '../domain/policy'
@@ -16,19 +18,28 @@ const startOfDay = (now: Date): Date => {
   return d
 }
 
+interface GoalSettings {
+  goalDate: string
+  bufferDays: number
+  scope: string
+}
+
 /** 목표 설정을 기본값과 함께 한 번에 읽는다 */
-async function readGoalSettings(
-  store: Store,
-): Promise<{ goalDate: string; bufferDays: number }> {
-  const [goalDate, bufferDays] = await Promise.all([
+async function readGoalSettings(store: Store): Promise<GoalSettings> {
+  const [goalDate, bufferDays, scope] = await Promise.all([
     store.settings.goalDate(),
     store.settings.goalBufferDays(),
+    store.settings.goalScope(),
   ])
   return {
     goalDate: goalDate ?? DEFAULT_GOAL_DATE,
     bufferDays: bufferDays ?? DEFAULT_REVIEW_BUFFER_DAYS,
+    scope: isGoalScope(scope) ? scope : DEFAULT_GOAL_SCOPE,
   }
 }
+
+const goalOf = (s: GoalSettings, learning: LearnProgress[], now: Date): GoalInfo =>
+  computeGoal(s.goalDate, learning, now, s.bufferDays, s.scope)
 
 /** 홈 진행률 묶음: 기초 3과정 · DEP 섹션별 · 180구절 */
 export interface ProgressRow {
@@ -94,7 +105,7 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     graduatedIds: new Set(learning.filter(isGraduated).map((l) => l.verseId)),
     inProgress: learning.find(isInProgress),
     newThisWeek: learning.filter((l) => isGraduated(l) && l.updatedAt >= weekAgo).length,
-    goal: computeGoal(settings.goalDate, learning, now, settings.bufferDays),
+    goal: goalOf(settings, learning, now),
   }
 }
 
@@ -152,14 +163,16 @@ export async function reloadQueuedCard(
 export interface SettingsData {
   reviews: number
   graduated: number
-  goalDate: string
-  bufferDays: number
+  goal: GoalInfo
   syncToken: string
   syncGistId: string
   lastSyncAt: string | undefined
 }
 
-export async function loadSettings(store: Store): Promise<SettingsData> {
+export async function loadSettings(
+  store: Store,
+  now: Date = new Date(),
+): Promise<SettingsData> {
   const [reviews, learning, goal, token, gistId, lastSyncAt] = await Promise.all([
     store.reviews.count(),
     store.learning.all(),
@@ -171,8 +184,7 @@ export async function loadSettings(store: Store): Promise<SettingsData> {
   return {
     reviews,
     graduated: learning.filter(isGraduated).length,
-    goalDate: goal.goalDate,
-    bufferDays: goal.bufferDays,
+    goal: goalOf(goal, learning, now),
     syncToken: token ?? '',
     syncGistId: gistId ?? '',
     lastSyncAt,

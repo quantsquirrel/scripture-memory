@@ -7,6 +7,7 @@ import {
   resetAll,
   setGoalBufferDays as persistGoalBufferDays,
   setGoalDate as persistGoalDate,
+  setGoalScope as persistGoalScope,
   setLastSyncAt as persistLastSyncAt,
   setSyncGistId as persistSyncGistId,
   setSyncToken as persistSyncToken,
@@ -50,6 +51,11 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   // 입력 중인 값이 있으면 그것을, 없으면 저장된 값을 보여준다
   const tokenValue = token ?? data.syncToken
   const gistIdValue = gistId ?? data.syncGistId
+
+  const saveGoalScope = async (scope: string) => {
+    await persistGoalScope(scope)
+    setMsg('목표 범위를 저장했습니다.')
+  }
 
   const saveGoalDate = async (d: string) => {
     await persistGoalDate(d)
@@ -159,8 +165,8 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
       />
 
       <GoalPanel
-        goalDate={data.goalDate}
-        bufferDays={data.bufferDays}
+        goal={data.goal}
+        onScope={(s) => void saveGoalScope(s)}
         onGoalDate={(d) => void saveGoalDate(d)}
         onBufferDays={(n) => void saveBuffer(n)}
       />

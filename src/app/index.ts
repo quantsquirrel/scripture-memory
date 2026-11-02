@@ -60,6 +60,7 @@ export const setGoalDate = notifying((v: string): Promise<void> => settings.setG
 export const setGoalBufferDays = notifying((v: number): Promise<void> =>
   settings.setGoalBufferDays(v),
 )
+export const setGoalScope = notifying((v: string): Promise<void> => settings.setGoalScope(v))
 export const setSyncToken = notifying((v: string): Promise<void> => settings.setSyncToken(v))
 export const setSyncGistId = notifying((v: string): Promise<void> => settings.setSyncGistId(v))
 export const setLastSyncAt = notifying((v: string): Promise<void> => settings.setLastSyncAt(v))

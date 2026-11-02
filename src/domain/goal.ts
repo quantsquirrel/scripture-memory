@@ -1,4 +1,4 @@
-import { collectionOf, COLLECTIONS, VERSES } from '../data/verses'
+import { type CollectionInfo, collectionOf, COLLECTIONS, VERSES } from '../data/verses'
 import { required } from './invariant'
 import { isGraduated, type LearnProgress } from './ladder'
 
@@ -6,21 +6,39 @@ export const DEFAULT_GOAL_DATE = '2026-08-26'
 /** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
 export const DEFAULT_REVIEW_BUFFER_DAYS = 7
 
-/** 목표 범위: DEP242 완결까지. 180구절 확장은 목표일 페이싱에 포함하지 않는다. */
-const DEP_ORDER = required(
-  COLLECTIONS.find((c) => c.key === 'DEP'),
-  'DEP 컬렉션',
-).order
-const GOAL_VERSE_IDS = new Set(
-  VERSES.filter((v) => collectionOf(v).order <= DEP_ORDER).map((v) => v.id),
-)
-export const GOAL_VERSE_COUNT = GOAL_VERSE_IDS.size
+/**
+ * 목표 범위: 학습 순서상 어느 과정까지 완결할지. 앞 과정을 모두 포함하는 누적 범위다.
+ * 기본은 DEP242 완결까지(315구절) — 180구절은 사용자가 범위를 넓혔을 때만 페이싱에 든다.
+ */
+export const DEFAULT_GOAL_SCOPE = 'DEP'
+
+export const isGoalScope = (v: unknown): v is string => COLLECTIONS.some((c) => c.key === v)
+
+const scopeOf = (scope: string): CollectionInfo =>
+  required(
+    COLLECTIONS.find((c) => c.key === scope),
+    `목표 범위 ${scope}`,
+  )
+
+export function goalVerseIds(scope: string): ReadonlySet<string> {
+  const { order } = scopeOf(scope)
+  return new Set(VERSES.filter((v) => collectionOf(v).order <= order).map((v) => v.id))
+}
+
+/** 기본 목표 범위의 구절 수 (315) */
+export const GOAL_VERSE_COUNT = goalVerseIds(DEFAULT_GOAL_SCOPE).size
 
 /** 실제 페이스 산출에 쓰는 최근 관찰 기간 (일) */
 export const PACE_WINDOW_DAYS = 7
 
 export interface GoalInfo {
   goalDate: string
+  /** 목표 범위의 마지막 과정 키 (COLLECTIONS[].key) */
+  scope: string
+  /** 목표 범위 표시 이름 — 마지막 과정의 short ('DEP242', '180구절' …) */
+  scopeLabel: string
+  /** 목표 범위 구절 수 */
+  total: number
   daysLeft: number
   /** 새 구절 학습에 쓸 수 있는 날 수 (목표일 − 정착 기간, 최소 1) */
   learnDaysLeft: number
@@ -48,9 +66,11 @@ export function computeGoal(
   learning: LearnProgress[],
   now: Date = new Date(),
   bufferDays: number = DEFAULT_REVIEW_BUFFER_DAYS,
+  scope: string = DEFAULT_GOAL_SCOPE,
 ): GoalInfo {
-  const graduated = learning.filter((l) => isGraduated(l) && GOAL_VERSE_IDS.has(l.verseId))
-  const remaining = GOAL_VERSE_COUNT - graduated.length
+  const ids = goalVerseIds(scope)
+  const graduated = learning.filter((l) => isGraduated(l) && ids.has(l.verseId))
+  const remaining = ids.size - graduated.length
   const midnight = new Date(now)
   midnight.setHours(0, 0, 0, 0)
   const todayNew = graduated.filter((l) => l.updatedAt >= midnight.toISOString()).length
@@ -74,6 +94,9 @@ export function computeGoal(
   }
   return {
     goalDate,
+    scope,
+    scopeLabel: scopeOf(scope).short,
+    total: ids.size,
     daysLeft,
     learnDaysLeft,
     bufferDays,
