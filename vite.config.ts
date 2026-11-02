@@ -21,6 +21,26 @@ export default defineConfig({
       },
     },
   },
+  // @fontsource는 글꼴 조각마다 woff2 뒤에 woff 대체본을 붙인다. 빌드 대상 브라우저
+  // (Vite 기본값: Chrome 111·Safari 16.4 이상)는 모두 woff2를 읽어 woff를 받지 않는다.
+  // Once여야 Vite가 url()을 자산으로 내보내기 전에 지운다 — Declaration 단계면 늦다.
+  css: {
+    postcss: {
+      plugins: [
+        {
+          postcssPlugin: 'drop-woff-fallback',
+          Once(root) {
+            root.walkDecls('src', (decl) => {
+              decl.value = decl.value.replace(
+                /,\s*url\([^)]*\.woff\)\s*format\(['"]?woff['"]?\)/g,
+                '',
+              )
+            })
+          },
+        },
+      ],
+    },
+  },
   plugins: [
     react(),
     VitePWA({
