@@ -80,6 +80,8 @@ test.describe('리마운트 제거 (상태 보존)', () => {
   test('입력 중 저장소 쓰기가 일어나도 입력값과 스크롤이 유지된다', async ({ page }) => {
     await page.goto(`${BASE}#/settings`)
 
+    // Gist 입력은 '고급' 접힘 안에 있다 — 펼쳐 둔 상태도 리마운트되면 함께 사라진다
+    await page.getByText('고급: GitHub Gist 동기화 (개발자용)').click()
     const gistId = page.locator('#sync-gist')
     await gistId.fill('my-draft-gist-id')
 
