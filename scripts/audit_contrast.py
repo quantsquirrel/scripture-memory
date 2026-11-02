@@ -82,27 +82,34 @@ CHECKS: list[tuple[str, str, float, str]] = [
     ("muted", "panel", AA_TEXT, "보조 텍스트 / 패널 (.muted .small 다수)"),
     ("muted", "panel2", AA_TEXT, "보조 텍스트 / 입력 배경 (.fl-dots, .rate-interval)"),
     ("accent", "bg", AA_LARGE, "강조 숫자(1.6rem) / 페이지 배경"),
-    ("accent", "panel", AA_LARGE, "강조 숫자 / 패널"),
-    ("accent", "panel2", AA_TEXT, "첫글자 공개 텍스트 / 입력 배경 (.fl-revealed)"),
-    ("accent-text", "accent", AA_TEXT, "주 버튼 라벨 / 주 버튼 배경"),
+    ("accent", "panel", AA_TEXT, "활성 세그먼트 글자 / 패널 (.seg.active, .col-tab.active)"),
+    ("accent-text", "accent", AA_TEXT, "주 버튼 라벨·제안 표지 / 금색 채움 (.rate-suggest)"),
     ("blue", "panel", AA_TEXT, "장절·모드 태그 / 패널 (.answer-ref, .mode-tag)"),
     ("blue", "bg", AA_TEXT, "그룹 제목 / 페이지 배경 (.group-title)"),
-    ("ok", "panel", AA_TEXT, "통과 등급 라벨 / 패널 (.rate-3)"),
-    ("warn", "panel", AA_TEXT, "주의 등급 라벨 / 패널 (.rate-2)"),
-    ("bad", "panel", AA_TEXT, "실패 등급 라벨 / 패널 (.rate-1, .diff-miss)"),
+    ("ok", "panel", AA_TEXT, "통과 결과 / 패널 (.diff-score)"),
+    ("warn", "panel", AA_TEXT, "주의 결과 / 패널 (.diff-extra)"),
+    ("bad", "panel", AA_TEXT, "실패 결과 / 패널 (.diff-miss)"),
+    ("ok", "panel2", AA_TEXT, "등급 라벨 '좋음' / 등급 버튼 (.rate-3)"),
+    ("warn", "panel2", AA_TEXT, "등급 라벨 '어려움' / 등급 버튼 (.rate-2)"),
+    ("bad", "panel2", AA_TEXT, "등급 라벨 '다시' / 등급 버튼 (.rate-1)"),
+    ("blue", "panel2", AA_TEXT, "등급 라벨 '쉬움' / 등급 버튼 (.rate-4)"),
     ("border", "panel", AA_UI, "컨트롤 경계 / 패널 (입력·버튼 테두리)"),
     ("border", "panel2", AA_UI, "컨트롤 경계 / 입력 배경"),
     ("border", "bg", AA_UI, "컨트롤 경계 / 페이지 배경"),
     ("accent", "panel", AA_UI, "포커스 링 / 패널 (UI)"),
+    ("accent", "panel2", AA_UI, "제안 등급 테두리 / 등급 버튼 (.rate.suggested)"),
 ]
 
-# 반투명 배지: color-mix(in srgb, <색> N%, transparent)를 패널 위에 올린 실효 배경
-MIX_CHECKS: list[tuple[str, str, float, float, str]] = [
-    ("ok", "ok", 0.18, AA_TEXT, ".diff-score.good — 색 18% 배경 위 같은 색 텍스트"),
-    ("warn", "warn", 0.18, AA_TEXT, ".diff-score.warn"),
-    ("bad", "bad", 0.18, AA_TEXT, ".diff-score.bad"),
-    ("warn", "warn", 0.15, AA_TEXT, ".st-learning 배지"),
-    ("ok", "ok", 0.15, AA_TEXT, ".st-done 배지"),
+# 반투명 바탕: color-mix(in srgb, <색> N%, transparent)를 <바탕> 위에 올린 실효 배경
+# (전경, 섞는 색, 비율, 바탕, 기준, 설명)
+MIX_CHECKS: list[tuple[str, str, float, str, float, str]] = [
+    ("ok", "ok", 0.18, "panel", AA_TEXT, ".diff-score.good — 색 18% 배경 위 같은 색 텍스트"),
+    ("warn", "warn", 0.18, "panel", AA_TEXT, ".diff-score.warn"),
+    ("bad", "bad", 0.18, "panel", AA_TEXT, ".diff-score.bad"),
+    ("warn", "warn", 0.12, "panel", AA_TEXT, ".st-learning 배지"),
+    ("blue", "blue", 0.08, "panel", AA_TEXT, ".mode-tag — 하늘빛 8% 바탕"),
+    ("accent", "accent", 0.14, "bg", AA_UI, "모바일 독 활성 아이콘 — 금빛 14% 번짐 (.tab-nav a.active)"),
+    ("accent", "accent", 0.09, "bg", AA_TEXT, "PC 헤더 활성 탭 이름 — 금빛 9% 번짐"),
 ]
 
 
@@ -126,8 +133,8 @@ def main() -> int:
             if not ok:
                 failures += 1
             print(f"  {label:<44} {ratio:6.2f} {need:5.1f}  {'OK' if ok else 'FAIL'}")
-        for fg, mixc, pct, need, label in MIX_CHECKS:
-            eff_bg = mix(p[mixc], p["panel"], pct)
+        for fg, mixc, pct, base, need, label in MIX_CHECKS:
+            eff_bg = mix(p[mixc], p[base], pct)
             ratio = contrast(p[fg], eff_bg)
             ok = ratio >= need
             if not ok:

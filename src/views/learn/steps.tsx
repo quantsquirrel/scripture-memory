@@ -1,5 +1,6 @@
 import { DiffView } from '../../components/DiffView'
 import { FirstLetterBoard } from '../../components/FirstLetterBoard'
+import { LampMark } from '../../components/LampMark'
 import { collectionOf, topicOf, type VerseEntry } from '../../data/verses'
 import type { TypingGrade } from '../../domain/grading'
 import { MAX_PEEKS_TO_PASS } from '../../domain/ladder'
@@ -38,9 +39,11 @@ export function IntroStep({
           </button>
         </div>
       )}
-      <button className="btn btn-primary" onClick={onRecited}>
-        낭송했어요 — 다음
-      </button>
+      <div className="stage-foot">
+        <button className="btn btn-primary" onClick={onRecited}>
+          낭송했어요 — 다음
+        </button>
+      </div>
     </>
   )
 }
@@ -67,8 +70,9 @@ export function FirstLetterStep({
     <>
       <h2 className="prompt-main">{verse.ref}</h2>
       <FirstLetterBoard key={attemptKey} text={verse.text} onPeek={onPeek} />
-      <p className="muted small">
-        첫 글자만 보고 낭송하세요. 막힌 어절만 탭 · 엿보기 {peeks}회
+      <p className="muted small fl-hint">
+        <span>첫 글자만 보고 낭송하세요. 막힌 어절만 탭</span>
+        <span className="fl-peeks">엿보기 {peeks}회</span>
       </p>
       {failedPeeks !== null && (
         <div className="diff-score bad">
@@ -76,13 +80,15 @@ export function FirstLetterStep({
           통과)
         </div>
       )}
-      <div className="btn-row">
-        <button className="btn" onClick={onRetry}>
-          다시 시도
-        </button>
-        <button className="btn btn-primary" onClick={onDone}>
-          낭송 완료
-        </button>
+      <div className="stage-foot">
+        <div className="btn-row">
+          <button className="btn" onClick={onRetry}>
+            다시 시도
+          </button>
+          <button className="btn btn-primary" onClick={onDone}>
+            낭송 완료
+          </button>
+        </div>
       </div>
     </>
   )
@@ -115,17 +121,19 @@ export function TypingStep({
         <>
           <DiffView grade={grade} target={verse.text} />
           {grade.perfect ? (
-            <button className="btn btn-primary" onClick={onGraduate}>
-              졸업 — 복습 큐에 추가
-            </button>
+            <div className="stage-foot">
+              <button className="btn btn-primary" onClick={onGraduate}>
+                졸업 — 복습 큐에 추가
+              </button>
+            </div>
           ) : (
-            <>
+            <div className="stage-foot">
               <p className="muted small">
                 틀린 곳을 확인했으면 정답을 가리고 기억만으로 다시 도전하세요.
               </p>
               <div className="btn-row">
                 <button className="btn btn-primary" onClick={onRetry}>
-                  다시 도전 (정답 가리고 재입력)
+                  다시 도전 <span className="btn-sub">정답 가리고 재입력</span>
                 </button>
                 <button className="btn" onClick={onAccept}>
                   그냥 넘어가기
@@ -134,7 +142,7 @@ export function TypingStep({
               <p className="muted small">
                 오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다 — 그대로 졸업합니다.
               </p>
-            </>
+            </div>
           )}
         </>
       ) : (
@@ -142,31 +150,33 @@ export function TypingStep({
           <label className="muted small" htmlFor="learn-typing">
             기억만으로 말씀 전체를 입력하세요
           </label>
-          <textarea
-            id="learn-typing"
-            className="typing-input"
-            value={attempt}
-            onChange={(e) => {
-              onAttempt(e.target.value)
-            }}
-            onKeyDown={(e) => {
-              // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
-              if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
-              e.preventDefault()
-              if (attempt.trim() !== '') onGrade()
-            }}
-            placeholder="기억만으로 말씀 전체를 입력하세요"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            rows={6}
-          />
-          {/*
-            음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
-            화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
-            트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
-          */}
-          <p className="stt-context">{verse.text}</p>
+          <div className="typing-field">
+            <textarea
+              id="learn-typing"
+              className="typing-input"
+              value={attempt}
+              onChange={(e) => {
+                onAttempt(e.target.value)
+              }}
+              onKeyDown={(e) => {
+                // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
+                if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+                e.preventDefault()
+                if (attempt.trim() !== '') onGrade()
+              }}
+              placeholder="기억만으로 말씀 전체를 입력하세요"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              rows={6}
+            />
+            {/*
+              음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
+              화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
+              트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
+            */}
+            <p className="stt-context">{verse.text}</p>
+          </div>
           <button
             className="btn btn-primary"
             disabled={attempt.trim() === ''}
@@ -180,7 +190,7 @@ export function TypingStep({
   )
 }
 
-/** 4단계: 졸업 */
+/** 4단계: 졸업 — 등불 하나를 켜고, 다음 걸음을 아래에 둔다 */
 export function GraduatedStep({
   verse,
   nextVerse,
@@ -195,31 +205,35 @@ export function GraduatedStep({
   onLearn: (verseId: string) => void
 }) {
   return (
-    <div className="center">
-      <h2>🎉 {verse.refAbbr} 졸업!</h2>
-      <p className="muted">
-        3방향 복습 카드(주제→말씀, 장절→말씀, 말씀→장절)가 생성되어
-        <br />
-        FSRS 스케줄에 편입되었습니다.
-      </p>
-      {nextVerse && (
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            onLearn(nextVerse.id)
-          }}
-        >
-          다음 구절: {nextVerse.refAbbr}
-        </button>
-      )}
-      <div className="btn-row">
-        <button className="btn" onClick={onExit}>
-          홈으로
-        </button>
-        <button className="btn" onClick={onReview}>
-          바로 복습
-        </button>
+    <>
+      <div className="finale">
+        <LampMark />
+        <h2>{verse.refAbbr} 졸업!</h2>
+        <p className="muted">
+          3방향 복습 카드(주제→말씀, 장절→말씀, 말씀→장절)가 생성되어 FSRS 스케줄에
+          편입되었습니다.
+        </p>
       </div>
-    </div>
+      <div className="stage-foot">
+        {nextVerse && (
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              onLearn(nextVerse.id)
+            }}
+          >
+            다음 구절: {nextVerse.refAbbr}
+          </button>
+        )}
+        <div className="btn-row">
+          <button className="btn" onClick={onExit}>
+            홈으로
+          </button>
+          <button className="btn" onClick={onReview}>
+            바로 복습
+          </button>
+        </div>
+      </div>
+    </>
   )
 }

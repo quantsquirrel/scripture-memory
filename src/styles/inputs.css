@@ -1,21 +1,53 @@
 /* 타이핑/장절 입력 */
 .typing-input,
 .ref-input {
+  display: block;
   width: 100%;
   background: var(--color-panel-alt);
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius);
   color: var(--color-text);
   font: inherit;
   font-size: 1rem;
   line-height: 1.7;
   padding: var(--space-6);
-  margin-top: var(--space-4);
+  margin-top: var(--space-3);
+  transition:
+    border-color var(--dur-fade) ease,
+    background-color var(--dur-fade) ease;
+}
+
+/* 말씀을 받아 적는 칸은 본문처럼 세리프로 — 적은 글자가 곧 외운 말씀이다 */
+.typing-input {
+  font-family: var(--font-serif);
+  font-size: var(--text-md);
+  line-height: var(--leading-relaxed);
+  resize: vertical;
+}
+
+.typing-input::placeholder,
+.ref-input::placeholder {
+  font-family: var(--font-sans);
+  color: var(--color-muted);
+  opacity: 0.8;
 }
 
 .typing-input:focus,
 .ref-input:focus {
   outline: 2px solid var(--color-accent);
+  outline-offset: 0;
+  background: var(--color-panel);
+}
+
+/* 입력란 위의 이름표 — 블록으로 세워 앞 입력란과 한 칸 떼어 둔다
+   (인라인이면 앞 입력란 바로 밑에 붙어 어느 칸의 이름인지 흐려졌다) */
+label.small {
+  display: block;
+  margin-top: var(--space-7);
+}
+
+:is(h2, h3) + label.small {
+  margin-top: 0;
 }
 
 /*
@@ -25,12 +57,25 @@
  * 따라다녀야 하고 토큰이 바뀔 때마다 어긋난다. 색만 지우므로 어떤 배경 위에서도
  * 보이지 않는다. display·visibility가 아니라서 접근성 트리에는 그대로 남는다.
  *
+ * 입력란 뒤에 겹쳐 둔다(.typing-field가 기준). 전에는 흐름 안에 있어서 입력란과
+ * 채점 버튼 사이에 본문 길이만큼 빈 칸이 벌어졌다. 크기·위치·접근성 트리는 그대로라
+ * 전사 앱이 읽는 맥락은 달라지지 않는다.
+ *
  * 명도비 감사(audit:contrast) 대상이 아니다 — 읽히라고 그린 텍스트가 아니다.
  */
+.typing-field {
+  position: relative;
+  isolation: isolate;
+}
+
 .stt-context {
+  position: absolute;
+  inset: var(--space-3) 0 auto;
+  z-index: -1;
   color: transparent;
+  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  margin: var(--space-4) 0 0;
+  margin: 0;
   line-height: var(--leading-normal);
 }

@@ -36,25 +36,29 @@ export function ReciteMode({
   const [revealed, setRevealed] = useState(false)
   if (!revealed) {
     return (
-      <button
-        className="btn btn-primary"
-        onClick={() => {
-          setRevealed(true)
-        }}
-      >
-        정답 보기
-      </button>
+      <div className="stage-foot">
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            setRevealed(true)
+          }}
+        >
+          정답 보기
+        </button>
+      </div>
     )
   }
   return (
     <>
       <Answer sc={sc} verse={verse} />
-      <RatingBar
-        card={sc.card}
-        onRate={(r) => {
-          onRate(r, 'recite', null, null)
-        }}
-      />
+      <div className="stage-foot">
+        <RatingBar
+          card={sc.card}
+          onRate={(r) => {
+            onRate(r, 'recite', null, null)
+          }}
+        />
+      </div>
     </>
   )
 }
@@ -80,29 +84,36 @@ export function FirstLetterMode({
             setPeeks((p) => p + 1)
           }}
         />
-        <p className="muted small">막히는 어절만 탭하세요 · 엿보기 {peeks}회</p>
-        <button
-          className="btn btn-primary"
-          onClick={() => {
-            setRevealed(true)
-          }}
-        >
-          낭송 완료 — 확인
-        </button>
+        <p className="muted small fl-hint">
+          <span>막히는 어절만 탭하세요</span>
+          <span className="fl-peeks">엿보기 {peeks}회</span>
+        </p>
+        <div className="stage-foot">
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              setRevealed(true)
+            }}
+          >
+            낭송 완료 — 확인
+          </button>
+        </div>
       </>
     )
   }
   return (
     <>
       <Answer sc={sc} verse={verse} />
-      <p className="muted small">엿보기 {peeks}회 → 제안 등급이 강조됩니다</p>
-      <RatingBar
-        card={sc.card}
-        suggested={ratingFromPeeks(peeks)}
-        onRate={(r) => {
-          onRate(r, 'firstLetter', null, peeks)
-        }}
-      />
+      <div className="stage-foot">
+        <p className="muted small">엿보기 {peeks}회 → 제안 등급이 강조됩니다</p>
+        <RatingBar
+          card={sc.card}
+          suggested={ratingFromPeeks(peeks)}
+          onRate={(r) => {
+            onRate(r, 'firstLetter', null, peeks)
+          }}
+        />
+      </div>
     </>
   )
 }
@@ -125,31 +136,33 @@ export function TypingMode({
         <label className="muted small" htmlFor="review-typing">
           말씀을 입력하세요 (구두점 무시)
         </label>
-        <textarea
-          id="review-typing"
-          className="typing-input"
-          value={attempt}
-          onChange={(e) => {
-            setAttempt(e.target.value)
-          }}
-          onKeyDown={(e) => {
-            // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
-            if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
-            e.preventDefault()
-            if (attempt.trim() !== '') setGrade(gradeTyping(verse.text, attempt))
-          }}
-          placeholder="말씀을 입력하세요 (구두점 무시)"
-          autoCapitalize="off"
-          autoCorrect="off"
-          spellCheck={false}
-          rows={5}
-        />
-        {/*
-          음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
-          화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
-          트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
-        */}
-        <p className="stt-context">{verse.text}</p>
+        <div className="typing-field">
+          <textarea
+            id="review-typing"
+            className="typing-input"
+            value={attempt}
+            onChange={(e) => {
+              setAttempt(e.target.value)
+            }}
+            onKeyDown={(e) => {
+              // 한글 IME 조합 확정 Enter는 제출로 치지 않는다 (isComposing)
+              if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+              e.preventDefault()
+              if (attempt.trim() !== '') setGrade(gradeTyping(verse.text, attempt))
+            }}
+            placeholder="말씀을 입력하세요 (구두점 무시)"
+            autoCapitalize="off"
+            autoCorrect="off"
+            spellCheck={false}
+            rows={5}
+          />
+          {/*
+            음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
+            화면에는 보이지 않지만 접근성 트리에는 남는다 — aria-hidden을 붙이면
+            트리에서 빠져 전사 앱이 읽지 못하므로 붙이지 않는다.
+          */}
+          <p className="stt-context">{verse.text}</p>
+        </div>
         <button
           className="btn btn-primary"
           disabled={attempt.trim() === ''}
@@ -166,13 +179,15 @@ export function TypingMode({
     <>
       <DiffView grade={grade} target={verse.text} />
       <Answer sc={sc} verse={verse} />
-      <RatingBar
-        card={sc.card}
-        suggested={ratingFromAccuracy(grade)}
-        onRate={(r) => {
-          onRate(r, 'typing', grade.accuracy, null)
-        }}
-      />
+      <div className="stage-foot">
+        <RatingBar
+          card={sc.card}
+          suggested={ratingFromAccuracy(grade)}
+          onRate={(r) => {
+            onRate(r, 'typing', grade.accuracy, null)
+          }}
+        />
+      </div>
     </>
   )
 }
@@ -232,13 +247,15 @@ export function RefInputMode({
         {refOk ? '정답!' : `오답 — 입력: ${attempt}`}
       </div>
       <Answer sc={sc} verse={verse} />
-      <RatingBar
-        card={sc.card}
-        suggested={refOk ? 3 : 1}
-        onRate={(r) => {
-          onRate(r, 'refInput', refOk ? 1 : 0, null)
-        }}
-      />
+      <div className="stage-foot">
+        <RatingBar
+          card={sc.card}
+          suggested={refOk ? 3 : 1}
+          onRate={(r) => {
+            onRate(r, 'refInput', refOk ? 1 : 0, null)
+          }}
+        />
+      </div>
     </>
   )
 }

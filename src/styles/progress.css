@@ -1,19 +1,62 @@
-/* 진행률 */
+/*
+ * 진행률.
+ *
+ * <span>으로 쓰이는 자리(버튼 안 — div를 둘 수 없다)가 있어 display를 명시한다.
+ * 전에는 인라인 span이라 폭·높이가 0이 되어, 홈의 과정별 막대가 73/73이어도 비어 보였다.
+ */
 .progress {
+  display: block;
   height: 6px;
   border-radius: var(--radius-pill);
   background: var(--color-panel-alt);
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgb(0 0 0 / 15%);
 }
 
 .progress-fill {
+  display: block;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--color-accent),
-    color-mix(in srgb, var(--color-accent) 80%, #fff 20%)
-  );
+  background: var(--color-accent);
   border-radius: var(--radius-pill);
-  transition: width 0.4s ease;
+  transition: width var(--dur-fill) var(--ease-out);
+}
+
+/* 먹빛 채움 — 등불(금색)이 아니라 기록. 한 화면에 막대가 여럿일 때 금색이
+   막대 수만큼 켜지지 않게 한다 */
+.progress-ink .progress-fill {
+  background: color-mix(in srgb, var(--color-text) 42%, var(--color-panel-alt));
+}
+
+.progress-thin {
+  height: 4px;
+}
+
+/*
+ * 학습 사다리 — 본문 익히기 → 첫글자 복원 → 타이핑 검증 → 졸업.
+ * 복습 화면의 진행 막대와 같은 자리(윗줄 가운데)에 네 칸으로 선다. 지나온 단은
+ * 먹빛, 지금 선 단은 본문색으로 진하게. 글자 안내(1/4 · 본문 익히기)가 옆에 있으므로
+ * 막대는 장식이다(aria-hidden).
+ */
+.ladder {
+  flex: 1;
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ladder li {
+  flex: 1;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-panel-alt);
+  transition: background-color var(--dur-fill) var(--ease-out);
+}
+
+.ladder .is-done {
+  background: color-mix(in srgb, var(--color-text) 42%, var(--color-panel-alt));
+}
+
+.ladder .is-current {
+  background: var(--color-text);
 }

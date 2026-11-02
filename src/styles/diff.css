@@ -1,9 +1,14 @@
-/* diff 결과 */
+/* diff 결과 — 상태색 18% 바탕 위에 같은 색 글자 */
 .diff-score {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
   border-radius: var(--radius);
   padding: var(--space-4) var(--space-6);
   margin-top: var(--space-6);
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: reveal var(--dur-enter) var(--ease-out) both;
 }
 
 .diff-score.good {
@@ -21,6 +26,25 @@
   color: var(--color-bad);
 }
 
+/* 결과 앞의 작은 표지 — 색만으로 정오를 알리지 않는다. 글자가 이미 결과를 말하므로
+   표지는 스크린리더가 읽지 않게 대체 텍스트를 비운다(`/ ''`) */
+.diff-score::before {
+  flex-shrink: 0;
+  width: 1.1em;
+  font-size: 0.9em;
+  line-height: 1;
+  text-align: center;
+}
+
+.diff-score.good::before {
+  content: '✓' / '';
+}
+
+.diff-score.warn::before,
+.diff-score.bad::before {
+  content: '!' / '';
+}
+
 .diff-ok {
   color: var(--color-text);
 }
@@ -28,6 +52,7 @@
 .diff-miss {
   color: var(--color-bad);
   text-decoration: underline dotted;
+  text-underline-offset: 0.25em;
 }
 
 .diff-extra {
@@ -36,6 +61,8 @@
 }
 
 .diff-legend {
+  display: flex;
+  gap: var(--space-6);
   font-size: var(--text-sm);
   color: var(--color-muted);
 }

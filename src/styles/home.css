@@ -1,0 +1,44 @@
+/*
+ * 홈 — 오늘의 복습.
+ *
+ * 하루치 몫을 알리는 카드라서 날짜 머리글로 시작한다. 큰 숫자는 본문색으로 크기만
+ * 키우고(금색 숫자 금지), 설명 한 줄과 물러선 지표 한 줄이 그 아래에 놓인다.
+ */
+.today {
+  padding: var(--stage-pad);
+}
+
+.today h2 {
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-8);
+}
+
+.today-figure {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+}
+
+.today-unit {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.today-line {
+  margin: 0;
+  line-height: var(--leading-normal);
+}
+
+.today-meta {
+  margin: var(--space-1) 0 0;
+}
+
+.today-rest {
+  margin: 0;
+  line-height: var(--leading-normal);
+}
+
+.today .btn-primary {
+  margin-top: var(--space-8);
+}

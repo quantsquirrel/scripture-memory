@@ -22,9 +22,8 @@
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-line);
   border-radius: 20px;
-  box-shadow:
-    0 10px 30px rgb(0 0 0 / 25%),
-    0 1px 3px rgb(0 0 0 / 15%);
+  /* 콘텐츠 위에 실제로 떠 있는 유일한 면 — 그림자가 허락된 두 예외 중 하나 */
+  box-shadow: var(--shadow-dock);
   z-index: 100;
 }
 
@@ -41,9 +40,10 @@
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
-    color 0.15s ease,
-    background 0.15s ease;
+    color var(--dur-fade) ease,
+    background-color var(--dur-fade) ease;
 }
 
 .tab-nav .tab-icon {
@@ -58,11 +58,12 @@
   display: none;
 }
 
+/* 지금 화면: 금색 그림에 같은 금빛이 은은히 번진 자리 — 등불이 놓인 곳.
+   번짐 농도는 audit_contrast.py가 잰다(모바일 아이콘 3:1, PC 이름 글자 4.5:1) */
 .tab-nav a.active {
   color: var(--color-accent);
   font-weight: 700;
-  background: var(--color-panel);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
 
 @media (hover: hover) {
@@ -94,6 +95,11 @@
     padding: 0 var(--space-5);
     border-radius: var(--radius);
     font-size: var(--text-sm2);
+  }
+
+  /* 이름 글자가 함께 보이므로 일반 텍스트 기준(4.5:1)을 지키도록 번짐을 줄인다 */
+  .tab-nav a.active {
+    background: color-mix(in srgb, var(--color-accent) 9%, transparent);
   }
 
   .tab-nav .tab-icon {

@@ -198,8 +198,9 @@ export function PairingPanel({
       {pairing && left === 0 && (
         <p className="muted small">코드가 만료되었습니다. 새로 만들어 주세요.</p>
       )}
+      {/* 설정 화면에는 오늘의 주 행동이 없다 — 금색 버튼(등불)을 켜지 않는다 */}
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={!enabled || busy !== null}
         aria-busy={busy === 'create'}
         onClick={onCreate}
@@ -230,7 +231,7 @@ export function PairingPanel({
         spellCheck={false}
       />
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={!enabled || busy !== null || normalizeCode(input) === null}
         aria-busy={busy === 'apply'}
         onClick={onApply}
@@ -302,7 +303,7 @@ export function SyncPanel({
         spellCheck={false}
       />
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={syncing || !token.trim() || !gistId.trim()}
         onClick={onSync}
       >
@@ -336,14 +337,15 @@ export function DataPanel({
     <section className="panel">
       <h2>데이터 및 학습</h2>
       <button className="btn" onClick={onRecalibrate}>
-        말씀 상태 개정 (Recalibrate)
+        말씀 상태 개정 <span className="btn-note">(Recalibrate)</span>
       </button>
       <p className="muted small">
         오래 쉬어 카드가 밀렸을 때, 구절마다 본문을 한 번 떠올려 보고 상태를 다시 정리합니다.
       </p>
+      <h3>백업</h3>
       <div className="btn-row">
         <button className="btn" onClick={onExport}>
-          내보내기 (JSON)
+          내보내기 <span className="btn-note">(JSON)</span>
         </button>
         <button
           className="btn"
@@ -353,9 +355,13 @@ export function DataPanel({
         >
           가져오기
         </button>
+      </div>
+      {/* 되돌릴 수 없는 행동은 구분선 아래로 떼어 둔다 — 백업 버튼 옆에서 잘못 누르지 않게 */}
+      <div className="danger-zone">
         <button className="btn btn-danger" onClick={onReset}>
           초기화
         </button>
+        <p className="muted small">모든 학습·복습 기록을 이 기기에서 지웁니다.</p>
       </div>
       <input
         ref={fileRef}
@@ -378,19 +384,32 @@ export function AboutPanel() {
   return (
     <section className="panel">
       <h2>정보</h2>
-      <p className="muted small">
-        본문: 성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로 퍼블릭
-        도메인이며, 대한성서공회 온라인 본문에서 추출·검증했습니다. 저작인격권은 소멸하지
-        않으므로 출처를 밝히고 본문을 고치지 않습니다 — 옛 표기와 문장부호를 그대로 둡니다.
-        <br />
-        구성: 네비게이토 암송 과정 495구절 — 그리스도인의 확신(5확신) 5구절 → 그리스도인의
-        생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
-        성경암송 시리즈 180구절.
-        <br />
-        스케줄링: FSRS (ts-fsrs, 목표 기억율 90%).
-        <br />
-        낭송 규칙: 주제 → 장절 → 말씀 → 장절.
-      </p>
+      <dl className="about-list">
+        <div>
+          <dt>본문</dt>
+          <dd>
+            성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로 퍼블릭 도메인이며,
+            대한성서공회 온라인 본문에서 추출·검증했습니다. 저작인격권은 소멸하지 않으므로
+            출처를 밝히고 본문을 고치지 않습니다 — 옛 표기와 문장부호를 그대로 둡니다.
+          </dd>
+        </div>
+        <div>
+          <dt>구성</dt>
+          <dd>
+            네비게이토 암송 과정 495구절 — 그리스도인의 확신(5확신) 5구절 → 그리스도인의
+            생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
+            성경암송 시리즈 180구절.
+          </dd>
+        </div>
+        <div>
+          <dt>스케줄링</dt>
+          <dd>FSRS (ts-fsrs, 목표 기억율 90%).</dd>
+        </div>
+        <div>
+          <dt>낭송 규칙</dt>
+          <dd>주제 → 장절 → 말씀 → 장절.</dd>
+        </div>
+      </dl>
     </section>
   )
 }

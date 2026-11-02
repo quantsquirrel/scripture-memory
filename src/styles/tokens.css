@@ -35,7 +35,9 @@
   --palette-light-bg: #f7f2e7;
   --palette-light-panel: #fffdf8;
   --palette-light-panel2: #efe7d5;
-  --palette-light-line: #a5997d;
+  /* 괘선은 종이 위에 연필로 그은 정도로 — 진하면 카드마다 갈색 테두리가 둘러져
+     지면이 상자로 보였다. 컨트롤 경계는 아래 border(3:1)가 따로 맡는다 */
+  --palette-light-line: #ddd3bd;
   --palette-light-border: #887959;
   --palette-light-text: #1e2538;
   --palette-light-muted: #58617a;
@@ -90,7 +92,9 @@
   --text-xl: 1.3rem;
   --text-2xl: 1.45rem;
   --text-3xl: 1.6rem;
+  --leading-tight: 1.3;
   --leading-normal: 1.7;
+  --leading-relaxed: 1.8;
   /* 본문 낭송용 — 한 줄을 눈으로 따라가기 쉽게 넉넉히 */
   --leading-verse: 1.95;
 
@@ -101,12 +105,28 @@
   --radius-lg: 14px;
   --radius-pill: 999px;
 
-  /* ── 그림자 ─────────────────────────────────────────────── */
-  --shadow-nav: 0 -1px 12px rgb(0 0 0 / 22%);
+  /* ── 그림자 ─────────────────────────────────────────────────
+   * 깊이는 bg → panel → panel-alt 명도 단차로만 만든다(DESIGN.md Elevation).
+   * 그림자는 실제로 떠 있는 하단 독과 포커스 링 둘뿐이다. */
+  --shadow-dock: 0 10px 30px rgb(0 0 0 / 25%), 0 1px 3px rgb(0 0 0 / 15%);
   --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 45%, transparent);
+
+  /* ── 움직임 ─────────────────────────────────────────────────
+   * 기능적일 때만: 누름 피드백, 진행률 변화, 새 카드가 놓였다는 신호.
+   * prefers-reduced-motion이면 a11y.css가 전부 끈다. */
+  --ease-out: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --dur-press: 0.1s;
+  --dur-fade: 0.15s;
+  --dur-enter: 0.28s;
+  --dur-fill: 0.4s;
 
   /* ── 레이아웃 ───────────────────────────────────────────── */
   --layout-max: 560px;
+  /* 카드 안쪽 여백. 복습·학습 무대(stage)는 말씀이 숨 쉬도록 한 단계 넓다 */
+  --panel-pad: var(--space-8);
+  --stage-pad: var(--space-10);
+  /* 모바일 하단 독이 차지하는 높이 + 본문과의 틈 (독은 position: fixed라 흐름 밖이다) */
+  --dock-clearance: 96px;
   /* 손가락으로 정확히 누를 수 있는 최소 크기 (WCAG 2.2 Target Size 최소 24, 권장 44) */
   --touch-min: 44px;
   /* 화면당 하나뿐인 주 행동(btn-primary)은 한 손 엄지로 더 확실히 */

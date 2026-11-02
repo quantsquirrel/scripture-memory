@@ -26,7 +26,7 @@ export function CardFace({
   onRate: RateFn
 }) {
   return (
-    <div className="panel">
+    <div className="panel stage-card">
       <div className="mode-tag">{MODE_LABEL[mode]}</div>
       <Prompt sc={sc} verse={verse} />
       {mode === 'recite' && <ReciteMode sc={sc} verse={verse} onRate={onRate} />}

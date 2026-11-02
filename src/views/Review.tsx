@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 
 import { nextDueAt, submitReview } from '../app'
+import { LampMark } from '../components/LampMark'
 import { VERSE_BY_ID } from '../data/verses'
 import type { Rating, ReviewMode, StoredCard } from '../domain/card'
 import { required } from '../domain/invariant'
@@ -64,38 +65,60 @@ export function Review({ onExit }: { onExit: () => void }) {
 
   if (!current) {
     return (
-      <div className="panel center">
-        <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
-        {notice !== null && (
-          <p className="muted" role="status">
-            {notice}
-          </p>
-        )}
-        {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
-        {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
-        {queue.length === 0 && done === 0 && (
-          <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
-        )}
-        <button className="btn btn-primary" onClick={onExit}>
-          홈으로
-        </button>
+      <div className="stage">
+        <div className="panel stage-card">
+          <div className="finale">
+            {done > 0 && <LampMark />}
+            <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
+            {notice !== null && (
+              <p className="muted" role="status">
+                {notice}
+              </p>
+            )}
+            {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
+            {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
+            {queue.length === 0 && done === 0 && (
+              <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
+            )}
+          </div>
+          <div className="stage-foot">
+            <button className="btn btn-primary" onClick={onExit}>
+              홈으로
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   // useDueCards가 본문 없는 카드를 걸러낸 뒤이므로 반드시 존재한다
   const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
+  const remaining = queue.length - idx
 
   return (
-    <div>
+    <div className="stage">
       <div className="review-top">
         <button className="btn-ghost" onClick={onExit}>
           ← 종료
         </button>
-        <span className="muted">남은 카드 {queue.length - idx}</span>
+        {/* 이번 세션에서 넘긴 몫 — 큐가 다시 채워지면 분모도 함께 늘어난다 */}
+        <span
+          className="progress progress-ink progress-thin"
+          role="progressbar"
+          aria-label="이번 복습 진행"
+          aria-valuemin={0}
+          aria-valuemax={done + remaining}
+          aria-valuenow={done}
+        >
+          <span
+            className="progress-fill"
+            style={{ width: `${(done / (done + remaining)) * 100}%` }}
+          />
+        </span>
+        <span className="review-count">남은 카드 {remaining}</span>
       </div>
       {notice !== null && (
-        <p className="muted" role="status">
+        <p className="muted small" role="status">
           {notice}
         </p>
       )}

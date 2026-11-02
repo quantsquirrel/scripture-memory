@@ -2,10 +2,10 @@
 .seg-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-3);
+  gap: var(--space-1);
   padding: 4px;
   background: var(--color-panel-alt);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   border: 1px solid var(--color-line);
   margin-bottom: var(--space-4);
 }
@@ -14,26 +14,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
   padding: 9px var(--space-2);
-  word-break: keep-all;
-  border-radius: calc(var(--radius) - 2px);
+  border-radius: var(--radius);
   border: none;
   background: transparent;
   color: var(--color-muted);
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--text-sm2);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition:
+    color var(--dur-fade) ease,
+    background-color var(--dur-fade) ease,
+    transform var(--dur-press) ease;
+}
+
+.seg:active {
+  transform: scale(0.97);
 }
 
 .seg.active {
   background: var(--color-panel);
   color: var(--color-accent);
-  box-shadow: 0 1px 4px rgb(0 0 0 / 12%);
   font-weight: 700;
 }
 
-/* 등급 버튼 */
+/* ── 등급 버튼 ───────────────────────────────────────────────
+ * 객관 채점이 제안한 등급(.suggested)이 이 화면의 등불이다 — 금색 테두리로 켜고,
+ * 나머지 셋은 보조 버튼처럼 물러선다. 라벨 색은 결과 상태색(bad/warn/ok/info).
+ */
 .rating-bar {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -42,19 +51,22 @@
 }
 
 .rate {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: var(--space-1);
   padding: var(--space-5) var(--space-2);
   border-radius: var(--radius);
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-border);
   background: var(--color-panel-alt);
   color: var(--color-text);
   cursor: pointer;
   transition:
-    transform 0.1s ease,
-    border-color 0.15s ease;
+    transform var(--dur-press) ease,
+    border-color var(--dur-fade) ease,
+    background-color var(--dur-fade) ease;
 }
 
 .rate:active {
@@ -69,6 +81,7 @@
 .rate-interval {
   font-size: var(--text-xs);
   color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .rate-1 .rate-label {
@@ -87,8 +100,28 @@
   color: var(--color-info);
 }
 
+/* 테두리를 2px로 굵히는 만큼 안쪽 여백을 1px 덜어 칸 크기가 흔들리지 않게 한다 */
 .rate.suggested {
-  outline: 2px solid var(--color-accent);
+  border: 2px solid var(--color-accent);
+  padding: calc(var(--space-5) - 1px) calc(var(--space-2) - 1px);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-panel-alt));
+}
+
+/* "제안" 표지 — 색만으로 알리지 않도록 글자 한 줄을 칸 위에 얹는다 */
+.rate-suggest {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -55%);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-accent-text);
+  font-size: 0.66rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
 
 /* 홈 화면 설치 안내 — 헤더 아래 한 줄, 닫으면 다시 나오지 않는다 */
@@ -97,21 +130,33 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-8);
-  margin-bottom: var(--space-8);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-8);
+  margin-bottom: var(--space-7);
   background: var(--color-panel);
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-lg);
 }
 
 .install-banner p {
   margin: 0;
 }
 
-/* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게 (강조 숫자와 같은 accent/panel 쌍) */
+.install-banner .btn {
+  width: auto;
+  margin-top: 0;
+}
+
+.install-banner .btn-install {
+  flex: 1;
+}
+
+/* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게 */
 .pair-code-box {
   text-align: center;
-  margin-bottom: var(--space-6);
+  margin: var(--space-4) 0 var(--space-6);
+  padding: var(--space-8) var(--space-6);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
 }
 
 .pair-code {
@@ -123,17 +168,84 @@
   /* 마지막 글자 뒤 자간만큼 왼쪽을 채워 시각적 중앙을 맞춘다 */
   padding-left: 0.16em;
   white-space: nowrap;
-  color: var(--color-accent);
-  margin: var(--space-4) 0 var(--space-2);
+  color: var(--color-text);
+  margin: 0 0 var(--space-2);
+}
+
+.pair-code-box .btn {
+  width: auto;
+  display: inline-block;
+  padding-inline: var(--space-12);
 }
 
 .pair-input {
   letter-spacing: 0.12em;
 }
 
-.install-banner .btn {
-  width: auto;
-  margin-top: 0;
+/* 기록 — 숫자 두 개를 나란히. 지표는 물러서므로 큰 숫자도 본문색, 단위는 muted */
+.stat-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+}
+
+.stat {
+  margin: 0;
+  padding: var(--space-6) var(--space-7);
+  border-radius: var(--radius);
+  background: var(--color-panel-alt);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.stat-label {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.stat-value {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+  margin-right: 2px;
+}
+
+/* 정보 — 항목 이름과 내용을 나란히 (긴 문단을 <br>로 이어 붙이던 것) */
+.about-list {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.about-list > div {
+  display: grid;
+  grid-template-columns: 5.5em 1fr;
+  gap: var(--space-4);
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.about-list > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.about-list dt {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.about-list dd {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+/* 설정 묶음 안의 위험 구역 — 되돌릴 수 없는 행동은 구분선 아래로 떼어 둔다 */
+.danger-zone {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-line);
 }
 
 @media (hover: hover) {
@@ -141,7 +253,7 @@
     color: var(--color-text);
   }
 
-  .rate:hover {
-    border-color: var(--color-accent);
+  .rate:not(.suggested):hover {
+    background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 7%);
   }
 }

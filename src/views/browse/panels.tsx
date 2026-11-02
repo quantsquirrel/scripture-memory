@@ -47,8 +47,8 @@ export function CollectionTabs({
             onSelect(c.key)
           }}
         >
-          <span>{c.short}</span>
-          <span className="muted small">
+          <span className="col-tab-name">{c.short}</span>
+          <span className="col-tab-count">
             {c.done}/{c.total}
           </span>
         </button>
@@ -75,15 +75,14 @@ export function SectionPanel({
 }) {
   return (
     <section className="panel">
-      <h2>
-        {group.title} {group.subtitle && <span className="muted small">{group.subtitle}</span>}
-      </h2>
+      <h2>{group.title}</h2>
+      {group.subtitle && <p className="muted small panel-sub">{group.subtitle}</p>}
       {group.topics.map((topic) => (
         <div key={topic.key}>
           {topic.group !== null && <h3 className="group-title">{topic.group}</h3>}
           <h3 className="topic-title">{topic.title}</h3>
           {topic.verses.map((verse) => (
-            <div key={verse.id}>
+            <div key={verse.id} className="verse-item">
               <button
                 type="button"
                 className="verse-row"
@@ -92,7 +91,15 @@ export function SectionPanel({
                   onToggle(verse.id)
                 }}
               >
-                <span>{verse.refAbbr}</span>
+                <span className="verse-row-main">
+                  <span className="verse-row-ref">{verse.refAbbr}</span>
+                  {/* 본문 첫머리 — 버튼 이름은 장절과 상태만으로 충분하니 읽지 않는다 */}
+                  {openVerseId !== verse.id && (
+                    <span className="verse-row-preview" aria-hidden="true">
+                      {verse.text}
+                    </span>
+                  )}
+                </span>
                 <span className={`status ${verse.status.cls}`}>{verse.status.label}</span>
               </button>
               {openVerseId === verse.id && (

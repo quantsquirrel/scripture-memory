@@ -30,7 +30,8 @@
 .rate,
 .col-tab,
 .verse-row,
-.col-row,
+.recal-unit,
+.recal-banner,
 .tech-details summary,
 .btn,
 .ref-input {
@@ -74,14 +75,19 @@
 /* ── 컨트롤 경계 ─────────────────────────────────────────────
  * 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳은 3:1 이상인
  * --color-border를 쓴다 (--color-line은 장식용 헤어라인).
+ *
+ * 제 색 경계가 있는 것은 뺀다 — 주 버튼(금색 채움)·위험 버튼(bad 외곽선)·제안 등급,
+ * 그리고 공개되어 본문 글자가 된 첫글자 어절. 전에는 이 규칙이 마지막에 오면서
+ * 금색 버튼에 회청색 테두리를, 공개 어절에 좁은 상자를 씌웠다.
  */
-.btn,
+.btn:not(.btn-primary, .btn-danger),
+.btn-primary:disabled,
 .seg,
-.rate,
+.rate:not(.suggested),
 .col-tab,
 .typing-input,
 .ref-input,
-.fl-word {
+.fl-word:not(.fl-revealed) {
   border-color: var(--color-border);
 }
 
@@ -96,7 +102,11 @@
     scroll-behavior: auto !important;
   }
 
-  .btn:active {
+  .btn:active,
+  .rate:active,
+  .fl-word:active,
+  .col-tab:active,
+  .seg:active {
     transform: none;
   }
 }
@@ -121,7 +131,8 @@
  */
 @media (prefers-contrast: more) {
   .panel,
-  .tech-details {
+  .tech-details,
+  .verse-row {
     border-color: var(--color-border);
   }
 

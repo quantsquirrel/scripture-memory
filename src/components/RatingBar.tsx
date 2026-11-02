@@ -30,6 +30,8 @@ export function RatingBar({
         >
           <span className="rate-label">{LABELS[r]}</span>
           <span className="rate-interval">{preview[r]}</span>
+          {/* 금색 테두리만으로 알리지 않는다 — 채점 증거가 고른 칸이라는 글자 표지 */}
+          {suggested === r && <span className="rate-suggest">제안</span>}
         </button>
       ))}
     </div>

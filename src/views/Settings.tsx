@@ -148,12 +148,17 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   return (
     <div>
       <section className="panel">
-        <h2>통계</h2>
-        <p>
-          총 복습 <strong>{data.reviews}</strong>회 · 암송 편입{' '}
-          <strong>{data.graduated}</strong>
-          구절
-        </p>
+        <h2>기록</h2>
+        <div className="stat-row">
+          <p className="stat">
+            <span className="stat-label">암송 편입</span>{' '}
+            <strong className="stat-value">{data.graduated}</strong>구절
+          </p>
+          <p className="stat">
+            <span className="stat-label">총 복습</span>{' '}
+            <strong className="stat-value">{data.reviews}</strong>회
+          </p>
+        </div>
       </section>
 
       <ThemePanel

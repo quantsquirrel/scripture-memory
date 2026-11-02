@@ -6,7 +6,7 @@ export function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
     const { nth, total } = topicOrdinalOf(verse)
     return (
       <div className="prompt">
-        <span className="chip">{crumbOf(verse).join(' · ')}</span>
+        <p className="kicker">{crumbOf(verse).join(' · ')}</p>
         <h2 className="prompt-main">
           {topicOf(verse).title}
           {total > 1 && (

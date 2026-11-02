@@ -64,6 +64,8 @@ export function Home({
         newThisWeek={data.newThisWeek}
         resume={resume}
         next={next}
+        // 복습 시작 버튼이 떠 있지 않을 때만 새 구절 학습이 오늘의 주 행동이 된다
+        lamp={data.due === 0 && data.upcoming === 0}
         onLearn={onLearn}
       />
       <ProgressPanel

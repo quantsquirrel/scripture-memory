@@ -13,6 +13,8 @@ body {
      PC에서는 "계/산하고"처럼 어절 중간이 끊겼다 */
   word-break: keep-all;
   overflow-wrap: break-word;
+  /* 엄지로 두 번 눌러도 확대되지 않게 — 복습 등급·첫글자 칩을 빠르게 누른다 */
+  touch-action: manipulation;
 }
 
 /*
@@ -43,18 +45,33 @@ textarea {
   font: inherit;
 }
 
+/*
+ * 앱 셸은 세로 flex다. 복습·학습 무대(.stage)가 남은 높이를 채워 주 행동을
+ * 엄지가 닿는 아래쪽에 둘 수 있게 하고, 나머지 화면은 패널이 위에서부터 쌓인다.
+ * svh는 브라우저 도구 막대가 보일 때의 높이라 넘치지 않는다(앞 줄은 구형 대체값).
+ */
 .app {
   max-width: var(--layout-max);
   margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
   padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-8)
-    calc(96px + env(safe-area-inset-bottom, 0px));
+    calc(var(--dock-clearance) + env(safe-area-inset-bottom, 0px));
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 모바일 헤더: 지금 화면의 이름 한 줄. 워드마크·보조 문구·가로선은 PC에만 */
 .app-header {
   display: flex;
   align-items: center;
-  padding: var(--space-2) var(--space-1) var(--space-5);
+  padding: var(--space-2) var(--space-1) var(--space-6);
 }
 
 /* 워드마크는 눈에서만 감춘다 — 앱 이름 h1은 스크린리더에 남아 모든 화면의 첫 제목이 된다
@@ -66,6 +83,8 @@ textarea {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  margin: 0;
+  line-height: 1;
 }
 
 .brand-sub {
@@ -86,11 +105,6 @@ textarea {
 }
 
 /* Ivan 워드마크 — i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다 */
-.brand {
-  margin: 0;
-  line-height: 1;
-}
-
 .brand-wordmark {
   display: inline-flex;
   align-items: baseline;
@@ -114,24 +128,34 @@ textarea {
   letter-spacing: 0.04em;
 }
 
+/*
+ * 제목. 장식 기호를 붙이지 않는다 — 카드마다 금색 ◆를 달면 화면에 등불이
+ * 카드 수만큼 켜진다(DESIGN.md 원칙 2). 위계는 크기·굵기·여백으로만 만든다.
+ */
 h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   font-size: var(--text-md);
+  font-weight: 700;
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
-  margin: 0 0 var(--space-5);
+  margin: 0 0 var(--space-6);
 }
 
-h2::before {
-  content: '◆';
-  font-size: 0.52rem;
-  color: var(--color-accent);
-  opacity: 0.85;
-}
-
+/* 카드 안의 소제목 — 브라우저 기본값(1.17em)이 카드 제목(h2)보다 커서 위계가 뒤집혔다 */
 h3 {
-  margin: var(--space-4) 0;
+  font-size: var(--text-base);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  margin: var(--space-10) 0 var(--space-3);
+}
+
+/* 머리글(kicker): 제목 위의 작은 한 줄 — 과정·주제 경로나 날짜처럼 "지금 어디인가"를 알린다 */
+.kicker {
+  display: block;
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: var(--leading-normal);
+  color: var(--color-muted);
 }
 
 .muted {
@@ -140,62 +164,43 @@ h3 {
 
 .small {
   font-size: var(--text-sm);
-}
-
-.center {
-  text-align: center;
+  line-height: var(--leading-normal);
 }
 
 .panel {
   background: var(--color-panel);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  /* 카드 사이 14px (DESIGN.md Layout) — 전에는 640px 이하에서만 14px이었다 */
+  padding: var(--panel-pad);
+  /* 카드 사이 14px (DESIGN.md Layout) */
   margin-bottom: var(--space-7);
-  box-shadow: var(--shadow-nav);
-  position: relative;
-  overflow: hidden;
 }
 
-.panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: color-mix(in srgb, var(--color-border) 35%, transparent);
+.panel > :last-child {
+  margin-bottom: 0;
 }
 
+/* 성경 본문 — 이 앱에서 세리프를 쓰는 유일한 자리 */
 .verse {
   font-family: var(--font-serif);
   font-size: var(--text-lg);
   line-height: var(--leading-verse);
   letter-spacing: -0.012em;
-  word-break: keep-all;
   margin: var(--space-6) 0;
+  text-wrap: pretty;
   font-feature-settings:
     'palt' 1,
     'liga' 1;
 }
 
-.chip {
-  display: inline-block;
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-line);
-  color: var(--color-muted);
-  border-radius: var(--radius-pill);
-  padding: 3px var(--space-6);
-  font-size: var(--text-sm);
-  margin-bottom: var(--space-3);
-}
-
 /* 큰 숫자 지표 — 본문색으로 크기만 키운다. 금색은 행동(등불)에 남겨둔다 */
 .big-number {
   font-size: var(--text-3xl);
-  color: var(--color-text);
   font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
 /* 큰 숫자 아래 한 줄로 내려 지표 문구가 숫자 옆에서 쪼개지지 않게 한다 */
@@ -204,6 +209,49 @@ h3 {
   margin-top: var(--space-2);
   font-size: var(--text-sm2);
   line-height: var(--leading-normal);
+}
+
+/*
+ * 무대(stage): 복습 카드·학습 사다리처럼 말씀 한 구절을 마주하는 화면.
+ * 모바일에서는 카드가 남은 높이를 채우고 주 행동(.stage-foot)이 카드 맨 아래,
+ * 엄지가 닿는 자리로 내려간다. 입력란이 있는 단계는 화면 키보드가 버튼을
+ * 덮지 않도록 .stage-foot을 쓰지 않고 입력란 바로 아래에 버튼을 둔다.
+ */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--stage-pad);
+  margin-bottom: 0;
+  animation: stage-enter var(--dur-enter) var(--ease-out) both;
+}
+
+.stage-foot {
+  margin-top: auto;
+  padding-top: var(--space-8);
+}
+
+.stage-foot > :first-child {
+  margin-top: 0;
+}
+
+/* 새 카드·새 단계가 놓였다는 신호 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */
+@keyframes stage-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ── PC (769px 이상) ─────────────────────────────────────────
@@ -241,17 +289,27 @@ h3 {
   .screen-title {
     display: none;
   }
+
+  /* 마우스는 엄지 영역이 없다 — 카드는 내용 높이만큼, 대신 너무 낮아 보이지 않게 */
+  .stage-card {
+    flex: none;
+    min-height: 440px;
+  }
 }
 
 /* iPhone SE(375px) 이하 — 본문 폭을 위해 바깥·안쪽 여백을 한 단계 줄인다 */
 @media (max-width: 380px) {
+  :root {
+    --panel-pad: var(--space-7);
+    --stage-pad: var(--space-8);
+  }
+
   .app {
     padding-left: var(--space-6);
     padding-right: var(--space-6);
   }
 
   .panel {
-    padding: var(--space-7);
     margin-bottom: var(--space-6);
   }
 }

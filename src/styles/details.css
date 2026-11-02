@@ -3,24 +3,50 @@
   background: var(--color-panel);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: var(--space-2) var(--space-8) var(--space-4);
+  padding: 0 var(--panel-pad);
   margin-bottom: var(--space-7);
 }
 
 .tech-details[open] {
-  padding-bottom: var(--space-8);
+  padding-bottom: var(--panel-pad);
 }
 
 .tech-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
   cursor: pointer;
+  list-style: none;
   font-weight: 700;
   font-size: var(--text-base);
   padding: var(--space-6) 0;
   color: var(--color-muted);
 }
 
+.tech-details summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠 */
+.tech-details summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--dur-fade) ease;
+}
+
 .tech-details[open] summary {
   color: var(--color-text);
+}
+
+.tech-details[open] summary::after {
+  transform: rotate(-135deg) translateY(-2px);
 }
 
 .tech-details h3 {

@@ -79,21 +79,33 @@ export function Learn({
     }
   }
 
+  const { nth, total } = stepOrdinal(step)
+
   return (
-    <div>
+    <div className="stage">
       <div className="review-top">
         <button className="btn-ghost" onClick={onExit}>
           ← 나가기
         </button>
-        <span className="muted">
-          {stepOrdinal(step).nth}/{stepOrdinal(step).total} · {STEP_TITLE[step]}
+        {/* 사다리 네 단 — 글자 안내가 옆에 있으므로 막대는 장식이다 */}
+        <ol className="ladder" aria-hidden="true">
+          {Array.from({ length: total }, (_, i) => (
+            <li
+              key={i}
+              className={i + 1 < nth ? 'is-done' : i + 1 === nth ? 'is-current' : undefined}
+            />
+          ))}
+        </ol>
+        <span className="review-count">
+          {nth}/{total} · {STEP_TITLE[step]}
         </span>
       </div>
 
-      <div className="panel">
-        <span className="chip">
+      {/* 단계가 바뀌면 카드를 새로 놓는다 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */}
+      <div key={step} className="panel stage-card">
+        <p className="kicker">
           {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
-        </span>
+        </p>
 
         {step === 'intro' && (
           <IntroStep

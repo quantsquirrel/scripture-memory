@@ -6,6 +6,7 @@ import {
   type RecalibrateVerdict,
   recalibrateVerse,
 } from '../app/recalibrate'
+import { LampMark } from '../components/LampMark'
 import { topicOf, VERSE_BY_ID } from '../data/verses'
 import { required } from '../domain/invariant'
 import { useRecalibrateUnits } from './hooks'
@@ -107,32 +108,39 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
     const at = units.findIndex((u) => u.key === unit.key)
     const next = units.slice(at + 1).find((u) => u.verseIds.length > 0)
     return (
-      <div className="panel center">
-        <h2>{unit.label} 개정 완료</h2>
-        <ul className="recal-summary">
-          <li>🟢 {tally.solid}구절 정상화</li>
-          <li>🟡 {tally.shaky}구절 단기 복습 큐</li>
-          <li>🔴 {tally.forgotten}구절 사다리 복귀</li>
-        </ul>
-        {tally.deferred > 0 && (
-          <p className="muted small">
-            말씀→장절 카드와 감사 차례 카드 {tally.deferred}장은 자가 판정으로 넘기지 않고 복습
-            큐에 남겨 두었습니다 — 복습 탭에서 객관 채점으로 확인하세요.
-          </p>
-        )}
-        {next && (
-          <button
-            className="btn btn-primary"
-            onClick={() => {
-              start(next)
-            }}
-          >
-            다음 파트 개정하기 — {next.label}
-          </button>
-        )}
-        <button className="btn" onClick={onExit}>
-          홈으로 가기
-        </button>
+      <div className="stage">
+        <div className="panel stage-card">
+          <div className="finale">
+            <LampMark />
+            <h2>{unit.label} 개정 완료</h2>
+            <ul className="recal-summary">
+              <li>🟢 {tally.solid}구절 정상화</li>
+              <li>🟡 {tally.shaky}구절 단기 복습 큐</li>
+              <li>🔴 {tally.forgotten}구절 사다리 복귀</li>
+            </ul>
+            {tally.deferred > 0 && (
+              <p className="muted small">
+                말씀→장절 카드와 감사 차례 카드 {tally.deferred}장은 자가 판정으로 넘기지 않고
+                복습 큐에 남겨 두었습니다 — 복습 탭에서 객관 채점으로 확인하세요.
+              </p>
+            )}
+          </div>
+          <div className="stage-foot">
+            {next && (
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  start(next)
+                }}
+              >
+                다음 파트 개정하기 — {next.label}
+              </button>
+            )}
+            <button className="btn" onClick={onExit}>
+              홈으로 가기
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -140,7 +148,7 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
   const verse = required(VERSE_BY_ID[verseId], `구절 ${verseId}`)
 
   return (
-    <div>
+    <div className="stage">
       <div className="review-top">
         <button
           className="btn-ghost"
@@ -150,56 +158,58 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
         >
           ← 파트 선택
         </button>
-        <span className="muted">
+        <span
+          className="progress progress-ink progress-thin"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuenow={idx}
+          aria-label="개정 진행률"
+        >
+          <span className="progress-fill" style={{ width: `${(idx / total) * 100}%` }} />
+        </span>
+        <span className="review-count">
           {idx} / {total} 완료
         </span>
       </div>
-      <div
-        className="progress"
-        role="progressbar"
-        aria-valuemin={0}
-        aria-valuemax={total}
-        aria-valuenow={idx}
-        aria-label="개정 진행률"
-      >
-        <div className="progress-fill" style={{ width: `${(idx / total) * 100}%` }} />
-      </div>
-      <div className="panel recal-card">
-        <span className="chip">{unit.label}</span>
-        <h2 className="prompt-main">
-          [{unit.key}-{idx + 1}] {topicOf(verse).title} · {verse.ref}
-        </h2>
+      <div key={verseId} className="panel stage-card">
+        <p className="kicker">
+          {unit.label} · {unit.key}-{idx + 1}
+        </p>
+        <h2 className="prompt-main">{topicOf(verse).title}</h2>
+        <p className="answer-ref">{verse.ref}</p>
         {revealed ? (
           <p className="verse">{verse.text}</p>
         ) : (
-          <>
-            <p className="muted">말씀을 마음속으로 끝까지 떠올린 뒤 본문을 확인하세요.</p>
+          <p className="muted">말씀을 마음속으로 끝까지 떠올린 뒤 본문을 확인하세요.</p>
+        )}
+        <div className="stage-foot">
+          {revealed ? (
+            <div className="recal-verdicts" role="group" aria-label="암송 상태 판정">
+              {VERDICTS.map((v) => (
+                <button
+                  key={v.verdict}
+                  className={`btn recal-${v.verdict}`}
+                  disabled={busy}
+                  onClick={() => {
+                    void judge(v.verdict)
+                  }}
+                >
+                  <kbd className="key-hint">{v.key}</kbd> {v.label}
+                </button>
+              ))}
+            </div>
+          ) : (
             <button
               className="btn btn-primary"
               onClick={() => {
                 setRevealed(true)
               }}
             >
-              본문 확인 (Space)
+              본문 확인 <kbd className="key-hint">Space</kbd>
             </button>
-          </>
-        )}
-        {revealed && (
-          <div className="recal-verdicts" role="group" aria-label="암송 상태 판정">
-            {VERDICTS.map((v) => (
-              <button
-                key={v.verdict}
-                className={`btn recal-${v.verdict}`}
-                disabled={busy}
-                onClick={() => {
-                  void judge(v.verdict)
-                }}
-              >
-                [{v.key}] {v.label}
-              </button>
-            ))}
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   )
@@ -229,21 +239,23 @@ function UnitPicker({
           복원 단계부터 다시 오릅니다. 말씀→장절 카드와 타이핑·첫글자 감사 차례인 카드는 자가
           판정으로 넘기지 않고 복습 큐에 남겨 둡니다.
         </p>
-        {units.map((u) => (
-          <button
-            key={u.key}
-            className="recal-unit"
-            disabled={u.verseIds.length === 0}
-            onClick={() => {
-              onPick(u)
-            }}
-          >
-            <span>{u.label}</span>
-            <span className="muted small">
-              {u.verseIds.length}구절{u.due > 0 && ` · 밀린 카드 ${u.due}장`}
-            </span>
-          </button>
-        ))}
+        <div className="recal-units">
+          {units.map((u) => (
+            <button
+              key={u.key}
+              className="recal-unit"
+              disabled={u.verseIds.length === 0}
+              onClick={() => {
+                onPick(u)
+              }}
+            >
+              <span>{u.label}</span>
+              <span className="muted small recal-unit-meta">
+                {u.verseIds.length}구절{u.due > 0 && ` · 밀린 카드 ${u.due}장`}
+              </span>
+            </button>
+          ))}
+        </div>
       </section>
     </div>
   )
