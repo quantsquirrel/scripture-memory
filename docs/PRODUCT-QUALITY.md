@@ -27,8 +27,9 @@ using the user's booklet. These are data-quality findings, distinct from user
 satisfaction research.
 
 The [deployment workflow](../.github/workflows/deploy.yml) is configured to run
-lint, formatting checks, coverage, type checking, and a build before deploying
-to GitHub Pages. [Actions](https://github.com/quantsquirrel/scripture-memory/actions)
+lint, formatting checks, coverage, type checking, and a build on every pull
+request and on pushes to `main`; only pushes to `main` deploy to GitHub Pages.
+[Actions](https://github.com/quantsquirrel/scripture-memory/actions)
 provides the latest execution results.
 
 ### Learning outcomes and adoption
