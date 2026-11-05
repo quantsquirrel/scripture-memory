@@ -1,3 +1,5 @@
+import { Chevron } from '../../components/Chevron'
+import { fillStyle } from '../../components/fill'
 import type { GoalInfo } from '../../domain/goal'
 import { formatInterval } from '../../domain/scheduler'
 
@@ -22,14 +24,14 @@ export function TodayReviewPanel({
   onReview: () => void
 }) {
   const untilNext = nextDue === null ? null : formatInterval(new Date(nextDue).getTime() - now)
-  const meta = [
-    overdue > 0 && `밀린 카드 ${overdue}장`,
-    todayReviews > 0 && `오늘 ${todayReviews}회 복습`,
-  ].filter(Boolean)
   return (
     <section className="panel today">
-      <p className="kicker">{todayLabel(now)}</p>
-      <h2>오늘의 복습</h2>
+      <div className="today-head">
+        <h2>오늘의 복습</h2>
+        <time className="today-date" dateTime={dateAttr(now)}>
+          {todayLabel(now)}
+        </time>
+      </div>
       {due > 0 ? (
         <>
           <p className="today-figure">
@@ -37,7 +39,12 @@ export function TodayReviewPanel({
             <span className="today-unit">구절</span>
           </p>
           <p className="today-line">카드 {due}장이 기다리고 있습니다</p>
-          {meta.length > 0 && <p className="muted small today-meta">{meta.join(' · ')}</p>}
+          {(overdue > 0 || todayReviews > 0) && (
+            <ul className="today-meta">
+              {overdue > 0 && <li>밀린 카드 {overdue}장</li>}
+              {todayReviews > 0 && <li>오늘 {todayReviews}회 복습</li>}
+            </ul>
+          )}
           <button className="btn btn-primary" onClick={onReview}>
             복습 시작
           </button>
@@ -49,18 +56,24 @@ export function TodayReviewPanel({
             {untilNext !== null && ` (${untilNext} 후)`}
           </p>
           {todayReviews > 0 && (
-            <p className="muted small today-meta">오늘 {todayReviews}회 복습</p>
+            <ul className="today-meta">
+              <li>오늘 {todayReviews}회 복습</li>
+            </ul>
           )}
           <button className="btn btn-primary" onClick={onReview}>
             지금 이어서 복습
           </button>
         </>
       ) : (
-        <p className="muted today-rest">
-          {todayReviews > 0 ? `오늘 ${todayReviews}회 복습 완료! ` : ''}
-          대기 중인 카드가 없습니다.
-          {untilNext !== null && ` 다음 복습: ${untilNext} 후`}
-        </p>
+        <>
+          <p className="today-rest">
+            {todayReviews > 0 ? `오늘 ${todayReviews}회 복습 완료! ` : ''}
+            대기 중인 카드가 없습니다.
+          </p>
+          {untilNext !== null && (
+            <p className="muted small today-rest">다음 복습: {untilNext} 후</p>
+          )}
+        </>
       )}
     </section>
   )
@@ -75,15 +88,23 @@ function todayLabel(now: number): string {
   })
 }
 
+/** <time datetime>용 현지 날짜 "2026-10-29" */
+function dateAttr(now: number): string {
+  const d = new Date(now)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 /** 이만큼 밀리면 카드를 한 장씩 넘기기보다 구절 단위 개정이 덜 지친다 */
 export const RECALIBRATE_DUE_THRESHOLD = 30
 
 export function RecalibrateBanner({ onOpen }: { onOpen: () => void }) {
   return (
-    <button className="callout recal-banner" onClick={onOpen}>
+    <button className="notice-row" onClick={onOpen}>
       <span>
         오랫동안 쉬셨나요? <strong>말씀 상태 개정 모드</strong>로 부담 없이 복귀해 보세요
       </span>
+      <Chevron dir="right" />
     </button>
   )
 }
@@ -116,20 +137,37 @@ export function NewVersePanel({
   return (
     <section className="panel">
       <h2>새 구절 학습</h2>
+      {/* 목표일 페이싱 — D-day 한 줄과 숫자 묶음. 지표는 물러서 있다(원칙 3) */}
       {!goal.past && goal.remaining > 0 && (
-        <p>
-          <strong className="big-number">D-{goal.daysLeft}</strong>{' '}
-          <span className="muted goal-meta">
-            {goal.goalDate.slice(5).replace('-', '/')}까지 {goal.scopeLabel} 완결 · 남은{' '}
-            {goal.remaining}구절 · 하루 {goal.requiredPace.toFixed(1)}구절 필요
-            {goal.todayNew > 0 && ` · 오늘 ${goal.todayNew}구절`}
-          </span>
-        </p>
+        <div className="goal">
+          <p className="goal-line">
+            <strong className="goal-dday">D-{goal.daysLeft}</strong>
+            <span className="muted">
+              {goal.goalDate.slice(5).replace('-', '/')}까지 {goal.scopeLabel} 완결
+            </span>
+          </p>
+          <dl className="figures">
+            <div>
+              <dt>남은</dt>
+              <dd>{goal.remaining}구절</dd>
+            </div>
+            <div>
+              <dt>하루 필요</dt>
+              <dd>{goal.requiredPace.toFixed(1)}구절</dd>
+            </div>
+            {goal.todayNew > 0 && (
+              <div>
+                <dt>오늘</dt>
+                <dd>{goal.todayNew}구절</dd>
+              </div>
+            )}
+          </dl>
+        </div>
       )}
       {!goal.past && goal.remaining === 0 && (
         <p className="muted small">
-          목표 범위({goal.scopeLabel}까지)를 모두 외웠습니다 — 설정에서 다음 목표를 정할 수
-          있습니다
+          목표 범위({goal.scopeLabel}까지)를 모두 외웠습니다. 설정에서 다음 목표를 정할 수
+          있습니다.
         </p>
       )}
       {resume && (
@@ -152,12 +190,14 @@ export function NewVersePanel({
           다음 구절: {next.label}
         </button>
       ) : (
-        !resume && <p>모든 구절을 학습했습니다! 🎉 이제 유지 복습만 하면 됩니다.</p>
+        !resume && <p>모든 구절을 학습했습니다! 이제 유지 복습만 하면 됩니다.</p>
       )}
-      <p className="muted small">
+      <p className="muted small panel-note">
+        이번 주 새 구절 {newThisWeek}개
+        <br />
         {goal.past
-          ? `이번 주 새 구절 ${newThisWeek}개 · 기한 없이 새기는 시기 — 마음에 오래 남는 속도로`
-          : `이번 주 새 구절 ${newThisWeek}개 · 새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`}
+          ? '기한 없이 새기는 시기, 마음에 오래 남는 속도로'
+          : `새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`}
       </p>
     </section>
   )
@@ -170,6 +210,7 @@ export interface ProgressBarRow {
   total: number
 }
 
+/** 진행률 — 읽는 기록이라 카드에 담지 않고 바닥에 헤어라인 표로 둔다 */
 export function ProgressPanel({
   overall,
   rows,
@@ -180,8 +221,13 @@ export function ProgressPanel({
   onOpen: () => void
 }) {
   return (
-    <section className="panel">
-      <h2>진행률</h2>
+    <section className="ground">
+      <div className="ground-head">
+        <h2>진행률</h2>
+        <button className="btn-ghost" onClick={onOpen}>
+          목록에서 구절 보기
+        </button>
+      </div>
       <div
         className="progress"
         role="progressbar"
@@ -190,10 +236,7 @@ export function ProgressPanel({
         aria-valuemax={overall.total}
         aria-valuenow={overall.done}
       >
-        <div
-          className="progress-fill"
-          style={{ width: `${(overall.done / overall.total) * 100}%` }}
-        />
+        <div className="progress-fill" style={fillStyle(overall.done, overall.total)} />
       </div>
       <p className="muted small progress-summary">
         전체 {overall.done}/{overall.total} 구절 암송 중
@@ -207,10 +250,7 @@ export function ProgressPanel({
           >
             <span className="col-label">{row.label}</span>
             <span className="progress progress-ink" aria-hidden="true">
-              <span
-                className="progress-fill"
-                style={{ width: `${(row.done / row.total) * 100}%` }}
-              />
+              <span className="progress-fill" style={fillStyle(row.done, row.total)} />
             </span>
             <span className="col-count">
               {row.done}/{row.total}
@@ -218,11 +258,6 @@ export function ProgressPanel({
           </li>
         ))}
       </ul>
-      <div className="panel-link">
-        <button className="btn-ghost" onClick={onOpen}>
-          목록에서 구절 보기 <span aria-hidden="true">→</span>
-        </button>
-      </div>
     </section>
   )
 }

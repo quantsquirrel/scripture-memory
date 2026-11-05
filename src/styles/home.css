@@ -1,23 +1,74 @@
 /*
- * 홈 — 오늘의 복습.
+ * 홈 — 오늘의 몫이 앞장서고, 새 구절이 그 뒤를, 진행률 기록이 맨 아래를 맡는다.
  *
- * 하루치 몫을 알리는 카드라서 날짜 머리글로 시작한다. 큰 숫자는 본문색으로 크기만
- * 키우고(금색 숫자 금지), 설명 한 줄과 물러선 지표 한 줄이 그 아래에 놓인다.
+ * 오늘의 복습과 새 구절 학습은 손으로 다루는 대상이라 카드에 담고, 진행률은
+ * 읽는 기록이라 카드 밖 바닥에 헤어라인 표로 둔다. 큰 숫자는 본문색으로 크기만
+ * 키운다(금색 숫자 금지).
  */
+/* 오래 쉬었을 때 홈 맨 위에 서는 안내 한 줄 — 옅은 우물 + 끝의 꺾쇠(누르면 들어간다) */
+.notice-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  width: 100%;
+  margin: 0 0 var(--space-6);
+  padding: var(--space-6) var(--space-6) var(--space-6) var(--space-8);
+  background: var(--color-panel-alt);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  font: inherit;
+  line-height: var(--leading-normal);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out);
+}
+
+.notice-row > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-row .chevron {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+@media (hover: hover) {
+  .notice-row:hover {
+    background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
+  }
+}
+
 .today {
   padding: var(--stage-pad);
 }
 
-.today h2 {
-  font-size: var(--text-lg);
-  margin-bottom: var(--space-8);
+/* 제목과 날짜가 한 줄 — 날짜는 제목을 예고하는 머리글이 아니라 이 카드의 날인(日印)이다 */
+.today-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-12);
+}
+
+.today-head h2 {
+  margin: 0;
+}
+
+.today-date {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .today-figure {
   display: flex;
   align-items: baseline;
   gap: var(--space-2);
-  margin: 0 0 var(--space-3);
+  margin: 0 0 var(--space-2);
 }
 
 .today-unit {
@@ -27,18 +78,108 @@
 
 .today-line {
   margin: 0;
-  line-height: var(--leading-normal);
 }
 
+/* 곁가지 숫자들 — 가운뎃점으로 잇지 않고 헤어라인 하나로 나란히 */
 .today-meta {
-  margin: var(--space-1) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.today-meta li + li {
+  margin-left: var(--space-4);
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--color-line);
 }
 
 .today-rest {
   margin: 0;
-  line-height: var(--leading-normal);
+}
+
+.today-rest + .today-rest {
+  margin-top: var(--space-2);
 }
 
 .today .btn-primary {
-  margin-top: var(--space-8);
+  margin-top: var(--space-12);
+}
+
+/* 새 구절 — 목표일 페이싱은 D-day 한 줄과 작은 숫자 묶음으로 물러서 있다 */
+.goal {
+  margin: 0 0 var(--space-8);
+}
+
+.goal-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 var(--space-6);
+}
+
+.goal-dday {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-note {
+  margin: var(--space-8) 0 0;
+}
+
+/* 진행률 기록 — 바닥의 표. 과정별 한 줄을 헤어라인으로 가른다 */
+.progress-summary {
+  margin: var(--space-4) 0 0;
+}
+
+/* 표 전체가 한 격자다 — 이름 열은 가장 긴 이름("5확신, 8동행, 60구절")에 맞춰 서고,
+   각 줄은 subgrid로 그 열을 나눠 쓴다(줄마다 따로 재면 열이 어긋나거나 이름이 잘렸다) */
+.col-list {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  column-gap: var(--space-6);
+  list-style: none;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+}
+
+.col-row {
+  display: grid;
+  grid-column: 1 / -1;
+  /* subgrid를 모르는 브라우저는 앞 줄의 고정 열로 선다 */
+  grid-template-columns: 9.5rem minmax(0, 1fr) 3.5rem;
+  grid-template-columns: subgrid;
+  align-items: center;
+  min-height: var(--touch-min);
+  border-top: 1px solid var(--color-line);
+}
+
+.col-row:last-child {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.col-label {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-count {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.col-row.is-complete .col-label {
+  color: var(--color-muted);
 }

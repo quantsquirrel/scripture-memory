@@ -8,22 +8,22 @@
 .tab-nav {
   position: fixed;
   /* 홈 인디케이터가 있는 기기에서는 인디케이터 위로 띄운다 */
-  bottom: max(12px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+  bottom: var(--dock-gap);
   left: 50%;
   transform: translateX(-50%);
-  width: calc(100% - 24px);
-  max-width: calc(var(--layout-max) - 16px);
+  width: calc(100% - var(--space-12));
+  max-width: calc(var(--layout-max) - var(--space-8));
   display: flex;
   justify-content: space-around;
   gap: var(--space-1);
-  padding: 6px;
-  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  padding: var(--space-2);
+  /* 떠 있는 유일한 면 — 그림자 대신 블러와 헤어라인으로 콘텐츠와 가른다 */
+  background: color-mix(in srgb, var(--color-panel) 86%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-line);
-  border-radius: 20px;
-  /* 콘텐츠 위에 실제로 떠 있는 유일한 면 — 그림자가 허락된 두 예외 중 하나 */
-  box-shadow: var(--shadow-dock);
+  /* 안쪽 탭 반경 + 안쪽 여백 — 두 곡선이 같은 중심을 갖는다 */
+  border-radius: calc(var(--radius-lg) + var(--space-2));
   z-index: 100;
 }
 
@@ -32,18 +32,18 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
-  padding: 10px 0;
-  border-radius: 14px;
+  gap: var(--space-2);
+  padding: var(--space-4) 0;
+  border-radius: var(--radius-lg);
   color: var(--color-muted);
-  font-size: 0.92rem;
-  font-weight: 500;
+  font-size: var(--text-sm);
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition:
-    color var(--dur-fade) ease,
-    background-color var(--dur-fade) ease;
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out);
 }
 
 .tab-nav .tab-icon {
@@ -62,14 +62,12 @@
    번짐 농도는 audit_contrast.py가 잰다(모바일 아이콘 3:1, PC 이름 글자 4.5:1) */
 .tab-nav a.active {
   color: var(--color-accent);
-  font-weight: 700;
   background: color-mix(in srgb, var(--color-accent) 14%, transparent);
 }
 
 @media (hover: hover) {
   .tab-nav a:not(.active):hover {
     color: var(--color-text);
-    background: color-mix(in srgb, var(--color-panel) 60%, transparent);
   }
 }
 
@@ -87,14 +85,12 @@
     -webkit-backdrop-filter: none;
     border: none;
     border-radius: 0;
-    box-shadow: none;
   }
 
   .tab-nav a {
     flex: none;
-    padding: 0 var(--space-5);
+    padding: 0 var(--space-4);
     border-radius: var(--radius);
-    font-size: var(--text-sm2);
   }
 
   /* 이름 글자가 함께 보이므로 일반 텍스트 기준(4.5:1)을 지키도록 번짐을 줄인다 */

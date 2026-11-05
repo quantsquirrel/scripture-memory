@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 
 import { nextDueAt, submitReview } from '../app'
+import { Chevron } from '../components/Chevron'
+import { fillStyle } from '../components/fill'
 import { LampMark } from '../components/LampMark'
 import { VERSE_BY_ID } from '../data/verses'
 import type { Rating, ReviewMode, StoredCard } from '../domain/card'
@@ -61,25 +63,41 @@ export function Review({ onExit }: { onExit: () => void }) {
     [current, queue, idx, refill, reload],
   )
 
-  if (queue === null) return <p className="muted">불러오는 중…</p>
+  if (queue === null) return <p className="muted loading">불러오는 중…</p>
 
   if (!current) {
+    // 이번 세션에 한 장도 넘기지 않았으면 마칠 것이 없다 — 화면을 채우는 무대 대신
+    // 내용 높이의 작은 카드로 비어 있음과 다음 걸음만 알린다. 무대와 등불은 완료 장면의 몫이다
+    if (done === 0) {
+      return (
+        <section className="panel empty-state">
+          <h2>복습할 카드가 없습니다</h2>
+          {notice !== null && (
+            <p className="muted" role="status">
+              {notice}
+            </p>
+          )}
+          {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
+          {queue.length === 0 && <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>}
+          <button className="btn btn-primary" onClick={onExit}>
+            홈으로
+          </button>
+        </section>
+      )
+    }
     return (
       <div className="stage">
         <div className="panel stage-card">
           <div className="finale">
-            {done > 0 && <LampMark />}
-            <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
+            <LampMark />
+            <h2>복습 완료!</h2>
             {notice !== null && (
               <p className="muted" role="status">
                 {notice}
               </p>
             )}
-            {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
+            <p>이번 세션에서 {done}회 복습했습니다.</p>
             {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
-            {queue.length === 0 && done === 0 && (
-              <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
-            )}
           </div>
           <div className="stage-foot">
             <button className="btn btn-primary" onClick={onExit}>
@@ -99,7 +117,8 @@ export function Review({ onExit }: { onExit: () => void }) {
     <div className="stage">
       <div className="review-top">
         <button className="btn-ghost" onClick={onExit}>
-          ← 종료
+          <Chevron dir="left" />
+          종료
         </button>
         {/* 이번 세션에서 넘긴 몫 — 큐가 다시 채워지면 분모도 함께 늘어난다 */}
         <span
@@ -110,10 +129,7 @@ export function Review({ onExit }: { onExit: () => void }) {
           aria-valuemax={done + remaining}
           aria-valuenow={done}
         >
-          <span
-            className="progress-fill"
-            style={{ width: `${(done / (done + remaining)) * 100}%` }}
-          />
+          <span className="progress-fill" style={fillStyle(done, done + remaining)} />
         </span>
         <span className="review-count">남은 카드 {remaining}</span>
       </div>

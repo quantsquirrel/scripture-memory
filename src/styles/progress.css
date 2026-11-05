@@ -3,6 +3,10 @@
  *
  * <span>으로 쓰이는 자리(버튼 안 — div를 둘 수 없다)가 있어 display를 명시한다.
  * 전에는 인라인 span이라 폭·높이가 0이 되어, 홈의 과정별 막대가 73/73이어도 비어 보였다.
+ *
+ * 채움은 폭을 바꾸지 않는다 — 폭 전환은 매 프레임 레이아웃을 다시 계산한다.
+ * 막대 너비 그대로 왼쪽으로 밀어 두었다가(--fill 0~1) transform으로 끌어낸다.
+ * 트랙이 둥근 모서리로 잘라 내므로 채움 끝은 늘 알약 모양이다.
  */
 .progress {
   display: block;
@@ -14,10 +18,12 @@
 
 .progress-fill {
   display: block;
+  width: 100%;
   height: 100%;
   background: var(--color-accent);
   border-radius: var(--radius-pill);
-  transition: width var(--dur-fill) var(--ease-out);
+  transform: translateX(calc((var(--fill, 0) - 1) * 100%));
+  transition: transform var(--dur-long) var(--ease-out);
 }
 
 /* 먹빛 채움 — 등불(금색)이 아니라 기록. 한 화면에 막대가 여럿일 때 금색이
@@ -33,7 +39,7 @@
 /*
  * 학습 사다리 — 본문 익히기 → 첫글자 복원 → 타이핑 검증 → 졸업.
  * 복습 화면의 진행 막대와 같은 자리(윗줄 가운데)에 네 칸으로 선다. 지나온 단은
- * 먹빛, 지금 선 단은 본문색으로 진하게. 글자 안내(1/4 · 본문 익히기)가 옆에 있으므로
+ * 먹빛, 지금 선 단은 본문색으로 진하게. 글자 안내(본문 익히기 1/4)가 옆에 있으므로
  * 막대는 장식이다(aria-hidden).
  */
 .ladder {
@@ -50,7 +56,7 @@
   height: 4px;
   border-radius: var(--radius-pill);
   background: var(--color-panel-alt);
-  transition: background-color var(--dur-fill) var(--ease-out);
+  transition: background-color var(--dur-long) var(--ease-out);
 }
 
 .ladder .is-done {

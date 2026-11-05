@@ -21,19 +21,25 @@ export function IntroStep({
     <>
       <h2 className="prompt-main">{verse.ref}</h2>
       <p className="verse">{verse.text}</p>
+      {/* 낭송의 틀 — 장절로 열고 장절로 닫는다(아래 낭송 규칙의 차례 그대로) */}
+      <p className="answer-ref answer-ref-end">{verse.ref}</p>
       <div className="callout">
-        <strong>낭송 규칙 (TMS)</strong> — 소리 내어 3회:
-        <br />
-        주제 → <em>장절</em> → 말씀 → <em>장절</em>
-        <br />
-        <span className="muted small">
-          "{topicOf(verse).title}, {verse.refAbbr}, …말씀…, {verse.refAbbr}"
-        </span>
+        <p>
+          <strong>낭송 규칙 (TMS)</strong> 소리 내어 3회
+        </p>
+        <p>
+          주제 → <em>장절</em> → 말씀 → <em>장절</em>
+        </p>
+        <p className="muted small">
+          “{topicOf(verse).title}, {verse.refAbbr}, …말씀…, {verse.refAbbr}”
+        </p>
       </div>
       {duplicateOf && (
         <div className="callout">
-          이미 <strong>{duplicateOf.refAbbr}</strong> ({collectionOf(duplicateOf).short} ·{' '}
-          {topicOf(duplicateOf).title})로 암송한 구절입니다.
+          <p>
+            이미 <strong>{duplicateOf.refAbbr}</strong> ({collectionOf(duplicateOf).short},{' '}
+            {topicOf(duplicateOf).title})로 암송한 구절입니다.
+          </p>
           <button className="btn" onClick={onSkipToTyping}>
             타이핑 검증으로 건너뛰기
           </button>
@@ -76,7 +82,7 @@ export function FirstLetterStep({
       </p>
       {failedPeeks !== null && (
         <div className="diff-score bad">
-          엿보기 {failedPeeks}회 — 본문을 다시 읽고 재도전하세요 ({MAX_PEEKS_TO_PASS}회 이하
+          엿보기 {failedPeeks}회. 본문을 다시 읽고 재도전하세요 ({MAX_PEEKS_TO_PASS}회 이하
           통과)
         </div>
       )}
@@ -140,7 +146,7 @@ export function TypingStep({
                 </button>
               </div>
               <p className="muted small">
-                오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다 — 그대로 졸업합니다.
+                오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다. 그대로 졸업합니다.
               </p>
             </div>
           )}

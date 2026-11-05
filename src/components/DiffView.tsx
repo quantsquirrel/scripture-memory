@@ -33,7 +33,7 @@ export function DiffView({ grade, target }: { grade: TypingGrade; target: string
       </p>
       {!grade.perfect && (
         <p className="diff-legend" aria-hidden="true">
-          <span className="diff-miss">빠뜨림</span> ·{' '}
+          <span className="diff-miss">빠뜨림</span>
           <span className="diff-extra">틀림/추가</span>
         </p>
       )}

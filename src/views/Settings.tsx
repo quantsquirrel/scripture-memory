@@ -46,7 +46,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const [pairMsg, setPairMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
-  if (!data) return <p className="muted">불러오는 중…</p>
+  if (!data) return <p className="muted loading">불러오는 중…</p>
 
   // 입력 중인 값이 있으면 그것을, 없으면 저장된 값을 보여준다
   const tokenValue = token ?? data.syncToken
@@ -75,7 +75,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
       await persistSyncGistId(gistIdValue.trim())
       const r = await syncNow({ token: tokenValue.trim(), gistId: gistIdValue.trim() })
       await persistLastSyncAt(new Date().toISOString())
-      setSyncMsg(`동기화 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`)
+      setSyncMsg(`동기화 완료: 복습 ${r.reviews}건, 카드 ${r.cards}장, 학습 ${r.learning}건`)
     } catch (e) {
       setSyncMsg(`실패: ${message(e)}`)
     } finally {
@@ -111,7 +111,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
     try {
       const r = await applyPairingCode(pairInput)
       setPairInput('')
-      setPairMsg(`연동 완료 — 복습 ${r.reviews}건 · 카드 ${r.cards}장 · 학습 ${r.learning}건`)
+      setPairMsg(`연동 완료: 복습 ${r.reviews}건, 카드 ${r.cards}장, 학습 ${r.learning}건`)
     } catch (e) {
       setPairMsg(`연동 실패: ${message(e)}`)
     } finally {
@@ -147,18 +147,25 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
 
   return (
     <div>
-      <section className="panel">
+      {/* 기록은 읽는 숫자라 카드에 담지 않고 바닥에 세운다 — 카드는 손으로 다루는 설정 묶음에만 */}
+      <section className="ground">
         <h2>기록</h2>
-        <div className="stat-row">
-          <p className="stat">
-            <span className="stat-label">암송 편입</span>{' '}
-            <strong className="stat-value">{data.graduated}</strong>구절
-          </p>
-          <p className="stat">
-            <span className="stat-label">총 복습</span>{' '}
-            <strong className="stat-value">{data.reviews}</strong>회
-          </p>
-        </div>
+        {/* 숫자 둘을 세로 헤어라인으로 가른다. 이름과 값 사이 공백은 "총 복습 4회"처럼
+            한 문장으로 읽히게 남겨 둔다(화면 낭독기·e2e가 그렇게 읽는다) */}
+        <dl className="figures">
+          <div>
+            <dt>암송 편입</dt>{' '}
+            <dd>
+              <strong className="stat-value">{data.graduated}</strong>구절
+            </dd>
+          </div>
+          <div>
+            <dt>총 복습</dt>{' '}
+            <dd>
+              <strong className="stat-value">{data.reviews}</strong>회
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <ThemePanel

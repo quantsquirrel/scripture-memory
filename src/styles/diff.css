@@ -1,4 +1,4 @@
-/* diff 결과 — 상태색 18% 바탕 위에 같은 색 글자 */
+/* 채점 결과 — 상태색 18% 바탕 위에 같은 색 글자 */
 .diff-score {
   display: flex;
   align-items: center;
@@ -8,7 +8,7 @@
   margin-top: var(--space-6);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-  animation: reveal var(--dur-enter) var(--ease-out) both;
+  animation: reveal var(--dur-short) var(--ease-out) both;
 }
 
 .diff-score.good {
@@ -60,9 +60,22 @@
   text-decoration: line-through;
 }
 
+/* 범례 — 가운뎃점으로 잇지 않고 칸을 띄워 나란히 */
 .diff-legend {
   display: flex;
-  gap: var(--space-6);
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-8);
+  margin: 0;
   font-size: var(--text-sm);
   color: var(--color-muted);
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

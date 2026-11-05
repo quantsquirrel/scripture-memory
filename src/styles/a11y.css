@@ -6,19 +6,13 @@
  */
 
 /* ── 포커스 표시 ─────────────────────────────────────────────
- * 이전에는 입력 필드에만 outline이 있었고 버튼·링크·요약에는 없었다.
- * 브라우저 기본 표시를 지운 곳이 있으므로 전 요소에 명시적으로 복원한다.
+ * 키보드로 옮겨 가면 곧바로 금빛 링 하나가 선다(번지거나 서서히 나타나지 않는다).
  * :focus-visible을 쓰면 마우스 클릭에는 링이 뜨지 않고 키보드 이동에만 뜬다.
+ * 입력란은 inputs.css가 링을 칸 안쪽으로 당긴다.
  */
 :where(a, button, input, textarea, select, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
-  border-radius: var(--radius-sm);
-}
-
-/* 포커스 링이 배경에 묻히지 않도록 안쪽 그림자를 함께 준다 */
-:where(button, a, summary):focus-visible {
-  box-shadow: var(--shadow-focus);
 }
 
 /* ── 터치 타깃 ───────────────────────────────────────────────
@@ -31,7 +25,7 @@
 .col-tab,
 .verse-row,
 .recal-unit,
-.recal-banner,
+.notice-row,
 .tech-details summary,
 .btn,
 .ref-input {
@@ -65,26 +59,16 @@
   min-width: var(--touch-min);
 }
 
-/* 상세 지표 접기/펴기 */
-.tech-details summary {
-  min-height: var(--touch-min);
-  display: flex;
-  align-items: center;
-}
-
 /* ── 컨트롤 경계 ─────────────────────────────────────────────
  * 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳은 3:1 이상인
  * --color-border를 쓴다 (--color-line은 장식용 헤어라인).
  *
  * 제 색 경계가 있는 것은 뺀다 — 주 버튼(금색 채움)·위험 버튼(bad 외곽선)·제안 등급,
- * 그리고 공개되어 본문 글자가 된 첫글자 어절. 전에는 이 규칙이 마지막에 오면서
- * 금색 버튼에 회청색 테두리를, 공개 어절에 좁은 상자를 씌웠다.
+ * 그리고 공개되어 본문 글자가 된 첫글자 어절.
  */
 .btn:not(.btn-primary, .btn-danger),
 .btn-primary:disabled,
-.seg,
 .rate:not(.suggested),
-.col-tab,
 .typing-input,
 .ref-input,
 .fl-word:not(.fl-revealed) {
@@ -132,7 +116,8 @@
 @media (prefers-contrast: more) {
   .panel,
   .tech-details,
-  .verse-row {
+  .verse-row,
+  .col-row {
     border-color: var(--color-border);
   }
 

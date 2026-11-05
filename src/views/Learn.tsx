@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 
 import { getAllLearning, runLadder } from '../app'
+import { Chevron } from '../components/Chevron'
+import { Crumb } from '../components/Crumb'
 import {
   crumbOf,
   DUPLICATES,
@@ -64,7 +66,7 @@ export function Learn({
   }, [step])
 
   if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
-  if (step === null) return <p className="muted">불러오는 중…</p>
+  if (step === null) return <p className="muted loading">불러오는 중…</p>
 
   /**
    * 사다리에 명령을 보낸다. 다음 단계와 졸업(3방향 카드 생성) 판단은 전부
@@ -85,7 +87,8 @@ export function Learn({
     <div className="stage">
       <div className="review-top">
         <button className="btn-ghost" onClick={onExit}>
-          ← 나가기
+          <Chevron dir="left" />
+          나가기
         </button>
         {/* 사다리 네 단 — 글자 안내가 옆에 있으므로 막대는 장식이다 */}
         <ol className="ladder" aria-hidden="true">
@@ -97,14 +100,18 @@ export function Learn({
           ))}
         </ol>
         <span className="review-count">
-          {nth}/{total} · {STEP_TITLE[step]}
+          {STEP_TITLE[step]}{' '}
+          <span className="step-of">
+            {nth}/{total}
+          </span>
         </span>
       </div>
 
       {/* 단계가 바뀌면 카드를 새로 놓는다 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */}
       <div key={step} className="panel stage-card">
-        <p className="kicker">
-          {crumbOf(verse).join(' · ')} — {topicOf(verse).title}
+        {/* 카드 머리줄 — 이 구절이 놓인 자리(과정 › 단원 › 주제) */}
+        <p className="card-head">
+          <Crumb parts={[...crumbOf(verse), topicOf(verse).title]} />
         </p>
 
         {step === 'intro' && (

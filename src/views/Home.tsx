@@ -24,7 +24,7 @@ export function Home({
   onRecalibrate: () => void
 }) {
   const data = useHomeData()
-  if (!data) return <p className="muted">불러오는 중…</p>
+  if (!data) return <p className="muted loading">불러오는 중…</p>
 
   const { graduatedIds, inProgress, goal } = data
   const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
@@ -38,7 +38,7 @@ export function Home({
 
   const nextNew = VERSES.find((v) => !graduatedIds.has(v.id) && v.id !== inProgress?.verseId)
   const next: LearnTarget | null = nextNew
-    ? { id: nextNew.id, label: `${collectionOf(nextNew).short} · ${nextNew.refAbbr}` }
+    ? { id: nextNew.id, label: `${nextNew.refAbbr} (${collectionOf(nextNew).short})` }
     : null
 
   const learnEnd = new Date(

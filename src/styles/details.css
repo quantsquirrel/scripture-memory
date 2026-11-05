@@ -1,10 +1,10 @@
-/* 접이식 상세 섹션 */
+/* 접이식 상세 섹션 — 닫혀 있을 때는 한 줄, 펼치면 설정 묶음(.panel)과 같은 카드 */
 .tech-details {
   background: var(--color-panel);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: 0 var(--panel-pad);
-  margin-bottom: var(--space-7);
+  margin-bottom: var(--space-6);
 }
 
 .tech-details[open] {
@@ -18,27 +18,28 @@
   gap: var(--space-4);
   cursor: pointer;
   list-style: none;
-  font-weight: 700;
+  font-weight: 600;
   font-size: var(--text-base);
   padding: var(--space-6) 0;
   color: var(--color-muted);
+  transition: color var(--dur-micro) var(--ease-out);
 }
 
 .tech-details summary::-webkit-details-marker {
   display: none;
 }
 
-/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠 */
+/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠(탭 아이콘과 같은 1.75px 선) */
 .tech-details summary::after {
   content: '';
   flex-shrink: 0;
   width: 8px;
   height: 8px;
-  margin-right: 4px;
-  border-right: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
+  margin-right: var(--space-2);
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
   transform: rotate(45deg) translateY(-2px);
-  transition: transform var(--dur-fade) ease;
+  transition: transform var(--dur-short) var(--ease-out);
 }
 
 .tech-details[open] summary {
@@ -53,4 +54,10 @@
   font-size: var(--text-base);
   color: var(--color-info);
   margin: var(--space-10) 0 var(--space-4);
+}
+
+@media (hover: hover) {
+  .tech-details summary:hover {
+    color: var(--color-text);
+  }
 }
