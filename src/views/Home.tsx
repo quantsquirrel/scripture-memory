@@ -24,7 +24,7 @@ export function Home({
   onRecalibrate: () => void
 }) {
   const data = useHomeData()
-  if (!data) return <p className="muted">불러오는 중…</p>
+  if (!data) return <p className="muted loading">불러오는 중…</p>
 
   const { graduatedIds, inProgress, goal } = data
   const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
@@ -38,7 +38,7 @@ export function Home({
 
   const nextNew = VERSES.find((v) => !graduatedIds.has(v.id) && v.id !== inProgress?.verseId)
   const next: LearnTarget | null = nextNew
-    ? { id: nextNew.id, label: `${collectionOf(nextNew).short} · ${nextNew.refAbbr}` }
+    ? { id: nextNew.id, label: `${nextNew.refAbbr} (${collectionOf(nextNew).short})` }
     : null
 
   const learnEnd = new Date(
@@ -64,6 +64,8 @@ export function Home({
         newThisWeek={data.newThisWeek}
         resume={resume}
         next={next}
+        // 복습 시작 버튼이 떠 있지 않을 때만 새 구절 학습이 오늘의 주 행동이 된다
+        lamp={data.due === 0 && data.upcoming === 0}
         onLearn={onLearn}
       />
       <ProgressPanel

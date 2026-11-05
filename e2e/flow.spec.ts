@@ -15,11 +15,11 @@ async function graduateFirstVerse(page: import('@playwright/test').Page): Promis
   await expect(page.getByText('낭송 규칙 (TMS)')).toBeVisible()
 
   const verseText = (await page.locator('p.verse').first().innerText()).trim()
-  await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+  await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
   await page.getByRole('button', { name: '낭송 완료' }).click()
   await page.locator('textarea.typing-input').fill(verseText)
   await page.getByRole('button', { name: /채점/ }).click()
-  await page.getByRole('button', { name: '졸업 — 복습 큐에 추가' }).click()
+  await page.getByRole('button', { name: '졸업하고 복습 큐에 추가' }).click()
   await expect(page.getByText(/졸업!/)).toBeVisible()
 }
 
@@ -47,7 +47,7 @@ test.describe('전체 흐름 왕복', () => {
       await page.locator('#review-ref').fill('요일 5:11-12')
       await page.getByRole('button', { name: '확인' }).click()
     } else {
-      await page.getByRole('button', { name: '낭송 완료 — 확인' }).click()
+      await page.getByRole('button', { name: '낭송 완료, 정답 확인' }).click()
     }
     // 등급 버튼이 나타나면 증거가 모인 상태다
     await expect(page.locator('.rating-bar')).toBeVisible()
@@ -115,7 +115,7 @@ test.describe('전체 흐름 왕복', () => {
     // 새 구절 사다리: intro → firstLetter → typing
     await expect(page.getByText('낭송 규칙 (TMS)')).toBeVisible()
     const newRef = (await page.locator('h2.prompt-main').innerText()).trim()
-    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
     await page.getByRole('button', { name: '낭송 완료' }).click()
 
     // 타이핑 단계: 이전 구절의 채점 DiffView가 아니라 빈 입력창 + 새 구절 ref

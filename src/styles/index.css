@@ -1,10 +1,23 @@
+/* Hallmark · shape: app screen · genre: editorial · theme: brand (DESIGN.md "Ivan", locked) · redesign: full
+ * nav: kept (icon dock on phones, header tabs from 769px) · signature: the recitation frame, 주제 장절 말씀 장절 on the stage card · states: loading, empty, done, error
+ * axes: dark/sans/gold · posture: restrained · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 · weakest: V, the first logged run for this app; the shell and the screen order stay, so the change lives in the system and in what each screen leads with */
+/* Hallmark · waive 39b · button.verse-row stands 66px, two lines: the reference over a serif line of the verse · each 목록 row carries the first words of its 말씀 under the reference, and a one-line row would drop them */
+/* Hallmark · waive 72 · the measured text sits inside the closed 고급 details of 설정 and in the ellipsis-clipped verse preview of 목록 · neither paints past its box; opened, the details pads its text 16px like every 설정 card */
+/* Hallmark · dismissed 41 · the accent's paired ink is --color-accent-text, which scripts/audit_contrast.py checks on the gold at 4.5:1 or more in both palettes */
+/* Hallmark · dismissed 49 · the 말씀 상태 개정 notice is a full-width row whose label is one sentence; two lines on a phone are intended and the chevron keeps its own column */
+/* Hallmark · reworded "통계" to "기록" · the 11/2 upgrade renamed the 설정 section; it still holds the same two figures */
+/* Hallmark · sweep: floor 0 · reflex 0 · waived 39b, 72 · dismissed 41, 49
+ * finish-review: subagent · fix · 8 findings · 8 resolved · gap: none */
+
 /*
  * 스타일 진입점.
  *
- * 이전에는 770줄 단일 전역 파일이었다. 레이어를 나눈 순서가 곧 우선순위이며,
- * a11y.css를 마지막에 두어 접근성 보정이 컴포넌트 스타일을 덮도록 한다.
+ * 레이어를 나눈 순서가 곧 우선순위이며, a11y.css를 마지막에 두어 접근성 보정이
+ * 컴포넌트 스타일을 덮도록 한다. 맨 위 Hallmark 주석은 디자인 스킬(hallmark)의
+ * 기록이다 — sloplint가 첫 줄에서 읽는다.
  *
- * tokens.css  색·간격·타이포·반경·그림자 (팔레트는 여기 한 곳에만)
+ * tokens.css  색·간격·타이포·반경·움직임 (팔레트는 여기 한 곳에만)
  * base.css    문서·레이아웃·타이포 기본
  * 그 외        컴포넌트별 스타일
  * a11y.css    포커스·터치 타깃·움직임·고대비 보정 (마지막에 적용)
@@ -18,6 +31,7 @@
 @import './base.css';
 @import './buttons.css';
 @import './nav.css';
+@import './home.css';
 @import './review.css';
 @import './inputs.css';
 @import './diff.css';

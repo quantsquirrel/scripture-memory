@@ -35,7 +35,9 @@
   --palette-light-bg: #f7f2e7;
   --palette-light-panel: #fffdf8;
   --palette-light-panel2: #efe7d5;
-  --palette-light-line: #a5997d;
+  /* 괘선은 종이 위에 연필로 그은 정도로 — 진하면 카드마다 갈색 테두리가 둘러져
+     지면이 상자로 보였다. 컨트롤 경계는 아래 border(3:1)가 따로 맡는다 */
+  --palette-light-line: #ddd3bd;
   --palette-light-border: #887959;
   --palette-light-text: #1e2538;
   --palette-light-muted: #58617a;
@@ -64,49 +66,70 @@
   /* iOS 홈 화면 앱의 상태바 뒤에 까는 색. 상태바 글씨가 늘 흰색이라 다크에서는 필요 없다 */
   --color-status-scrim: transparent;
 
-  /* ── 간격 (4px 스케일) ──────────────────────────────────── */
+  /* ── 간격: 4px 격자 ─────────────────────────────────────────
+   * 이름의 숫자 × 2px. 2px(--space-1)은 헤어라인 옆 미세 조정에만 쓴다.
+   * 6·10·14px 단을 없앴다 — 격자에서 벗어난 단이 화면마다 리듬을 흐렸다. */
   --space-1: 2px;
   --space-2: 4px;
-  --space-3: 6px;
   --space-4: 8px;
-  --space-5: 10px;
   --space-6: 12px;
-  --space-7: 14px;
   --space-8: 16px;
   --space-10: 20px;
   --space-12: 24px;
+  --space-16: 32px;
+  --space-20: 40px;
+  --space-24: 48px;
 
-  /* ── 타이포 ─────────────────────────────────────────────── */
+  /* ── 타이포 ─────────────────────────────────────────────────
+   * 16px 본문에서 1.125배씩 오르는 고정 스케일. 화면 크기 따라 늘지 않는다(앱 화면).
+   * 굵기는 400(본문)·600(컨트롤·이름)·700(제목·숫자) 셋뿐이다. */
   --font-sans:
     'Pretendard Variable', 'Pretendard', 'Apple SD Gothic Neo', -apple-system,
     BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
   --font-serif: 'Noto Serif KR', ui-serif, 'Apple SD Gothic Neo', serif;
-  --text-xs: 0.72rem;
-  --text-sm: 0.8rem;
-  --text-sm2: 0.88rem;
-  --text-base: 0.95rem;
-  --text-md: 1.02rem;
-  --text-lg: 1.12rem;
-  --text-xl: 1.3rem;
-  --text-2xl: 1.45rem;
-  --text-3xl: 1.6rem;
-  --leading-normal: 1.7;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.266rem;
+  --text-xl: 1.424rem;
+  --text-2xl: 1.602rem;
+  --text-3xl: 1.802rem;
+  --leading-tight: 1.3;
+  --leading-normal: 1.6;
+  --leading-relaxed: 1.8;
   /* 본문 낭송용 — 한 줄을 눈으로 따라가기 쉽게 넉넉히 */
-  --leading-verse: 1.95;
+  --leading-verse: 1.9;
 
-  /* ── 반경 ───────────────────────────────────────────────── */
+  /* ── 반경: 큰 면일수록 크다 (카드 14 > 컨트롤 10 > 태그 6) ── */
   --radius-sm: 6px;
   --radius: 10px;
-  --radius-md: 12px;
   --radius-lg: 14px;
   --radius-pill: 999px;
 
-  /* ── 그림자 ─────────────────────────────────────────────── */
-  --shadow-nav: 0 -1px 12px rgb(0 0 0 / 22%);
-  --shadow-focus: 0 0 0 3px color-mix(in srgb, var(--color-accent) 45%, transparent);
+  /* 그림자 토큰은 없다. 깊이는 bg → panel → panel-alt 명도 단차로만 만들고,
+     떠 있는 하단 독도 블러와 헤어라인으로 선다(DESIGN.md Elevation). */
+
+  /* ── 움직임: 차분하게, 상태가 바뀔 때만 ─────────────────────
+   * micro 누름·색, short 새 카드가 놓임·펼침, long 진행 막대·등불이 켜짐.
+   * prefers-reduced-motion이면 a11y.css가 전부 끈다. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-long: 420ms;
 
   /* ── 레이아웃 ───────────────────────────────────────────── */
   --layout-max: 560px;
+  /* 카드 안쪽 여백. 복습·학습 무대(stage)는 말씀이 숨 쉬도록 한 단계 넓다 */
+  --panel-pad: var(--space-8);
+  --stage-pad: var(--space-10);
+  /* 모바일 하단 독이 차지하는 높이 + 본문과의 틈 (독은 position: fixed라 흐름 밖이다) */
+  --dock-clearance: 96px;
+  /* 독의 자리: 화면 아래에서 띄운 거리(홈 인디케이터가 있으면 그 위로)와 독 자체의 높이
+     (탭 44 + 안쪽 여백 4×2 + 테두리 1×2). 무대의 주 행동 묶음이 독 바로 위에 붙는 기준이다 */
+  --dock-gap: max(var(--space-6), calc(env(safe-area-inset-bottom, 0px) + var(--space-2)));
+  --dock-height: calc(var(--touch-min) + 2 * var(--space-2) + 2px);
   /* 손가락으로 정확히 누를 수 있는 최소 크기 (WCAG 2.2 Target Size 최소 24, 권장 44) */
   --touch-min: 44px;
   /* 화면당 하나뿐인 주 행동(btn-primary)은 한 손 엄지로 더 확실히 */

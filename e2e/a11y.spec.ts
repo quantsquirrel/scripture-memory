@@ -56,7 +56,7 @@ test.describe('터치 타깃 44×44px', () => {
 
   test('학습 화면(첫글자 보드 포함)의 타깃이 44px 이상', async ({ page }) => {
     await page.goto(`${BASE}#/learn/AS1a`)
-    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
     await expect(page.locator('.fl-board')).toBeVisible()
     const { checked, small } = await measureTargets(page)
     expect(checked).toBeGreaterThan(5)
@@ -107,7 +107,7 @@ test.describe('키보드 전용 조작', () => {
     await page.keyboard.press('Tab')
     await expect(page.locator(':focus')).toHaveText(/채점/)
     await page.keyboard.press('Enter')
-    await page.getByRole('button', { name: '졸업 — 복습 큐에 추가' }).focus()
+    await page.getByRole('button', { name: '졸업하고 복습 큐에 추가' }).focus()
     await page.keyboard.press('Enter')
     await expect(page.getByText(/졸업!/)).toBeVisible()
   })
@@ -151,7 +151,7 @@ test.describe('키보드 전용 조작', () => {
 test.describe('스크린리더 텍스트 대안', () => {
   test('첫글자 보드의 각 어절 버튼에 뜻이 통하는 이름이 있다', async ({ page }) => {
     await page.goto(`${BASE}#/learn/AS1a`)
-    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
     const board = page.locator('.fl-board')
     await expect(board).toHaveAttribute('aria-label', '첫글자 복원 보드')
     const first = board.getByRole('button').first()
@@ -161,7 +161,7 @@ test.describe('스크린리더 텍스트 대안', () => {
 
   test('diff 결과에 색이 아닌 문장 요약이 함께 있다', async ({ page }) => {
     await page.goto(`${BASE}#/learn/AS1a`)
-    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
     await page.getByRole('button', { name: '낭송 완료' }).click()
     await page.locator('textarea.typing-input').fill('전혀 다른 문장을 입력한다')
     await page.getByRole('button', { name: /채점/ }).click()

@@ -53,12 +53,12 @@ const CORE_COLLECTIONS = new Set(['AS', 'LV', 'TMS60'])
 export const PROGRESS_ROWS: readonly ProgressRow[] = [
   {
     key: 'core',
-    label: '5확신·8동행·60구절',
+    label: '5확신, 8동행, 60구절',
     verseIds: VERSES.filter((v) => CORE_COLLECTIONS.has(collectionOf(v).key)).map((v) => v.id),
   },
   ...sectionsOf('DEP').map((s, i) => ({
     key: s.key,
-    label: `${i + 1}. ${s.title}`,
+    label: `DEP ${i + 1}. ${s.title}`,
     verseIds: VERSES.filter((v) => sectionOf(v).key === s.key).map((v) => v.id),
   })),
   {

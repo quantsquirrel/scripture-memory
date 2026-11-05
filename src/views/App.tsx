@@ -30,7 +30,7 @@ export default function App() {
             <span className="brand-tail">van</span>
           </span>
         </h1>
-        <span className="brand-sub muted small">말씀암송 · 개역한글</span>
+        <span className="brand-sub muted small">개역한글 말씀암송</span>
         {/* 모바일은 워드마크 대신 지금 화면의 이름을 보인다 — 탭이 아이콘뿐이라 글자로 된 위치 단서가 이것 하나다 */}
         <p className="screen-title">{SCREEN_TITLES[route.name]}</p>
 

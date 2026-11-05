@@ -46,7 +46,7 @@ export function Browse({ onLearn }: { onLearn: (verseId: string) => void }) {
   const [open, setOpen] = useState<string | null>(null)
   const [collection, setCollection] = useState(FIRST_COLLECTION_KEY)
 
-  if (!data) return <p className="muted">불러오는 중…</p>
+  if (!data) return <p className="muted loading">불러오는 중…</p>
 
   const graduatedCount = (collectionKey: string): number =>
     VERSES.filter((v) => {

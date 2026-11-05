@@ -160,7 +160,7 @@ test.describe('오프라인 완결', () => {
     const verseText = (await page.locator('p.verse').first().innerText()).trim()
     expect(verseText.length).toBeGreaterThan(10)
 
-    await page.getByRole('button', { name: '낭송했어요 — 다음' }).click()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
     await page.getByRole('button', { name: '낭송 완료' }).click()
 
     const box = page.locator('textarea.typing-input')
@@ -168,7 +168,7 @@ test.describe('오프라인 완결', () => {
     // 정답 본문을 그대로 입력해 word-perfect 통과
     await box.fill(verseText)
     await page.getByRole('button', { name: /채점/ }).click()
-    await page.getByRole('button', { name: '졸업 — 복습 큐에 추가' }).click()
+    await page.getByRole('button', { name: '졸업하고 복습 큐에 추가' }).click()
     await expect(page.getByText(/졸업!/)).toBeVisible()
 
     // 홈에서 복습 대기 카드가 보인다 — 네트워크 없이 전 과정이 끝났다

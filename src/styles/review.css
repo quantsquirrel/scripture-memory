@@ -1,69 +1,257 @@
-/* 복습 화면 */
+/*
+ * 복습·학습·말씀 상태 개정 — 말씀 한 구절을 마주하는 화면들.
+ */
+
+/* 윗줄: 나가기 · 진행 막대 · 남은 수 */
 .review-top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: var(--space-6);
+  min-height: var(--touch-min);
   margin-bottom: var(--space-4);
 }
 
-.mode-tag {
-  display: inline-block;
-  font-size: var(--text-xs);
-  letter-spacing: 0.08em;
-  color: var(--color-info);
-  border: 1px solid var(--color-info);
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-4);
-  margin-bottom: var(--space-5);
-  background: color-mix(in srgb, var(--color-info) 8%, transparent);
+.review-top .progress {
+  flex: 1;
 }
 
+.review-count {
+  margin-left: auto;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.review-count .step-of {
+  margin-left: var(--space-2);
+}
+
+/* 복습 모드(타이핑/첫글자/낭송/장절) — 등불이 아니라 표지라서 하늘빛 글자 한 줄.
+   상자·자간 없이, 카드 머리줄 왼쪽에 늘 같은 자리로 선다 */
+.mode-tag {
+  font-weight: 600;
+  color: var(--color-info);
+}
+
+/* 화면당 하나뿐인 물음 — 장절이나 주제. 답(본문)이 나타나면 본문이 주인공이다 */
 .prompt-main {
-  font-size: var(--text-2xl);
-  margin: var(--space-4) 0 var(--space-2);
-  letter-spacing: -0.01em;
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-4);
 }
 
 .prompt-ord {
-  margin-left: 8px;
-  font-size: 0.85rem;
+  margin-left: var(--space-4);
+  font-size: var(--text-sm);
   font-weight: 600;
-  color: var(--color-accent);
-  vertical-align: 2px;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  vertical-align: 0.2em;
 }
 
+/* 카드 모서리의 차례 번호(예: A-3) — 자릿수가 흔들리지 않게 */
+.card-code {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.prompt-ask {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.prompt .verse {
+  margin-top: 0;
+}
+
+/*
+ * 정답 — 낭송의 틀. TMS 낭송 순서(주제 → 장절 → 말씀 → 장절)대로 선다:
+ * 여는 장절은 왼쪽, 말씀, 닫는 장절은 오른쪽 끝 — 카드 아랫단에 다시 찍힌 장절처럼.
+ * 공개 전 경계는 점선(아직 열리지 않은 것의 관례).
+ */
 .answer {
-  border-top: 1px dashed var(--color-line);
-  margin-top: var(--space-7);
-  padding-top: var(--space-6);
+  border-top: 1px dashed var(--color-border);
+  margin-top: var(--space-12);
+  padding-top: var(--space-10);
+  animation: reveal var(--dur-short) var(--ease-out) both;
+}
+
+.answer-head {
+  font-size: var(--text-xl);
+  letter-spacing: -0.015em;
+  margin: 0 0 var(--space-2);
+}
+
+.answer-topic {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
+  margin: 0 0 var(--space-6);
+}
+
+.answer-title {
+  font-weight: 700;
+}
+
+.answer-topic .crumb {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
 }
 
 .answer-ref {
   color: var(--color-info);
   font-weight: 600;
-  margin: var(--space-3) 0;
+  margin: 0;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* 말씀 상태 개정 */
-.recal-banner {
-  display: block;
-  width: 100%;
-  margin-top: 0;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  color: var(--color-text);
+.answer .verse {
+  margin: var(--space-4) 0;
+}
+
+.answer-ref-end {
+  text-align: right;
+}
+
+/* ── 첫글자 보드 ────────────────────────────────────────────── */
+/* 무대의 본문보다 한 단 작게 — 읽는 글이 아니라 떠올리는 발판이라 한 줄에 더 많은 어절이 선다 */
+.fl-board {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-6);
+  font-size: var(--text-md);
+}
+
+.fl-word {
   font: inherit;
-  text-align: left;
+  border: 1px solid var(--color-border);
+  background: var(--color-panel-alt);
+  color: var(--color-text);
+  border-radius: var(--radius);
+  padding: var(--space-1) var(--space-4);
   cursor: pointer;
+  line-height: 1.6;
+  transition:
+    transform var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
 }
 
-.recal-unit {
+.fl-word:active {
+  transform: translateY(1px);
+}
+
+.fl-dots {
+  color: var(--color-muted);
+  letter-spacing: -0.04em;
+}
+
+/* 엿본 어절은 상자를 벗고 본문 글자로 돌아간다. 밑줄은 "여기서 도움을 받았다"는
+   표지 — 엿보기 횟수가 곧 채점 증거라서 상태색(warn)을 쓴다 */
+.fl-revealed {
+  border-color: transparent;
+  background: transparent;
+  padding-inline: var(--space-1);
+  cursor: default;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-warn) 80%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 0.25em;
+  animation: reveal var(--dur-short) var(--ease-out) both;
+}
+
+.fl-hint {
   display: flex;
   justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.fl-peeks {
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 학습 1단계의 낭송 규칙 — 카드 안의 옅은 우물. 띠를 두르지 않는다 */
+.callout {
+  background: var(--color-panel-alt);
+  border-radius: var(--radius);
+  padding: var(--space-6) var(--space-8);
+  line-height: var(--leading-relaxed);
+  margin: var(--space-8) 0;
+}
+
+.callout p {
+  margin: 0;
+}
+
+.callout .small {
+  margin-top: var(--space-2);
+}
+
+.callout .btn {
+  margin-top: var(--space-6);
+}
+
+/* 낭송 규칙의 "장절" 강조 — 한글 서체에는 기울임꼴이 없어 브라우저가 글자를 억지로
+   눕혔다. 기울이는 대신 장절의 색(하늘빛)으로 가리킨다 */
+.callout em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--color-info);
+}
+
+/* ── 마침 장면: 복습 완료·졸업·개정 완료 ─────────────────────── */
+.finale {
+  margin-block: auto;
+  padding: var(--space-8) 0;
+  text-align: center;
+}
+
+.finale h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-4);
+}
+
+.finale p {
+  margin: var(--space-2) 0;
+}
+
+/* 등불 — 워드마크 i의 점과 같은 모양. 마친 자리에 하나만 켜진다 */
+.lamp {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--space-8);
+  animation: kindle var(--dur-long) var(--ease-out) both;
+}
+
+@keyframes kindle {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── 말씀 상태 개정 ─────────────────────────────────────────── */
+.recal-units {
+  margin-top: var(--space-6);
+}
+
+/* 개정 단위 한 줄 — 목록 행. 오른쪽 꺾쇠는 "누르면 들어간다"는 표지 */
+.recal-unit {
+  display: flex;
   align-items: center;
-  gap: var(--space-5);
+  gap: var(--space-6);
   width: 100%;
   background: none;
   border: none;
@@ -71,75 +259,132 @@
   color: var(--color-text);
   font: inherit;
   font-weight: 600;
-  padding: var(--space-5) 0;
+  padding: var(--space-4) var(--space-1);
   cursor: pointer;
   text-align: left;
+  transition: background-color var(--dur-micro) var(--ease-out);
 }
 
-.recal-unit:disabled {
-  opacity: 0.45;
-  cursor: default;
+.recal-unit:last-child {
+  border-bottom: none;
 }
 
-.recal-card {
-  margin-top: var(--space-5);
+.recal-unit-name {
+  flex: 1;
+  min-width: 0;
 }
 
-.recal-verdicts .btn {
-  text-align: left;
-}
-
-.recal-solid {
-  border-color: var(--color-ok);
-}
-
-.recal-shaky {
-  border-color: var(--color-warn);
-}
-
-.recal-forgotten {
-  border-color: var(--color-bad);
-}
-
-.recal-summary {
-  list-style: none;
-  padding: 0;
-  line-height: 2;
-}
-
-/* 첫글자 보드 */
-.fl-board {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px var(--space-3);
-  margin: var(--space-7) 0;
-}
-
-.fl-word {
-  font: inherit;
-  border: 1px solid var(--color-line);
-  background: var(--color-panel-alt);
-  color: var(--color-text);
-  border-radius: var(--radius);
-  padding: 4px var(--space-4);
-  cursor: pointer;
-  line-height: 1.6;
-  transition:
-    transform 0.1s ease,
-    border-color 0.15s ease;
-}
-
-.fl-word:active {
-  transform: scale(0.96);
-}
-
-.fl-dots {
+.recal-unit .chevron {
   color: var(--color-muted);
 }
 
-.fl-revealed {
-  border: 1px solid transparent;
-  padding: 4px var(--space-1);
-  color: var(--color-accent);
+/* 개정할 구절이 없는 단위 — 글자를 옅게, 금지 커서, 그리고 disabled 속성.
+   들어갈 곳이 없으니 꺾쇠도 내린다 */
+.recal-unit:disabled {
+  color: var(--color-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.recal-unit:disabled .chevron {
+  visibility: hidden;
+}
+
+.recal-unit-meta {
+  flex-shrink: 0;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.recal-verdicts .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  text-align: left;
+}
+
+.recal-verdicts .btn:first-child {
+  margin-top: 0;
+}
+
+/* 키보드 단축키 표지 — 터치 기기에서는 누를 키가 없으니 감춘다 */
+.key-hint {
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 0 var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--text-xs);
   font-weight: 600;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--color-muted);
+}
+
+@media (hover: none) {
+  .key-hint {
+    display: none;
+  }
+}
+
+/* 판정 버튼의 상태색 테두리 — a11y.css의 일괄 경계색(.btn:not(...))보다 구체적이어야
+   이긴다. 상태색은 모두 패널 대비 3:1을 넘는다(audit_contrast.py) */
+.recal-verdicts .btn.recal-solid {
+  border-color: var(--color-ok);
+}
+
+.recal-verdicts .btn.recal-shaky {
+  border-color: var(--color-warn);
+}
+
+.recal-verdicts .btn.recal-forgotten {
+  border-color: var(--color-bad);
+}
+
+/* 개정 결과 — 판정 셋을 나란히 센다. 칸 위의 짧은 상태색 선이 어느 판정인지 가리킨다 */
+.recal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: var(--space-12) 0 var(--space-4);
+  text-align: left;
+}
+
+.recal-summary > div {
+  padding: var(--space-4) var(--space-4) 0;
+  border-top: 2px solid var(--tally-color, var(--color-line));
+}
+
+.recal-summary > div + div {
+  margin-left: var(--space-4);
+}
+
+.recal-summary dt {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.recal-summary dd {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.recal-summary .tally-solid {
+  --tally-color: var(--color-ok);
+}
+
+.recal-summary .tally-shaky {
+  --tally-color: var(--color-warn);
+}
+
+.recal-summary .tally-forgotten {
+  --tally-color: var(--color-bad);
+}
+
+@media (hover: hover) {
+  .recal-unit:not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
+  }
 }

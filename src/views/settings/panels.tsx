@@ -53,9 +53,9 @@ const GOAL_SCOPE_OPTIONS = COLLECTIONS.map((c) => ({
 
 function goalSummary(goal: GoalInfo): string {
   if (goal.past)
-    return '목표일이 지났습니다 — 앞으로 올 날짜를 고르면 일일 목표가 다시 켜집니다'
-  if (goal.remaining === 0) return `${goal.scopeLabel}까지 모두 외웠습니다 — 범위를 넓혀 보세요`
-  return `D-${goal.daysLeft} · 남은 ${goal.remaining}/${goal.total}구절 · 하루 ${goal.requiredPace.toFixed(1)}구절 필요`
+    return '목표일이 지났습니다. 앞으로 올 날짜를 고르면 일일 목표가 다시 켜집니다.'
+  if (goal.remaining === 0) return `${goal.scopeLabel}까지 모두 외웠습니다. 범위를 넓혀 보세요.`
+  return `D-${goal.daysLeft}, 남은 ${goal.remaining}/${goal.total}구절, 하루 ${goal.requiredPace.toFixed(1)}구절 필요`
 }
 
 export function GoalPanel({
@@ -122,7 +122,7 @@ export function GoalPanel({
         선택 도구입니다. 시험(목표일)에 암송할 수 있으려면 외운 뒤 복습으로 굳힐 시간이
         필요하므로, 새 구절 학습은 목표일 {bufferDays}일 전까지 끝내는 것으로 일일 목표를
         계산하고 남은 기간은 복습만 합니다. 목표일이 지나면 D-day 페이싱은 사라지고, FSRS가 복습
-        간격을 늘려 가는 유지 모드로 돌아갑니다 — 평상시에는 목표일 없이 그대로 두면 됩니다.
+        간격을 늘려 가는 유지 모드로 돌아갑니다. 평상시에는 목표일 없이 그대로 두면 됩니다.
       </p>
     </section>
   )
@@ -189,7 +189,7 @@ export function PairingPanel({
           >
             {formatCode(pairing.code)}
           </output>
-          <p className="muted small">{mmss(left)} 뒤 만료 · 한 번만 쓸 수 있습니다</p>
+          <p className="muted small">{mmss(left)} 뒤 만료, 한 번만 쓸 수 있습니다</p>
           <button className="btn" onClick={onCopy}>
             코드 복사
           </button>
@@ -198,17 +198,14 @@ export function PairingPanel({
       {pairing && left === 0 && (
         <p className="muted small">코드가 만료되었습니다. 새로 만들어 주세요.</p>
       )}
+      {/* 설정 화면에는 오늘의 주 행동이 없다 — 금색 버튼(등불)을 켜지 않는다 */}
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={!enabled || busy !== null}
         aria-busy={busy === 'create'}
         onClick={onCreate}
       >
-        {busy === 'create'
-          ? '코드 만드는 중…'
-          : pairing
-            ? '새 코드 만들기'
-            : '내 기기 코드 만들기'}
+        {busy === 'create' ? '코드 만드는 중…' : pairing ? '새 코드 만들기' : '코드 만들기'}
       </button>
 
       <h3>다른 기기 코드 입력</h3>
@@ -218,6 +215,7 @@ export function PairingPanel({
       <input
         id="pair-input"
         className="ref-input pair-input"
+        disabled={!enabled}
         placeholder="ABC-DEF"
         maxLength={7}
         value={input}
@@ -230,7 +228,7 @@ export function PairingPanel({
         spellCheck={false}
       />
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={!enabled || busy !== null || normalizeCode(input) === null}
         aria-busy={busy === 'apply'}
         onClick={onApply}
@@ -243,7 +241,7 @@ export function PairingPanel({
         </p>
       )}
       <p className="muted small">
-        코드를 입력한 기기에만 합쳐집니다 — 복습 기록은 합집합, 카드·학습 상태는 더 진행된
+        코드를 입력한 기기에만 합쳐집니다. 복습 기록은 합집합, 카드·학습 상태는 더 진행된
         쪽으로. 양쪽을 똑같이 맞추려면 반대 방향으로도 한 번 더 하세요. 코드를 만든 뒤에 한
         복습은 그 코드에 들어가지 않습니다.
       </p>
@@ -302,7 +300,7 @@ export function SyncPanel({
         spellCheck={false}
       />
       <button
-        className="btn btn-primary"
+        className="btn"
         disabled={syncing || !token.trim() || !gistId.trim()}
         onClick={onSync}
       >
@@ -336,26 +334,30 @@ export function DataPanel({
     <section className="panel">
       <h2>데이터 및 학습</h2>
       <button className="btn" onClick={onRecalibrate}>
-        말씀 상태 개정 (Recalibrate)
+        말씀 상태 개정 <span className="btn-note">(Recalibrate)</span>
       </button>
       <p className="muted small">
         오래 쉬어 카드가 밀렸을 때, 구절마다 본문을 한 번 떠올려 보고 상태를 다시 정리합니다.
       </p>
-      <div className="btn-row">
-        <button className="btn" onClick={onExport}>
-          내보내기 (JSON)
-        </button>
-        <button
-          className="btn"
-          onClick={() => {
-            fileRef.current?.click()
-          }}
-        >
-          가져오기
-        </button>
+      {/* 백업 두 버튼은 전폭으로 세운다 — 반쪽 폭에서는 320px 화면에서 "내보내기 (JSON)"이 꺾였다 */}
+      <h3>백업</h3>
+      <button className="btn" onClick={onExport}>
+        내보내기 <span className="btn-note">(JSON)</span>
+      </button>
+      <button
+        className="btn"
+        onClick={() => {
+          fileRef.current?.click()
+        }}
+      >
+        가져오기
+      </button>
+      {/* 되돌릴 수 없는 행동은 구분선 아래로 떼어 둔다 — 백업 버튼 옆에서 잘못 누르지 않게 */}
+      <div className="danger-zone">
         <button className="btn btn-danger" onClick={onReset}>
           초기화
         </button>
+        <p className="muted small">모든 학습·복습 기록을 이 기기에서 지웁니다.</p>
       </div>
       <input
         ref={fileRef}
@@ -376,21 +378,34 @@ export function DataPanel({
 
 export function AboutPanel() {
   return (
-    <section className="panel">
+    <section className="ground">
       <h2>정보</h2>
-      <p className="muted small">
-        본문: 성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로 퍼블릭
-        도메인이며, 대한성서공회 온라인 본문에서 추출·검증했습니다. 저작인격권은 소멸하지
-        않으므로 출처를 밝히고 본문을 고치지 않습니다 — 옛 표기와 문장부호를 그대로 둡니다.
-        <br />
-        구성: 네비게이토 암송 과정 495구절 — 그리스도인의 확신(5확신) 5구절 → 그리스도인의
-        생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
-        성경암송 시리즈 180구절.
-        <br />
-        스케줄링: FSRS (ts-fsrs, 목표 기억율 90%).
-        <br />
-        낭송 규칙: 주제 → 장절 → 말씀 → 장절.
-      </p>
+      <dl className="about-list">
+        <div>
+          <dt>본문</dt>
+          <dd>
+            성경전서 개역한글판(1961). 저작재산권 보호기간 만료(2011.12.31)로 퍼블릭 도메인이며,
+            대한성서공회 온라인 본문에서 추출·검증했습니다. 저작인격권은 소멸하지 않으므로
+            출처를 밝히고 본문을 고치지 않습니다 — 옛 표기와 문장부호를 그대로 둡니다.
+          </dd>
+        </div>
+        <div>
+          <dt>구성</dt>
+          <dd>
+            네비게이토 암송 과정 495구절: 그리스도인의 확신(5확신) 5구절 → 그리스도인의
+            생활지침(8동행) 8구절 → 주제별 성경암송 60구절 → 제자의 도(DEP242) 242구절 → 주제별
+            성경암송 시리즈 180구절.
+          </dd>
+        </div>
+        <div>
+          <dt>스케줄링</dt>
+          <dd>FSRS (ts-fsrs, 목표 기억율 90%).</dd>
+        </div>
+        <div>
+          <dt>낭송 규칙</dt>
+          <dd>주제 → 장절 → 말씀 → 장절.</dd>
+        </div>
+      </dl>
     </section>
   )
 }

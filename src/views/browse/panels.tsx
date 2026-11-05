@@ -47,8 +47,8 @@ export function CollectionTabs({
             onSelect(c.key)
           }}
         >
-          <span>{c.short}</span>
-          <span className="muted small">
+          <span className="col-tab-name">{c.short}</span>
+          <span className="col-tab-count">
             {c.done}/{c.total}
           </span>
         </button>
@@ -74,44 +74,54 @@ export function SectionPanel({
   onLearn: (verseId: string) => void
 }) {
   return (
-    <section className="panel">
-      <h2>
-        {group.title} {group.subtitle && <span className="muted small">{group.subtitle}</span>}
-      </h2>
-      {group.topics.map((topic) => (
-        <div key={topic.key}>
-          {topic.group !== null && <h3 className="group-title">{topic.group}</h3>}
-          <h3 className="topic-title">{topic.title}</h3>
-          {topic.verses.map((verse) => (
-            <div key={verse.id}>
-              <button
-                type="button"
-                className="verse-row"
-                aria-expanded={openVerseId === verse.id}
-                onClick={() => {
-                  onToggle(verse.id)
-                }}
-              >
-                <span>{verse.refAbbr}</span>
-                <span className={`status ${verse.status.cls}`}>{verse.status.label}</span>
-              </button>
-              {openVerseId === verse.id && (
-                <div className="verse-detail">
-                  <p className="verse">{verse.text}</p>
-                  <button
-                    className="btn"
-                    onClick={() => {
-                      onLearn(verse.id)
-                    }}
-                  >
-                    {actionLabel(verse.status.cls)}
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
+    // 차례처럼: 섹션 제목과 부제는 바닥에 서고, 주제·구절 줄만 카드에 담긴다
+    <section className="index-section">
+      <h2>{group.title}</h2>
+      {group.subtitle && <p className="muted small index-sub">{group.subtitle}</p>}
+      <div className="panel index-card">
+        {group.topics.map((topic) => (
+          <div key={topic.key}>
+            {topic.group !== null && <h3 className="group-title">{topic.group}</h3>}
+            <h3 className="topic-title">{topic.title}</h3>
+            {topic.verses.map((verse) => (
+              <div key={verse.id} className="verse-item">
+                <button
+                  type="button"
+                  className="verse-row"
+                  aria-expanded={openVerseId === verse.id}
+                  onClick={() => {
+                    onToggle(verse.id)
+                  }}
+                >
+                  <span className="verse-row-main">
+                    <span className="verse-row-ref">{verse.refAbbr}</span>
+                    {/* 본문 첫머리 — 버튼 이름은 장절과 상태만으로 충분하니 읽지 않는다 */}
+                    {openVerseId !== verse.id && (
+                      <span className="verse-row-preview" aria-hidden="true">
+                        {verse.text}
+                      </span>
+                    )}
+                  </span>
+                  <span className={`status ${verse.status.cls}`}>{verse.status.label}</span>
+                </button>
+                {openVerseId === verse.id && (
+                  <div className="verse-detail">
+                    <p className="verse">{verse.text}</p>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        onLearn(verse.id)
+                      }}
+                    >
+                      {actionLabel(verse.status.cls)}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </section>
   )
 }

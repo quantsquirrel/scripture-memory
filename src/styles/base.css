@@ -1,5 +1,18 @@
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+/* 가로 넘침은 잘라 낸다 — hidden이 아니라 clip이어야 sticky 헤더·fixed 독이 산다 */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* 스크롤바·선택 영역·입력 커서처럼 직접 그리지 않은 면도 팔레트에서 고른다 */
+html {
+  scrollbar-color: var(--color-line) var(--color-bg);
 }
 
 body {
@@ -7,12 +20,28 @@ body {
   background: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  /* 세리프는 400 한 벌만 싣는다 — 브라우저가 가짜 굵은 글씨를 만들지 않게 */
+  font-synthesis: none;
+  caret-color: var(--color-accent);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   /* 한국어는 어절 단위로 줄을 바꾼다 — 폭과 무관하게. 640px 이하에만 걸려 있어
      PC에서는 "계/산하고"처럼 어절 중간이 끊겼다 */
   word-break: keep-all;
   overflow-wrap: break-word;
+  /* 엄지로 두 번 눌러도 확대되지 않게 — 복습 등급·첫글자 칩을 빠르게 누른다 */
+  touch-action: manipulation;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  color: var(--color-text);
+}
+
+p {
+  text-wrap: pretty;
 }
 
 /*
@@ -43,18 +72,33 @@ textarea {
   font: inherit;
 }
 
+/*
+ * 앱 셸은 세로 flex다. 복습·학습 무대(.stage)가 남은 높이를 채워 주 행동을
+ * 엄지가 닿는 아래쪽에 둘 수 있게 하고, 나머지 화면은 위에서부터 쌓인다.
+ * svh는 브라우저 도구 막대가 보일 때의 높이라 넘치지 않는다(앞 줄은 구형 대체값).
+ */
 .app {
   max-width: var(--layout-max);
   margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
   padding: calc(var(--space-6) + env(safe-area-inset-top, 0px)) var(--space-8)
-    calc(96px + env(safe-area-inset-bottom, 0px));
+    calc(var(--dock-clearance) + env(safe-area-inset-bottom, 0px));
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 모바일 헤더: 지금 화면의 이름 한 줄. 워드마크·보조 문구·가로선은 PC에만 */
 .app-header {
   display: flex;
   align-items: center;
-  padding: var(--space-2) var(--space-1) var(--space-5);
+  padding: var(--space-2) var(--space-1) var(--space-8);
 }
 
 /* 워드마크는 눈에서만 감춘다 — 앱 이름 h1은 스크린리더에 남아 모든 화면의 첫 제목이 된다
@@ -66,6 +110,8 @@ textarea {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+  margin: 0;
+  line-height: 1;
 }
 
 .brand-sub {
@@ -74,27 +120,18 @@ textarea {
 
 .screen-title {
   margin: 0;
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   font-weight: 700;
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
 }
 
-.app-header h1 {
-  margin: 0;
-  font-size: var(--text-xl);
-  letter-spacing: 0.04em;
-}
-
-/* Ivan 워드마크 — i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다 */
-.brand {
-  margin: 0;
-  line-height: 1;
-}
-
+/* Ivan 워드마크 — i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다.
+   자간을 벌리는 곳은 이 워드마크 하나뿐이다(라벨·태그는 자간을 벌리지 않는다) */
 .brand-wordmark {
   display: inline-flex;
   align-items: baseline;
-  font-size: var(--text-xl);
+  font-size: var(--text-lg);
   line-height: 1;
   color: var(--color-text);
 }
@@ -114,24 +151,30 @@ textarea {
   letter-spacing: 0.04em;
 }
 
+/*
+ * 제목. 장식 기호를 붙이지 않는다 — 카드마다 금색 ◆를 달면 화면에 등불이
+ * 카드 수만큼 켜진다(DESIGN.md 원칙 2). 위계는 크기·굵기·여백으로만 만든다.
+ * 위 여백이 아래 여백보다 넓어야 제목이 앞 내용이 아니라 뒤 내용에 붙어 보인다.
+ */
+h2,
+h3 {
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
 h2 {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
   font-size: var(--text-md);
   letter-spacing: -0.01em;
-  margin: 0 0 var(--space-5);
+  margin: 0 0 var(--space-6);
 }
 
-h2::before {
-  content: '◆';
-  font-size: 0.52rem;
-  color: var(--color-accent);
-  opacity: 0.85;
-}
-
+/* 카드 안의 소제목 — 카드 제목(h2)보다 한 단 작다 */
 h3 {
-  margin: var(--space-4) 0;
+  font-size: var(--text-base);
+  margin: var(--space-12) 0 var(--space-4);
 }
 
 .muted {
@@ -140,70 +183,229 @@ h3 {
 
 .small {
   font-size: var(--text-sm);
+  line-height: var(--leading-normal);
 }
 
-.center {
-  text-align: center;
-}
-
+/*
+ * 표면의 사다리: 바닥(bg) → 헤어라인 → 옅은 우물(panel-alt) → 카드(panel).
+ * 카드는 손으로 다루는 대상(오늘의 복습, 구절 카드, 설정 묶음)에만 쓴다.
+ * 기록(진행률 표)·목록의 제목은 바닥에 그대로 선다 — 같은 상자를 쌓지 않는다.
+ */
 .panel {
   background: var(--color-panel);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
-  padding: var(--space-8);
-  /* 카드 사이 14px (DESIGN.md Layout) — 전에는 640px 이하에서만 14px이었다 */
-  margin-bottom: var(--space-7);
-  box-shadow: var(--shadow-nav);
-  position: relative;
-  overflow: hidden;
+  padding: var(--panel-pad);
+  margin-bottom: var(--space-6);
 }
 
-.panel::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: color-mix(in srgb, var(--color-border) 35%, transparent);
+.panel > :last-child {
+  margin-bottom: 0;
 }
 
+/* 바닥에 바로 서는 묶음 — 카드 사이보다 한 단 넓게 띄워 쉼표가 아니라 마침표로 읽히게.
+   화면 맨 위에 설 때는 헤더 바로 아래라 띄우지 않는다 */
+.ground {
+  margin: var(--space-16) 0 var(--space-12);
+}
+
+.ground:first-child {
+  margin-top: 0;
+}
+
+/* 비어 있음 — 무엇이 비었는지, 왜인지, 다음 걸음 하나. 내용 높이의 작은 카드 */
+.empty-state p {
+  margin: 0 0 var(--space-2);
+}
+
+/* 화면 제목과 같은 카드 제목 — 모바일은 헤더의 화면 이름이 이미 말하므로 눈에서만
+   감추고(낭독기에는 남는다), 화면 이름이 사라지는 PC에서 보인다 */
+@media (max-width: 768px) {
+  .screen-dup {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .screen-dup + * {
+    margin-top: 0;
+  }
+}
+
+.ground-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-8);
+  margin-bottom: var(--space-4);
+}
+
+.ground-head h2 {
+  margin: 0;
+}
+
+/* 머리줄 오른쪽 끝의 이동 버튼 — 글자 끝이 내용의 오른쪽 가장자리와 맞도록 */
+.ground-head .btn-ghost {
+  padding: var(--space-2) 0 var(--space-2) var(--space-2);
+}
+
+/* 경로 표기 — 과정 › 단원 › 묶음. 구분 기호는 화면 낭독기가 읽지 않는다 */
+.crumb {
+  min-width: 0;
+}
+
+.crumb-sep {
+  color: var(--color-border);
+}
+
+/*
+ * 카드 머리줄: 카드 맨 위 가장자리에 늘 같은 자리로 서는 한 줄.
+ * 왼쪽은 이 카드가 무엇을 묻는지(모드), 오른쪽은 말씀이 어디에 있는지(경로·번호).
+ * 제목을 예고하는 머리글이 아니라 TMS 카드 윗단에 인쇄된 표지와 같은 자리다.
+ */
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-8);
+  flex-wrap: wrap;
+  margin: 0 0 var(--space-8);
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  color: var(--color-muted);
+}
+
+.card-head > :last-child:not(:first-child) {
+  margin-left: auto;
+  text-align: right;
+}
+
+/* 성경 본문 — 이 앱에서 세리프를 쓰는 유일한 자리. 무대 위에서는 한 단 크게 */
 .verse {
   font-family: var(--font-serif);
   font-size: var(--text-lg);
   line-height: var(--leading-verse);
   letter-spacing: -0.012em;
-  word-break: keep-all;
   margin: var(--space-6) 0;
+  text-wrap: pretty;
   font-feature-settings:
     'palt' 1,
     'liga' 1;
 }
 
-.chip {
-  display: inline-block;
-  background: var(--color-panel-alt);
-  border: 1px solid var(--color-line);
-  color: var(--color-muted);
-  border-radius: var(--radius-pill);
-  padding: 3px var(--space-6);
-  font-size: var(--text-sm);
-  margin-bottom: var(--space-3);
-}
-
 /* 큰 숫자 지표 — 본문색으로 크기만 키운다. 금색은 행동(등불)에 남겨둔다 */
 .big-number {
   font-size: var(--text-3xl);
-  color: var(--color-text);
   font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
-/* 큰 숫자 아래 한 줄로 내려 지표 문구가 숫자 옆에서 쪼개지지 않게 한다 */
-.goal-meta {
-  display: block;
-  margin-top: var(--space-2);
-  font-size: var(--text-sm2);
-  line-height: var(--leading-normal);
+/*
+ * 나란히 놓는 숫자 묶음(<dl>) — 이름 위, 값 아래. 칸 사이는 세로 헤어라인 하나로
+ * 가른다(상자에 넣지 않는다). 지표는 물러서므로 이름은 muted, 값은 본문색.
+ */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.figures > div {
+  padding: 0 var(--space-8);
+  border-left: 1px solid var(--color-line);
+}
+
+.figures > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.figures dt {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.figures dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * 무대(stage): 복습 카드·학습 사다리처럼 말씀 한 구절을 마주하는 화면.
+ * 모바일에서는 카드가 남은 높이를 채우고 주 행동(.stage-foot)이 카드 맨 아래,
+ * 엄지가 닿는 자리로 내려간다. 입력란이 있는 단계는 화면 키보드가 버튼을
+ * 덮지 않도록 .stage-foot을 쓰지 않고 입력란 바로 아래에 버튼을 둔다.
+ */
+.stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.stage-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--stage-pad);
+  margin-bottom: 0;
+  animation: stage-enter var(--dur-short) var(--ease-out) both;
+}
+
+/*
+ * 주 행동 묶음은 카드 아래쪽 엄지 자리에 붙어 있다. 말씀이 길어 카드가 화면을
+ * 넘쳐도(긴 DEP 구절, 타이핑 감사의 diff와 정답) 독 바로 위에 남아 스크롤 없이
+ * 채점할 수 있다. 밑으로 지나가는 본문은 카드와 같은 면이 덮는다 — 그래서 묶음을
+ * 카드 안쪽 여백까지 펴서 칠하고, 카드 아래 모서리와 같은 곡선으로 끝낸다.
+ * 내용이 짧으면 sticky가 움직일 일이 없어 전과 똑같이 카드 맨 아래에 선다.
+ */
+.stage-foot {
+  position: sticky;
+  bottom: calc(var(--dock-gap) + var(--dock-height));
+  margin: auto calc(-1 * var(--stage-pad)) calc(-1 * var(--stage-pad));
+  padding: var(--space-8) var(--stage-pad) var(--stage-pad);
+  background: var(--color-panel);
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+}
+
+.stage-foot > :first-child {
+  margin-top: 0;
+}
+
+/* 새 카드·새 단계가 놓였다는 신호 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */
+@keyframes stage-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 데이터를 읽는 동안의 한 줄 — 순식간에 끝나는 읽기에서는 깜빡이지 않도록
+   잠깐 기다렸다가 나타난다(처음부터 그려져 있고 투명도만 늦게 오른다) */
+.loading {
+  margin: var(--space-8) var(--space-1);
+  animation: loading-in var(--dur-short) var(--ease-out) 200ms both;
+}
+
+@keyframes loading-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── PC (769px 이상) ─────────────────────────────────────────
@@ -219,7 +421,7 @@ h3 {
     position: sticky;
     top: 0;
     z-index: 100;
-    gap: var(--space-5);
+    gap: var(--space-4);
     padding: var(--space-4) 0;
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-line);
@@ -241,17 +443,27 @@ h3 {
   .screen-title {
     display: none;
   }
+
+  /* 마우스는 엄지 영역이 없다 — 카드는 내용 높이만큼, 대신 너무 낮아 보이지 않게 */
+  .stage-card {
+    flex: none;
+    min-height: 440px;
+  }
+
+  /* 독이 없으니 주 행동 묶음은 화면 아래 끝에 붙는다 */
+  .stage-foot {
+    bottom: 0;
+  }
 }
 
-/* iPhone SE(375px) 이하 — 본문 폭을 위해 바깥·안쪽 여백을 한 단계 줄인다 */
+/* iPhone SE(375px) 이하 — 본문 폭을 위해 바깥·무대 여백을 한 단계 줄인다 */
 @media (max-width: 380px) {
+  :root {
+    --stage-pad: var(--space-8);
+  }
+
   .app {
     padding-left: var(--space-6);
     padding-right: var(--space-6);
-  }
-
-  .panel {
-    padding: var(--space-7);
-    margin-bottom: var(--space-6);
   }
 }

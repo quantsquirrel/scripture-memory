@@ -1,6 +1,9 @@
 import { useCallback, useState } from 'react'
 
 import { nextDueAt, submitReview } from '../app'
+import { Chevron } from '../components/Chevron'
+import { fillStyle } from '../components/fill'
+import { LampMark } from '../components/LampMark'
 import { VERSE_BY_ID } from '../data/verses'
 import type { Rating, ReviewMode, StoredCard } from '../domain/card'
 import { required } from '../domain/invariant'
@@ -60,42 +63,78 @@ export function Review({ onExit }: { onExit: () => void }) {
     [current, queue, idx, refill, reload],
   )
 
-  if (queue === null) return <p className="muted">불러오는 중…</p>
+  if (queue === null) return <p className="muted loading">불러오는 중…</p>
 
   if (!current) {
+    // 이번 세션에 한 장도 넘기지 않았으면 마칠 것이 없다 — 화면을 채우는 무대 대신
+    // 내용 높이의 작은 카드로 비어 있음과 다음 걸음만 알린다. 무대와 등불은 완료 장면의 몫이다
+    if (done === 0) {
+      return (
+        <section className="panel empty-state">
+          <h2>복습할 카드가 없습니다</h2>
+          {notice !== null && (
+            <p className="muted" role="status">
+              {notice}
+            </p>
+          )}
+          {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
+          {queue.length === 0 && <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>}
+          <button className="btn btn-primary" onClick={onExit}>
+            홈으로
+          </button>
+        </section>
+      )
+    }
     return (
-      <div className="panel center">
-        <h2>{done > 0 ? '복습 완료!' : '복습할 카드가 없습니다'}</h2>
-        {notice !== null && (
-          <p className="muted" role="status">
-            {notice}
-          </p>
-        )}
-        {done > 0 && <p>이번 세션에서 {done}회 복습했습니다.</p>}
-        {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
-        {queue.length === 0 && done === 0 && (
-          <p className="muted">새 구절을 학습하면 카드가 생성됩니다.</p>
-        )}
-        <button className="btn btn-primary" onClick={onExit}>
-          홈으로
-        </button>
+      <div className="stage">
+        <div className="panel stage-card">
+          <div className="finale">
+            <LampMark />
+            <h2>복습 완료!</h2>
+            {notice !== null && (
+              <p className="muted" role="status">
+                {notice}
+              </p>
+            )}
+            <p>이번 세션에서 {done}회 복습했습니다.</p>
+            {nextDueLabel !== null && <p className="muted">다음 복습: {nextDueLabel} 후</p>}
+          </div>
+          <div className="stage-foot">
+            <button className="btn btn-primary" onClick={onExit}>
+              홈으로
+            </button>
+          </div>
+        </div>
       </div>
     )
   }
 
   // useDueCards가 본문 없는 카드를 걸러낸 뒤이므로 반드시 존재한다
   const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
+  const remaining = queue.length - idx
 
   return (
-    <div>
+    <div className="stage">
       <div className="review-top">
         <button className="btn-ghost" onClick={onExit}>
-          ← 종료
+          <Chevron dir="left" />
+          종료
         </button>
-        <span className="muted">남은 카드 {queue.length - idx}</span>
+        {/* 이번 세션에서 넘긴 몫 — 큐가 다시 채워지면 분모도 함께 늘어난다 */}
+        <span
+          className="progress progress-ink progress-thin"
+          role="progressbar"
+          aria-label="이번 복습 진행"
+          aria-valuemin={0}
+          aria-valuemax={done + remaining}
+          aria-valuenow={done}
+        >
+          <span className="progress-fill" style={fillStyle(done, done + remaining)} />
+        </span>
+        <span className="review-count">남은 카드 {remaining}</span>
       </div>
       {notice !== null && (
-        <p className="muted" role="status">
+        <p className="muted small" role="status">
           {notice}
         </p>
       )}
