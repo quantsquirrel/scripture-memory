@@ -47,6 +47,13 @@
   background: var(--color-panel);
 }
 
+/* 날짜 값은 짧다 — 패널 폭만큼 늘이지 않고 내용 폭에 맞춘다. */
+.ref-input[type='date'] {
+  display: block;
+  width: auto;
+  min-width: 11rem;
+}
+
 /* 쓸 수 없는 칸 — 옅게, 금지 커서, 그리고 disabled 속성. 테두리 두께는 그대로 */
 .typing-input:disabled,
 .ref-input:disabled {
