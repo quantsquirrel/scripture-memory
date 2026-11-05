@@ -47,7 +47,7 @@ export function IntroStep({
       )}
       <div className="stage-foot">
         <button className="btn btn-primary" onClick={onRecited}>
-          낭송했어요 — 다음
+          낭송했어요, 다음으로
         </button>
       </div>
     </>
@@ -129,7 +129,7 @@ export function TypingStep({
           {grade.perfect ? (
             <div className="stage-foot">
               <button className="btn btn-primary" onClick={onGraduate}>
-                졸업 — 복습 큐에 추가
+                졸업하고 복습 큐에 추가
               </button>
             </div>
           ) : (

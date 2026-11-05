@@ -7,7 +7,7 @@
 /* Hallmark · dismissed 41 · the accent's paired ink is --color-accent-text, which scripts/audit_contrast.py checks on the gold at 4.5:1 or more in both palettes */
 /* Hallmark · dismissed 49 · the 말씀 상태 개정 notice is a full-width row whose label is one sentence; two lines on a phone are intended and the chevron keeps its own column */
 /* Hallmark · reworded "통계" to "기록" · the 11/2 upgrade renamed the 설정 section; it still holds the same two figures */
-/* Hallmark · sweep: floor 2 FAIL open (19: three button names the e2e tests read keep their dash, awaiting the owner) · reflex 0 · waived 39b, 72 · dismissed 41, 49
+/* Hallmark · sweep: floor 0 · reflex 0 · waived 39b, 72 · dismissed 41, 49
  * finish-review: subagent · fix · 8 findings · 8 resolved · gap: none */
 
 /*

@@ -95,7 +95,7 @@ export function FirstLetterMode({
               setRevealed(true)
             }}
           >
-            낭송 완료 — 확인
+            낭송 완료, 정답 확인
           </button>
         </div>
       </>
