@@ -10,7 +10,8 @@ import {
 } from '../domain/card'
 import { type LadderStep, type LearnProgress, stepFromLegacy } from '../domain/ladder'
 import { toState } from '../domain/scheduler'
-import { type ExportBundle, SCHEMA_VERSION } from '../ports/repositories'
+import { type ExportBundle, type GoalPrefs, SCHEMA_VERSION } from '../ports/repositories'
+import { isIsoDay } from './goalPrefs'
 
 /**
  * 백업 번들 검증·마이그레이션.
@@ -36,7 +37,7 @@ export function decodeBundle(input: unknown): ExportBundle {
   ) {
     throw new Error('백업 파일이 손상되었습니다 (cards/reviews/learning 누락)')
   }
-  return {
+  const bundle: ExportBundle = {
     app: 'scripture-memory',
     version: SCHEMA_VERSION,
     exportedAt:
@@ -45,6 +46,29 @@ export function decodeBundle(input: unknown): ExportBundle {
     reviews: b['reviews'].map(asReviewEntry),
     learning: b['learning'].map(asLearnProgress),
   }
+  // 목표가 없는 번들(이전 버전·한 번도 목표를 정하지 않은 기기)은 키 자체를 두지 않는다
+  if (b['goal'] !== undefined) bundle.goal = asGoalPrefs(b['goal'])
+  return bundle
+}
+
+/**
+ * 암송 목표. 범위 값은 형식만 본다 — 다음 버전이 과정을 더 들이면 이 버전이 모르는
+ * 키가 올 수 있고, 그 값은 저장소의 읽기 가드가 기본 범위로 읽는다.
+ */
+export function asGoalPrefs(v: unknown): GoalPrefs {
+  const g = asRecord(v, 'goal')
+  const goal: GoalPrefs = { updatedAt: isoDate(g['updatedAt'], 'goal.updatedAt') }
+  if (g['date'] !== undefined) {
+    if (!isIsoDay(g['date'])) {
+      throw new Error(
+        `백업의 goal.date가 날짜(YYYY-MM-DD)가 아닙니다: ${JSON.stringify(g['date'])}`,
+      )
+    }
+    goal.date = g['date']
+  }
+  if (g['bufferDays'] !== undefined) goal.bufferDays = count(g['bufferDays'], 'goal.bufferDays')
+  if (g['scope'] !== undefined) goal.scope = str(g['scope'], 'goal.scope')
+  return goal
 }
 
 function asRecord(v: unknown, what: string): Record<string, unknown> {

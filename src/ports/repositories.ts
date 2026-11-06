@@ -65,6 +65,18 @@ export interface SettingsStore {
   setSyncDeviceId(v: string): Promise<void>
 }
 
+/**
+ * 암송 목표 — 기기 연동·동기화·백업으로 옮겨지는 유일한 설정.
+ * 정하지 않은 필드는 비워 두고 읽는 쪽 기본값을 쓴다. updatedAt은 셋 중 무엇이든
+ * 마지막으로 바꾼 시각이고, 병합은 이 시각이 늦은 쪽 목표를 통째로 고른다.
+ */
+export interface GoalPrefs {
+  date?: string
+  bufferDays?: number
+  scope?: string
+  updatedAt: string
+}
+
 /** export/import 번들의 현재 스키마 버전 */
 export const SCHEMA_VERSION = 2
 
@@ -75,6 +87,11 @@ export interface ExportBundle {
   cards: StoredCard[]
   reviews: ReviewEntry[]
   learning: LearnProgress[]
+  /**
+   * 암송 목표. 선택 필드라 버전을 올리지 않는다 — 이전 앱은 모르는 필드를 무시하고,
+   * 이 필드가 없는 이전 번들은 "목표를 옮기지 않음"으로 읽는다.
+   */
+  goal?: GoalPrefs
 }
 
 /**
@@ -102,7 +119,7 @@ export interface Store {
   /** v1·v2 번들을 모두 받는다 (v1은 마이그레이션해서 적용) */
   importAll(input: unknown): Promise<void>
   /**
-   * 동기화 병합. cards/reviews/learning을 한 트랜잭션 안에서 읽어 merge에 넘기고,
+   * 동기화 병합. cards/reviews/learning과 암송 목표를 한 트랜잭션 안에서 읽어 merge에 넘기고,
    * 그 결과로 세 스토어를 교체한 뒤 결과를 돌려준다.
    *
    * 읽기와 쓰기 사이에 다른 쓰기가 끼어들 수 없으므로, 네트워크를 기다리는 동안

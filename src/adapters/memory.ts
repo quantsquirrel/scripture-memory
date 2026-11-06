@@ -17,6 +17,7 @@ import {
 import {
   type CardRepository,
   type ExportBundle,
+  type GoalPrefs,
   type LearnProgressStore,
   type ReviewLog,
   SCHEMA_VERSION,
@@ -24,6 +25,7 @@ import {
   type Store,
 } from '../ports/repositories'
 import { decodeBundle } from './bundle'
+import { GOAL_KEYS, goalPrefsRows, readGoalPrefs } from './goalPrefs'
 
 /**
  * 인메모리 저장소. 도메인·앱 계층 테스트가 fake-indexeddb 없이 돌게 하려고 있다.
@@ -96,11 +98,11 @@ export class MemoryStore implements Store {
 
   readonly settings: SettingsStore = {
     goalDate: () => this.readSetting('goalDate', (v) => typeof v === 'string'),
-    setGoalDate: (v) => this.writeSetting('goalDate', v),
+    setGoalDate: (v) => this.writeGoal(GOAL_KEYS.date, v),
     goalBufferDays: () => this.readSetting('goalBufferDays', (v) => typeof v === 'number'),
-    setGoalBufferDays: (v) => this.writeSetting('goalBufferDays', v),
+    setGoalBufferDays: (v) => this.writeGoal(GOAL_KEYS.bufferDays, v),
     goalScope: () => this.readSetting('goalScope', (v) => typeof v === 'string'),
-    setGoalScope: (v) => this.writeSetting('goalScope', v),
+    setGoalScope: (v) => this.writeGoal(GOAL_KEYS.scope, v),
     syncToken: () => this.readSetting('syncToken', (v) => typeof v === 'string'),
     setSyncToken: (v) => this.writeSetting('syncToken', v),
     syncGistId: () => this.readSetting('syncGistId', (v) => typeof v === 'string'),
@@ -119,6 +121,23 @@ export class MemoryStore implements Store {
   private writeSetting(key: string, value: string | number | boolean): Promise<void> {
     this.settingRows.set(key, value)
     return Promise.resolve()
+  }
+
+  private writeGoal(key: string, value: string | number): Promise<void> {
+    this.settingRows.set(key, value)
+    this.settingRows.set(GOAL_KEYS.updatedAt, new Date().toISOString())
+    return Promise.resolve()
+  }
+
+  private readGoal(): GoalPrefs | undefined {
+    return readGoalPrefs((key) => this.settingRows.get(key))
+  }
+
+  private applyGoal(goal: GoalPrefs): void {
+    for (const [key, value] of goalPrefsRows(goal)) {
+      if (value === undefined) this.settingRows.delete(key)
+      else this.settingRows.set(key, value)
+    }
   }
 
   graduate(verseId: string, directions: readonly Direction[], now: Date): Promise<void> {
@@ -143,14 +162,17 @@ export class MemoryStore implements Store {
   }
 
   exportAll(now: Date = new Date()): Promise<ExportBundle> {
-    return Promise.resolve({
+    const bundle: ExportBundle = {
       app: 'scripture-memory',
       version: SCHEMA_VERSION,
       exportedAt: now.toISOString(),
       cards: [...this.cardRows.values()],
       reviews: [...this.reviewRows],
       learning: [...this.learningRows.values()],
-    })
+    }
+    const goal = this.readGoal()
+    if (goal) bundle.goal = goal
+    return Promise.resolve(bundle)
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
@@ -162,25 +184,30 @@ export class MemoryStore implements Store {
       return { ...rest, id: this.nextReviewId++ }
     })
     this.learningRows = new Map(bundle.learning.map((l) => [l.verseId, l]))
+    if (bundle.goal) this.applyGoal(bundle.goal)
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await
   async mergeAll(merge: (local: ExportBundle) => ExportBundle): Promise<ExportBundle> {
     // 읽기와 쓰기 사이에 await가 없어야 다른 커밋이 끼어들지 못한다
-    const merged = merge({
+    const local: ExportBundle = {
       app: 'scripture-memory',
       version: SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       cards: [...this.cardRows.values()],
       reviews: [...this.reviewRows],
       learning: [...this.learningRows.values()],
-    })
+    }
+    const localGoal = this.readGoal()
+    if (localGoal) local.goal = localGoal
+    const merged = merge(local)
     this.cardRows = new Map(merged.cards.map((c) => [c.key, c]))
     this.reviewRows = merged.reviews.map((r) => {
       const { id: _id, ...rest } = r
       return { ...rest, id: this.nextReviewId++ }
     })
     this.learningRows = new Map(merged.learning.map((l) => [l.verseId, l]))
+    if (merged.goal) this.applyGoal(merged.goal)
     return merged
   }
 
