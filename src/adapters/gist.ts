@@ -2,6 +2,7 @@ import type { ReviewEntry, StoredCard } from '../domain/card'
 import { type LearnProgress, stepToLegacy } from '../domain/ladder'
 import { type ExportBundle, SCHEMA_VERSION, type Store } from '../ports/repositories'
 import { decodeBundle } from './bundle'
+import { mergeGoalPrefs } from './goalPrefs'
 
 export interface SyncConfig {
   token: string
@@ -37,7 +38,7 @@ function emptyBundle(): ExportBundle {
   }
 }
 
-/** 리뷰는 합집합, 카드/학습 상태는 더 진행된 쪽 우선. */
+/** 리뷰는 합집합, 카드/학습 상태는 더 진행된 쪽 우선, 암송 목표는 나중에 바꾼 쪽. */
 export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const reviews = new Map<string, ReviewEntry>()
   for (const r of [...a.reviews, ...b.reviews]) {
@@ -67,7 +68,7 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
       learning.set(l.verseId, l)
     }
   }
-  return {
+  const merged: ExportBundle = {
     app: 'scripture-memory',
     version: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
@@ -75,6 +76,9 @@ export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
     reviews: [...reviews.values()].sort((x, y) => (x.ts < y.ts ? -1 : 1)),
     learning: [...learning.values()],
   }
+  const goal = mergeGoalPrefs(a.goal, b.goal)
+  if (goal) merged.goal = goal
+  return merged
 }
 
 interface GistFile {

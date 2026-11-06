@@ -20,6 +20,7 @@ import {
 import {
   type CardRepository,
   type ExportBundle,
+  type GoalPrefs,
   type LearnProgressStore,
   type ReviewLog,
   SCHEMA_VERSION,
@@ -27,6 +28,7 @@ import {
   type Store,
 } from '../ports/repositories'
 import { decodeBundle } from './bundle'
+import { GOAL_KEYS, goalPrefsRows, isIsoDay, readGoalPrefs, sameGoalPrefs } from './goalPrefs'
 
 const DB_NAME = 'tms-krv'
 /** v1: 인덱스 없음, learning.step은 숫자. v2: 인덱스 추가 + step을 사다리 단계 문자열로. */
@@ -221,11 +223,6 @@ function isFiniteNumber(v: unknown): v is number {
   return typeof v === 'number' && Number.isFinite(v)
 }
 
-/** 'YYYY-MM-DD' — 목표일은 Date 파싱과 문자열 비교 양쪽에 쓰이므로 형식을 고정한다 */
-function isIsoDate(v: unknown): v is string {
-  return typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))
-}
-
 /**
  * 설정 읽기는 스키마 검증을 통과해야 한다. 저장된 값은 export/import와 Gist
  * 동기화로 기기 사이를 오가는 JSON이라 타입 보장이 없다 — 형태가 어긋나면
@@ -242,13 +239,21 @@ class IdbSettings implements SettingsStore {
     await (await openTmsDb()).put('settings', { key, value })
   }
 
-  goalDate = (): Promise<string | undefined> => this.read('goalDate', isIsoDate)
-  setGoalDate = (v: string): Promise<void> => this.write('goalDate', v)
+  /** 목표 값과 바꾼 시각을 한 트랜잭션으로 — 시각 없이 값만 바뀌면 병합에서 옛 목표에 진다 */
+  private async writeGoal(key: string, value: string | number): Promise<void> {
+    const tx = (await openTmsDb()).transaction('settings', 'readwrite')
+    await tx.store.put({ key, value })
+    await tx.store.put({ key: GOAL_KEYS.updatedAt, value: new Date().toISOString() })
+    await tx.done
+  }
+
+  goalDate = (): Promise<string | undefined> => this.read(GOAL_KEYS.date, isIsoDay)
+  setGoalDate = (v: string): Promise<void> => this.writeGoal(GOAL_KEYS.date, v)
   goalBufferDays = (): Promise<number | undefined> =>
-    this.read('goalBufferDays', isFiniteNumber)
-  setGoalBufferDays = (v: number): Promise<void> => this.write('goalBufferDays', v)
-  goalScope = (): Promise<string | undefined> => this.read('goalScope', isGoalScope)
-  setGoalScope = (v: string): Promise<void> => this.write('goalScope', v)
+    this.read(GOAL_KEYS.bufferDays, isFiniteNumber)
+  setGoalBufferDays = (v: number): Promise<void> => this.writeGoal(GOAL_KEYS.bufferDays, v)
+  goalScope = (): Promise<string | undefined> => this.read(GOAL_KEYS.scope, isGoalScope)
+  setGoalScope = (v: string): Promise<void> => this.writeGoal(GOAL_KEYS.scope, v)
   syncToken = (): Promise<string | undefined> => this.read('syncToken', isString)
   setSyncToken = (v: string): Promise<void> => this.write('syncToken', v)
   syncGistId = (): Promise<string | undefined> => this.read('syncGistId', isString)
@@ -257,6 +262,30 @@ class IdbSettings implements SettingsStore {
   setLastSyncAt = (v: string): Promise<void> => this.write('lastSyncAt', v)
   syncDeviceId = (): Promise<string | undefined> => this.read('syncDeviceId', isString)
   setSyncDeviceId = (v: string): Promise<void> => this.write('syncDeviceId', v)
+}
+
+interface SettingsObjectStore {
+  getAll(): Promise<{ key: string; value: unknown }[]>
+}
+
+/** settings 스토어 전체를 키→값 조회 함수로 (목표 키 네 개를 한 번에 읽기 위해) */
+async function settingRows(store: SettingsObjectStore): Promise<(key: string) => unknown> {
+  const rows = new Map((await store.getAll()).map((r) => [r.key, r.value]))
+  return (key) => rows.get(key)
+}
+
+/** 목표를 설정 행에 쓴다. 값이 없는 필드는 지워 받은 목표와 똑같이 만든다 */
+async function writeGoalRows(
+  store: {
+    put(row: { key: string; value: unknown }): Promise<unknown>
+    delete(key: string): Promise<unknown>
+  },
+  goal: GoalPrefs,
+): Promise<void> {
+  for (const [key, value] of goalPrefsRows(goal)) {
+    if (value === undefined) await store.delete(key)
+    else await store.put({ key, value })
+  }
 }
 
 class IdbStore implements Store {
@@ -295,7 +324,7 @@ class IdbStore implements Store {
 
   async exportAll(now: Date = new Date()): Promise<ExportBundle> {
     const d = await openTmsDb()
-    return {
+    const bundle: ExportBundle = {
       app: 'scripture-memory',
       version: SCHEMA_VERSION,
       exportedAt: now.toISOString(),
@@ -303,13 +332,16 @@ class IdbStore implements Store {
       reviews: await d.getAll('reviews'),
       learning: await d.getAll('learning'),
     }
+    const goal = readGoalPrefs(await settingRows(d.transaction('settings').store))
+    if (goal) bundle.goal = goal
+    return bundle
   }
 
   async importAll(input: unknown): Promise<void> {
     // 검증·마이그레이션을 먼저 끝낸다 — 저장소를 비운 뒤 실패하면 데이터가 사라진다
     const bundle = decodeBundle(input)
     const d = await openTmsDb()
-    const tx = d.transaction(['cards', 'reviews', 'learning'], 'readwrite')
+    const tx = d.transaction(['cards', 'reviews', 'learning', 'settings'], 'readwrite')
     await tx.objectStore('cards').clear()
     await tx.objectStore('reviews').clear()
     await tx.objectStore('learning').clear()
@@ -319,23 +351,29 @@ class IdbStore implements Store {
       await tx.objectStore('reviews').add(rest)
     }
     for (const l of bundle.learning) await tx.objectStore('learning').put(l)
+    // 목표가 든 백업은 목표도 되살린다. 목표가 없는 이전 백업은 이 기기 목표를 둔다
+    if (bundle.goal) await writeGoalRows(tx.objectStore('settings'), bundle.goal)
     await tx.done
   }
 
   async mergeAll(merge: (local: ExportBundle) => ExportBundle): Promise<ExportBundle> {
     const d = await openTmsDb()
-    const tx = d.transaction(['cards', 'reviews', 'learning'], 'readwrite')
+    const tx = d.transaction(['cards', 'reviews', 'learning', 'settings'], 'readwrite')
     const cards = tx.objectStore('cards')
     const reviews = tx.objectStore('reviews')
     const learning = tx.objectStore('learning')
-    const merged = merge({
+    const settings = tx.objectStore('settings')
+    const local: ExportBundle = {
       app: 'scripture-memory',
       version: SCHEMA_VERSION,
       exportedAt: new Date().toISOString(),
       cards: await cards.getAll(),
       reviews: await reviews.getAll(),
       learning: await learning.getAll(),
-    })
+    }
+    const localGoal = readGoalPrefs(await settingRows(settings))
+    if (localGoal) local.goal = localGoal
+    const merged = merge(local)
     await cards.clear()
     await reviews.clear()
     await learning.clear()
@@ -345,6 +383,9 @@ class IdbStore implements Store {
       await reviews.add(rest)
     }
     for (const l of merged.learning) await learning.put(l)
+    if (merged.goal && !sameGoalPrefs(merged.goal, localGoal)) {
+      await writeGoalRows(settings, merged.goal)
+    }
     await tx.done
     return merged
   }
