@@ -3,7 +3,7 @@
 이 레포의 PR을 자동 검수·머지하는 에이전트가 따르는 절차다. 사람이 누른 머지와
 에이전트 머지는 **GitHub 신원으로** 구분한다.
 
-- 에이전트 머지: `merged_by` = `pinky-review-quantsquirrel[bot]` (GitHub App)
+- 에이전트 머지: `merged_by` = `pinky-merge[bot]` (GitHub App)
 - 사람 머지: `merged_by` = `quantsquirrel`
 
 에이전트는 `quantsquirrel` 개인 토큰으로 머지하지 않는다. 그러면 위 구분이 무너진다.
@@ -95,9 +95,9 @@
 App 신원 (공개값):
 
 ```bash
-APP_ID=5643359                               # pinky-review-quantsquirrel
-BOT_NAME='pinky-review-quantsquirrel[bot]'
-BOT_EMAIL='353369846+pinky-review-quantsquirrel[bot]@users.noreply.github.com'
+APP_ID=5643359                               # pinky-merge
+BOT_NAME='pinky-merge[bot]'
+BOT_EMAIL='353369846+pinky-merge[bot]@users.noreply.github.com'
 ```
 
 비밀값(에이전트 쪽 비밀 저장소에 둔다): `INSTALLATION_ID`, 개인 키 PEM(`APP_KEY_PEM`은
