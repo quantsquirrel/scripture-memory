@@ -125,6 +125,29 @@ test.describe('전체 흐름 왕복', () => {
     await expect(page.locator('h2.prompt-main')).toHaveText(newRef)
   })
 
+  /**
+   * 회귀(사용자 보고 2026-11-06): 목록에서 뒤쪽 과정(DEP)을 골라 졸업하면 '다음 구절'이
+   * 학습 순서의 첫 빈 자리(5확신·8동행)로 되돌아갔다. 방금 구절 바로 뒤여야 한다.
+   */
+  test('뒤쪽 과정에서 졸업하면 다음 구절은 그 바로 뒤 구절이다', async ({ page }) => {
+    await page.goto(`${BASE}#/learn/D1-1b`)
+    await expect(page.getByText('낭송 규칙 (TMS)')).toBeVisible()
+    const verseText = (await page.locator('p.verse').first().innerText()).trim()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
+    await page.getByRole('button', { name: '낭송 완료' }).click()
+    await page.locator('textarea.typing-input').fill(verseText)
+    await page.getByRole('button', { name: /채점/ }).click()
+    await page.getByRole('button', { name: '졸업하고 복습 큐에 추가' }).click()
+    await expect(page.getByText(/졸업!/)).toBeVisible()
+
+    // D1-1b(요일 5:11-12) 다음은 D1-2a(요일 5:13) — 예전에는 5확신 첫 구절(요일 5:11-12)
+    await expect(page.getByRole('button', { name: '다음 구절: 요일 5:13' })).toBeVisible()
+
+    // 홈의 다음 구절도 같은 자리를 가리킨다
+    await page.goto(`${BASE}#/home`)
+    await expect(page.getByRole('button', { name: /다음 구절: 요일 5:13/ })).toBeVisible()
+  })
+
   test('v1 백업 파일도 가져올 수 있다 (마이그레이션 경로)', async ({ page }) => {
     await page.goto(`${BASE}#/settings`)
     // 저장소의 골든 v1 fixture를 그대로 올린다

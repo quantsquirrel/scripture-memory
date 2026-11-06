@@ -9,6 +9,7 @@ import {
   isGoalScope,
 } from '../domain/goal'
 import { isGraduated, isInProgress, type LearnProgress } from '../domain/ladder'
+import { latestGraduatedId, pickNextVerse } from '../domain/nextVerse'
 import { LEARN_AHEAD_MS, orderQueue } from '../domain/policy'
 import type { Store } from '../ports/repositories'
 
@@ -79,6 +80,8 @@ export interface HomeData {
   nextDue: string | null
   graduatedIds: ReadonlySet<string>
   inProgress: LearnProgress | undefined
+  /** 다음 새 구절 — 가장 최근에 졸업한 구절 뒤에서부터 (진행 중인 구절은 이어 하기가 맡는다) */
+  nextNewId: string | null
   newThisWeek: number
   goal: GoalInfo
 }
@@ -94,6 +97,11 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     readGoalSettings(store),
   ])
   const weekAgo = new Date(now.getTime() - 7 * 86400_000).toISOString()
+  const graduatedIds = new Set(learning.filter(isGraduated).map((l) => l.verseId))
+  const inProgress = learning.find(isInProgress)
+  const order = VERSES.map((v) => v.id)
+  const skip = new Set(graduatedIds)
+  if (inProgress) skip.add(inProgress.verseId)
   return {
     now: now.getTime(),
     due: due.length,
@@ -102,8 +110,9 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     overdue: due.filter((c) => c.card.due < midnight).length,
     todayReviews: today.length,
     nextDue,
-    graduatedIds: new Set(learning.filter(isGraduated).map((l) => l.verseId)),
-    inProgress: learning.find(isInProgress),
+    graduatedIds,
+    inProgress,
+    nextNewId: pickNextVerse(order, skip, latestGraduatedId(order, learning)),
     newThisWeek: learning.filter((l) => isGraduated(l) && l.updatedAt >= weekAgo).length,
     goal: goalOf(settings, learning, now),
   }
