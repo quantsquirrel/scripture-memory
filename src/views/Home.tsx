@@ -36,7 +36,7 @@ export function Home({
         }
       : null
 
-  const nextNew = VERSES.find((v) => !graduatedIds.has(v.id) && v.id !== inProgress?.verseId)
+  const nextNew = data.nextNewId ? VERSE_BY_ID[data.nextNewId] : undefined
   const next: LearnTarget | null = nextNew
     ? { id: nextNew.id, label: `${nextNew.refAbbr} (${collectionOf(nextNew).short})` }
     : null

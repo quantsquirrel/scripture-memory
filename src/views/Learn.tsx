@@ -14,6 +14,7 @@ import {
 } from '../data/verses'
 import { gradeTyping, type TypingGrade } from '../domain/grading'
 import { isGraduated, type LadderCommand, STEP_TITLE, stepOrdinal } from '../domain/ladder'
+import { pickNextVerse } from '../domain/nextVerse'
 import { useLearnProgress } from './hooks'
 import { FirstLetterStep, GraduatedStep, IntroStep, TypingStep } from './learn/steps'
 
@@ -61,9 +62,15 @@ export function Learn({
     if (step !== 'graduated') return
     void getAllLearning().then((ls) => {
       const grad = new Set(ls.filter(isGraduated).map((l) => l.verseId))
-      setNextVerse(VERSES.find((v) => !grad.has(v.id)) ?? null)
+      // 방금 졸업한 구절 바로 뒤에서부터 — 목록에서 골라 시작한 과정을 그대로 이어 간다
+      const next = pickNextVerse(
+        VERSES.map((v) => v.id),
+        grad,
+        verseId,
+      )
+      setNextVerse(next ? (VERSE_BY_ID[next] ?? null) : null)
     })
-  }, [step])
+  }, [step, verseId])
 
   if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
   if (step === null) return <p className="muted loading">불러오는 중…</p>
