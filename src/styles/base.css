@@ -126,7 +126,8 @@ main {
   letter-spacing: -0.01em;
 }
 
-/* Ivan 워드마크 — i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다.
+/* Ivan 워드마크 — i는 앱 아이콘의 i를 줄인 SVG 마크다(기하는 App.tsx). 후광 없는 금색 점을
+   기둥 정중앙에 올리고, 기둥은 'van'의 x높이·굵기에 맞춰 기준선에 선다.
    자간을 벌리는 곳은 이 워드마크 하나뿐이다(라벨·태그는 자간을 벌리지 않는다) */
 .brand-wordmark {
   display: inline-flex;
@@ -136,11 +137,16 @@ main {
   color: var(--color-text);
 }
 
+/*
+ * 크기는 viewBox(257×774, 1단위 = 0.001em)와 같은 비율이어야 한다 — 다르면 SVG가 여백을 두고
+ * 줄어들어 기둥이 기준선에서 뜬다. flex 항목인 SVG는 상자 아래 끝을 기준선으로 삼는다.
+ * overflow: visible은 기준선 아래로 넘치는 기둥의 둥근 끝(0.01em)을 자르지 않기 위해서다.
+ * 오른쪽 여백은 'van'의 자간과 같다 — 글자 뒤에 붙는 자간을 i 뒤에도 같은 폭으로 둔다.
+ */
 .brand-i-icon {
-  width: 0.38em;
-  height: 1.05em;
-  display: inline-block;
-  vertical-align: -0.15em;
+  width: 0.257em;
+  height: 0.774em;
+  overflow: visible;
   margin-right: 0.04em;
   flex-shrink: 0;
 }

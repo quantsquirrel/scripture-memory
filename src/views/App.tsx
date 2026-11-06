@@ -14,18 +14,23 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        {/* 워드마크: i를 SVG 벡터 마크로 그려 등불 점(악센트 금색)을 기둥 정중앙에 올린다 — DESIGN.md Overview의 시각 은유 */}
+        {/*
+          워드마크: i는 앱 아이콘의 i를 그대로 줄인 SVG 마크다 — 등불 점(악센트 금색)을 기둥 정중앙에
+          올린다(DESIGN.md Overview의 시각 은유). 좌표 1단위 = 0.001em, y=0이 기준선이다.
+          - 기둥: 'van'(Pretendard Bold)의 i와 같은 굵기 144·글자 폭 257. 기준선에서 x높이 530까지
+            서되, 둥근 끝이 짧아 보이지 않게 'o'처럼 위아래로 10씩 넘친다.
+          - 점: 지름 = 기둥 굵기, 점과 기둥 사이 90(굵기의 0.62배) — 둘 다 아이콘 비율. 후광은 없다.
+        */}
         <h1 className="brand" aria-label="Ivan">
           <span aria-hidden="true" className="brand-wordmark">
             <svg
               className="brand-i-icon"
-              viewBox="0 0 10 24"
+              viewBox="0 -774 257 774"
               aria-hidden="true"
               focusable="false"
             >
-              <circle cx="5" cy="4.5" r="3" fill="var(--color-accent)" />
-              <circle cx="5" cy="4.5" r="5.5" fill="var(--color-accent)" opacity="0.25" />
-              <rect x="3.2" y="10.5" width="3.6" height="13.5" rx="1.8" fill="currentColor" />
+              <circle cx="128.5" cy="-702" r="72" fill="var(--color-accent)" />
+              <rect x="56.5" y="-540" width="144" height="550" rx="72" fill="currentColor" />
             </svg>
             <span className="brand-tail">van</span>
           </span>
