@@ -92,8 +92,16 @@
 
 ## App 토큰 발급
 
-필요한 값(에이전트 쪽 비밀 저장소에 둔다): `APP_ID`, `INSTALLATION_ID`, 개인 키 PEM 경로.
-설치 토큰은 1시간 유효하다. 실행마다 새로 받는다.
+App 신원 (공개값):
+
+```bash
+APP_ID=5643359                               # pinky-review-quantsquirrel
+BOT_NAME='pinky-review-quantsquirrel[bot]'
+BOT_EMAIL='353369846+pinky-review-quantsquirrel[bot]@users.noreply.github.com'
+```
+
+비밀값(에이전트 쪽 비밀 저장소에 둔다): `INSTALLATION_ID`, 개인 키 PEM(`APP_KEY_PEM`은
+그 파일 경로). 설치 토큰은 1시간 유효하다. 실행마다 새로 받는다.
 
 ```bash
 b64() { openssl base64 -A | tr '+/' '-_' | tr -d '='; }
