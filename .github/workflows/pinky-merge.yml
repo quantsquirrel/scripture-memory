@@ -1,0 +1,101 @@
+name: Pinky 머지
+
+# 에이전트(Pinky)가 검수를 마치고 PR에 `pinky:approved` 라벨을 붙이면, GitHub App
+# pinky-merge 신원으로 검수 판정(pinky/review 상태)을 head SHA에 남기고 auto-merge를 켠다.
+# 그래서 에이전트 머지는 merged_by = pinky-merge[bot], 사람 머지는 quantsquirrel로 갈린다.
+#
+# App 개인 키는 이 저장소 secret에만 있다 — 에이전트는 키를 갖지 않는다.
+# pull_request_target이라 secret을 쓸 수 있지만, PR 코드는 체크아웃하지 않고 API만 부른다.
+# 절차 전체: .github/agent-merge-runbook.md
+
+on:
+  pull_request_target:
+    types: [labeled, synchronize]
+
+permissions: {}
+
+concurrency:
+  group: pinky-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  BOT_NAME: pinky-merge[bot]
+  BOT_EMAIL: 353369846+pinky-merge[bot]@users.noreply.github.com
+  # 이 경로를 건드리면 검수만 하고 머지는 사람이 한다 (CLAUDE.md 하드 경계·배포 설정)
+  HIGH_RISK: '^(src/domain/|src/app/review\.ts$|src/adapters/|src/data/|tests/fixtures/|\.github/|package(-lock)?\.json$)'
+
+jobs:
+  approve:
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'pinky:approved' &&
+      github.event.sender.login == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.PINKY_MERGE_CLIENT_ID }}
+          private-key: ${{ secrets.PINKY_MERGE_APP_KEY }}
+      - name: 판정 기록 · auto-merge
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          R: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          now=$(gh pr view "$PR" -R "$R" --json headRefOid,isDraft -q '"\(.headRefOid) \(.isDraft)"')
+          if [ "$now" != "$SHA false" ]; then
+            echo "검수한 커밋($SHA)이 지금 head가 아니거나 draft다: $now — 다시 검수해야 한다"
+            exit 1
+          fi
+
+          high=$(gh pr diff "$PR" -R "$R" --name-only | grep -E "$HIGH_RISK" || true)
+          if [ -n "$high" ]; then
+            gh api "repos/$R/statuses/$SHA" -f state=success -f context=pinky/review \
+              -f description="검수 통과 — 사람 머지 대기 (high-risk 경로)" >/dev/null
+            echo "high-risk 경로라 auto-merge를 켜지 않는다:"
+            echo "$high"
+            exit 0
+          fi
+
+          gh api "repos/$R/statuses/$SHA" -f state=success -f context=pinky/review \
+            -f description="검수 통과 — auto-merge" >/dev/null
+          # 원래 커밋 본문(decision: 블록 포함)을 그대로 두고 트레일러만 덧붙인다
+          body=$(gh pr view "$PR" -R "$R" --json commits -q '
+            if (.commits | length) == 1 then .commits[0].messageBody
+            else [.commits[] | "* " + .messageHeadline + "\n\n" + .messageBody] | join("\n\n") end')
+          # git interpret-trailers는 쓰지 않는다 — 마지막 단락이 decision: 블록이면 그것을
+          # 트레일러로 읽고 줄을 합쳐 버린다. 마지막 단락이 전부 "Key: 값" 줄일 때만 이어 붙인다.
+          trailers="Reviewed-by: $BOT_NAME <$BOT_EMAIL>"$'\n'"Merged-by-agent: pinky"
+          last=$(printf '%s\n' "$body" | awk 'BEGIN { RS = "" } { p = $0 } END { print p }')
+          if [ -z "$body" ]; then
+            body=$trailers
+          elif printf '%s\n' "$last" | grep -qvE '^[A-Za-z][A-Za-z0-9-]*: .+$'; then
+            body=$body$'\n\n'$trailers
+          else
+            body=$body$'\n'$trailers
+          fi
+          gh pr merge "$PR" -R "$R" --auto --squash --match-head-commit "$SHA" --body "$body"
+
+  # 승인 뒤 새 커밋이 오면 승인을 거둔다. 새 SHA에는 pinky/review가 없으므로 다시 검수해야 머지된다.
+  reset:
+    if: >-
+      github.event.action == 'synchronize' &&
+      contains(github.event.pull_request.labels.*.name, 'pinky:approved')
+    runs-on: ubuntu-latest
+    steps:
+      - id: app
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.PINKY_MERGE_CLIENT_ID }}
+          private-key: ${{ secrets.PINKY_MERGE_APP_KEY }}
+      - name: 승인 라벨·auto-merge 해제
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          R: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          gh api -X DELETE "repos/$R/issues/$PR/labels/pinky%3Aapproved" >/dev/null
+          gh pr merge "$PR" -R "$R" --disable-auto || true
