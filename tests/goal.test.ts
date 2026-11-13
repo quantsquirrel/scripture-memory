@@ -29,19 +29,21 @@ describe('computeGoal', () => {
     expect(GOAL_VERSE_COUNT).toBe(315)
   })
 
-  it('학습 전: 정착 기간을 뺀 학습 가능일로 나눈 필요 페이스', () => {
+  it('기본 정착 기간은 0일이다 (FSRS 분산을 깨지 않고 목표일까지 고르게 나눈다)', () => {
+    expect(DEFAULT_REVIEW_BUFFER_DAYS).toBe(0)
     const g = computeGoal('2026-08-20', [], now)
     expect(g.remaining).toBe(GOAL_VERSE_COUNT)
     expect(g.daysLeft).toBeGreaterThanOrEqual(34)
-    expect(g.learnDaysLeft).toBe(g.daysLeft - DEFAULT_REVIEW_BUFFER_DAYS)
-    expect(g.requiredPace).toBeCloseTo(GOAL_VERSE_COUNT / g.learnDaysLeft)
+    expect(g.learnDaysLeft).toBe(g.daysLeft)
+    expect(g.requiredPace).toBeCloseTo(GOAL_VERSE_COUNT / g.daysLeft)
     expect(g.past).toBe(false)
   })
 
-  it('정착 기간은 인자로 조절되고 학습일은 최소 1로 클램프', () => {
-    const g0 = computeGoal('2026-08-20', [], now, 0)
-    expect(g0.learnDaysLeft).toBe(g0.daysLeft)
-    const gLate = computeGoal('2026-08-20', [], new Date('2026-08-18T08:00:00+09:00'))
+  it('정착 기간을 켠 경우 학습 가능일에서 빼고 최소 1로 클램프한다', () => {
+    const g7 = computeGoal('2026-08-20', [], now, 7)
+    expect(g7.learnDaysLeft).toBe(g7.daysLeft - 7)
+    expect(g7.requiredPace).toBeCloseTo(GOAL_VERSE_COUNT / g7.learnDaysLeft)
+    const gLate = computeGoal('2026-08-20', [], new Date('2026-08-18T08:00:00+09:00'), 7)
     expect(gLate.learnDaysLeft).toBe(1)
     expect(gLate.requiredPace).toBeCloseTo(gLate.remainingAtDayStart)
   })
@@ -94,9 +96,11 @@ describe('computeGoal', () => {
     const g = computeGoal('2026-08-20', learning, now)
     expect(g.remaining).toBe(8)
     expect(g.recentPace).toBeCloseTo(1)
-    // 예상 완료: 7/17 정오 + 8일 = 7/25. 학습 마감: 8/20 − 7일 = 8/13
+    // 예상 완료: 7/17 정오 + 8일 = 7/25. 기본 정착 0일 → 목표일 8/20 대비 26일 여유
     expect(g.projectedDone).toBe('2026-07-25')
-    expect(g.aheadDays).toBe(19)
+    expect(g.aheadDays).toBe(26)
+    // 정착 7일이면 학습 마감 8/13 대비 19일 여유
+    expect(computeGoal('2026-08-20', learning, now, 7).aheadDays).toBe(19)
   })
 
   it('목표일 당일도 1일로 계산한다', () => {

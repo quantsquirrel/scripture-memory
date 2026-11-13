@@ -3,8 +3,8 @@ import { required } from './invariant'
 import { isGraduated, type LearnProgress } from './ladder'
 
 export const DEFAULT_GOAL_DATE = '2026-08-26'
-/** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 복습 정착 기간 */
-export const DEFAULT_REVIEW_BUFFER_DAYS = 7
+/** 새 구절 학습을 목표일보다 며칠 먼저 끝내고 남기는 선택적 복습 정착 기간 (기본 0 — FSRS 분산 유지) */
+export const DEFAULT_REVIEW_BUFFER_DAYS = 0
 
 /**
  * 목표 범위: 학습 순서상 어느 과정까지 완결할지. 앞 과정을 모두 포함하는 누적 범위다.
