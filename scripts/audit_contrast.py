@@ -110,6 +110,7 @@ MIX_CHECKS: list[tuple[str, str, float, str, float, str]] = [
     ("accent-text", "text", 0.12, "accent", AA_TEXT, "주 버튼 hover — 금빛에 본문색 12%"),
     ("accent", "accent", 0.14, "panel", AA_UI, "모바일 독 활성 아이콘 — panel 독 위 금빛 14% 번짐 (.tab-nav a.active)"),
     ("accent", "accent", 0.09, "bg", AA_TEXT, "PC 헤더 활성 탭 이름 — 금빛 9% 번짐"),
+    ("accent-text", "accent-text", 0.10, "accent", AA_TEXT, "주 버튼 안 키 힌트 — 금빛 위 잉크 10% 바탕 (.btn-primary .key-hint)"),
 ]
 
 

@@ -11,6 +11,10 @@
   padding-bottom: var(--panel-pad);
 }
 
+.tech-details[open] > :last-child {
+  margin-bottom: 0;
+}
+
 .tech-details summary {
   display: flex;
   align-items: center;

@@ -38,11 +38,11 @@
 
 /* 첫글자 보드의 어절 버튼은 본문 흐름을 유지해야 해서 시각 크기를 키울 수 없다.
  * 대신 누를 수 있는 영역을 투명하게 넓힌다. */
-.fl-word {
+.fl-word:not(.fl-revealed) {
   position: relative;
 }
 
-.fl-word::after {
+.fl-word:not(.fl-revealed)::after {
   content: '';
   position: absolute;
   inset: 50% 0 0 0;
