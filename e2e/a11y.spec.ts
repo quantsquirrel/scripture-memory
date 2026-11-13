@@ -44,7 +44,7 @@ async function measureTargets(page: import('@playwright/test').Page) {
 }
 
 test.describe('터치 타깃 44×44px', () => {
-  for (const route of ['home', 'browse', 'settings'] as const) {
+  for (const route of ['home', 'browse', 'settings', 'recalibrate'] as const) {
     test(`${route} 화면의 모든 대화형 요소가 44px 이상`, async ({ page }) => {
       await page.goto(`${BASE}#/${route}`)
       await expect(page.locator('nav.tab-nav')).toBeVisible()

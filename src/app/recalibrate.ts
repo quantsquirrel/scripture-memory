@@ -9,8 +9,8 @@ import { bumpRevision } from './revision'
  * 말씀 상태 개정 — 오래 쉰 뒤 밀린 카드를 구절 단위로 한 번에 정리한다.
  *
  * 카드 3장을 따로 넘기는 대신 구절 본문을 한 번 떠올려 보고 셋 중 하나로 판정한다.
- * - solid: 낭송 자가 채점 '좋음'
- * - shaky: 낭송 자가 채점 '다시' (재학습 단계로 돌아가 며칠 안에 다시 나온다)
+ * - solid: 기한이 지난 낭송 카드에 자가 채점 '좋음' (미래 일정 카드는 유지)
+ * - shaky: 낭송 카드에 자가 채점 '다시' (미래 일정이라도 재학습 단계로 보낸다)
  * - forgotten: 카드를 지우고 사다리 첫글자 단계로 강등
  *
  * 자가 채점은 정책이 그 회차를 recite로 정한 카드에만 매긴다. 말씀→장절 방향과
@@ -33,9 +33,25 @@ export interface RecalibrateResult {
   demoted: boolean
 }
 
+export type VerseRecalibrateKind = 'recite' | 'future' | 'auditOnly' | 'none'
+
 async function cardsOf(store: Store, verseId: string): Promise<StoredCard[]> {
   const found = await Promise.all(DIRECTIONS.map((d) => store.cards.get(cardKey(verseId, d))))
   return found.filter((c): c is StoredCard => c !== undefined)
+}
+
+/** 구절이 지금 자가 판정 대상인지(또는 전부 객관 채점 차례·기한 전인지) 살핀다 */
+export async function verseRecalibrateKind(
+  store: Store,
+  verseId: string,
+  now: Date = new Date(),
+): Promise<VerseRecalibrateKind> {
+  const cards = await cardsOf(store, verseId)
+  if (cards.length === 0) return 'none'
+  const reciteCards = cards.filter((c) => reviewMode(c.direction, c.card.reps) === 'recite')
+  if (reciteCards.length === 0) return 'auditOnly'
+  const iso = now.toISOString()
+  return reciteCards.some((c) => c.card.due <= iso) ? 'recite' : 'future'
 }
 
 export async function recalibrateVerse(
@@ -53,11 +69,14 @@ export async function recalibrateVerse(
     await store.demoteToLadder(verseId, 'firstLetter', now)
     result.demoted = true
   } else {
+    const iso = now.toISOString()
     for (const card of cards) {
       if (reviewMode(card.direction, card.card.reps) !== 'recite') {
         result.deferred++
         continue
       }
+      // 아직 기한 전인 카드는 '온전히 기억남'에서 건드리지 않는다(불필요하게 감사 회차에 다다르지 않게)
+      if (verdict === 'solid' && card.card.due > iso) continue
       await submitReview(
         store,
         card,
@@ -71,7 +90,7 @@ export async function recalibrateVerse(
   return result
 }
 
-/** 개정 단위 — 네비게이토 커리큘럼의 섹션 하나 (5확신·8동행·60구절 A~E·DEP 1~8) */
+/** 개정 단위 — 네비게이토 커리큘럼의 섹션 하나 (5확신·8동행·60구절 A~E·DEP 1~8·180구절 1~5) */
 export interface RecalibrateUnit {
   key: string
   label: string
@@ -81,11 +100,12 @@ export interface RecalibrateUnit {
   due: number
 }
 
-const UNIT_COLLECTIONS = ['AS', 'LV', 'TMS60', 'DEP'] as const
+const UNIT_COLLECTIONS = ['AS', 'LV', 'TMS60', 'DEP', 'TMS180'] as const
 
 function unitLabel(s: SectionInfo, i: number): string {
   if (s.collection === 'TMS60') return `60구절 ${s.key}. ${s.title}`
   if (s.collection === 'DEP') return `DEP ${i + 1}. ${s.title}`
+  if (s.collection === 'TMS180') return `180구절 ${i + 1}. ${s.title}`
   return s.title
 }
 

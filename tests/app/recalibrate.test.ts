@@ -5,7 +5,11 @@ import { describe, expect, it } from 'vitest'
 
 import { idbStore } from '../../src/adapters/indexeddb'
 import { MemoryStore } from '../../src/adapters/memory'
-import { loadRecalibrateUnits, recalibrateVerse } from '../../src/app/recalibrate'
+import {
+  loadRecalibrateUnits,
+  recalibrateVerse,
+  verseRecalibrateKind,
+} from '../../src/app/recalibrate'
 import { runLadder, submitReview } from '../../src/app/review'
 import { getRevision } from '../../src/app/revision'
 import { cardKey, DIRECTIONS, type StoredCard } from '../../src/domain/card'
@@ -141,6 +145,50 @@ describe('recalibrateVerse — forgotten', () => {
   })
 })
 
+describe('recalibrateVerse — 기한 전 카드', () => {
+  it('기한이 남은 낭송 카드는 solid에서 건드리지 않고, shaky에서는 재학습으로 보낸다', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    const at = await reviewUntil(store, 3)
+    const beforeTopic = await cardOf(store, 'topic')
+    const beforeRef = await cardOf(store, 'ref')
+    // 마지막 복습 직후라 아직 due 전이다
+    expect(beforeTopic.card.due > at.toISOString()).toBe(true)
+    const countBefore = await store.reviews.count()
+
+    const solid = await recalibrateVerse(store, V, 'solid', at)
+    expect(solid).toEqual({ rated: 0, deferred: 1, demoted: false })
+    expect(await store.reviews.count()).toBe(countBefore)
+    expect((await cardOf(store, 'topic')).card).toEqual(beforeTopic.card)
+    expect((await cardOf(store, 'ref')).card).toEqual(beforeRef.card)
+
+    const shaky = await recalibrateVerse(store, V, 'shaky', at)
+    expect(shaky).toEqual({ rated: 2, deferred: 1, demoted: false })
+    for (const dir of ['topic', 'ref'] as const) {
+      const c = await cardOf(store, dir)
+      expect(c.card.state).toBe(State.Relearning)
+      expect(c.card.lapses).toBe(1)
+    }
+  })
+})
+
+describe('verseRecalibrateKind', () => {
+  it('due 낭송·기한 전·객관 감사 전용·미졸업을 구분한다', async () => {
+    const store = new MemoryStore()
+    expect(await verseRecalibrateKind(store, V, NOW)).toBe('none')
+
+    await graduate(store)
+    expect(await verseRecalibrateKind(store, V, later(NOW))).toBe('auditOnly')
+
+    const at3 = await reviewUntil(store, 3)
+    expect(await verseRecalibrateKind(store, V, at3)).toBe('future')
+    expect(await verseRecalibrateKind(store, V, later(at3))).toBe('recite')
+
+    const at4 = await reviewUntil(store, 4)
+    expect(await verseRecalibrateKind(store, V, later(at4))).toBe('auditOnly')
+  })
+})
+
 describe('recalibrateVerse — 경계', () => {
   it('정책이 타이핑 감사를 요구하는 회차는 자가 판정으로 넘기지 않는다 (경계 2)', async () => {
     const store = new MemoryStore()
@@ -259,10 +307,11 @@ describe('IndexedDB 어댑터 — demoteToLadder', () => {
 })
 
 describe('loadRecalibrateUnits', () => {
-  it('5확신·8동행·60구절 A~E·DEP 1~8 단위로, 졸업한 구절과 밀린 카드만 센다', async () => {
+  it('5확신·8동행·60구절 A~E·DEP 1~8·180구절 1~5 단위로, 졸업한 구절과 밀린 카드만 센다', async () => {
     const store = new MemoryStore()
     await graduate(store)
     await graduate(store, 'AS2a', new Date(NOW.getTime() + 10 * DAY))
+    await graduate(store, 'T1-1a')
 
     const units = await loadRecalibrateUnits(store, new Date(NOW.getTime() + DAY))
 
@@ -282,10 +331,23 @@ describe('loadRecalibrateUnits', () => {
       'D6',
       'D7',
       'D8',
+      'T1',
+      'T2',
+      'T3',
+      'T4',
+      'T5',
     ])
     const as = required(units[0])
     expect(as.verseIds).toEqual(['AS1a', 'AS2a'])
     expect(as.due).toBe(3)
-    expect(units.slice(1).every((u) => u.verseIds.length === 0 && u.due === 0)).toBe(true)
+    const t1 = required(units.find((u) => u.key === 'T1'))
+    expect(t1.label).toBe('180구절 1. 하나님을 알아감')
+    expect(t1.verseIds).toEqual(['T1-1a'])
+    expect(t1.due).toBe(3)
+    expect(
+      units
+        .filter((u) => u.key !== 'AS' && u.key !== 'T1')
+        .every((u) => u.verseIds.length === 0 && u.due === 0),
+    ).toBe(true)
   })
 })
