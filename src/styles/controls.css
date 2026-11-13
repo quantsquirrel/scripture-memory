@@ -49,6 +49,14 @@
   margin-top: var(--space-8);
 }
 
+.stage-foot > p {
+  margin-bottom: 0;
+}
+
+.stage-foot > p + .rating-bar {
+  margin-top: var(--space-6);
+}
+
 .rate {
   position: relative;
   display: flex;
@@ -225,6 +233,10 @@
   margin-top: var(--space-8);
   padding-top: var(--space-6);
   border-top: 1px solid var(--color-line);
+}
+
+.danger-zone > :last-child {
+  margin-bottom: 0;
 }
 
 @media (hover: hover) {

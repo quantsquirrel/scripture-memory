@@ -78,6 +78,13 @@
   animation: reveal var(--dur-short) var(--ease-out) both;
 }
 
+@media (max-width: 768px) {
+  .answer {
+    margin-top: var(--space-8);
+    padding-top: var(--space-8);
+  }
+}
+
 .answer-head {
   font-size: var(--text-xl);
   letter-spacing: -0.015em;
@@ -320,6 +327,20 @@
   line-height: 1.6;
   text-align: center;
   color: var(--color-muted);
+}
+
+/* 금색 주 버튼 안에서는 버튼 글자색(--color-accent-text)을 그대로 써서 대비를 지킨다 */
+.btn-primary .key-hint {
+  color: inherit;
+  border-color: color-mix(in srgb, currentColor 55%, transparent);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.btn-primary:has(> .key-hint) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
 }
 
 @media (hover: none) {
