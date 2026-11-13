@@ -114,6 +114,20 @@ export interface LearnTarget {
   label: string
 }
 
+/**
+ * 홈의 새 구절 카드 하단 보조 문구.
+ * 정착 기간(bufferDays)이 0인 기본 상태에서는 FSRS 분산을 깨는 별도 마감을 두지 않는다.
+ * 사용자가 시험 대비로 버퍼를 켠 경우에만 마감 전후를 구분해 알린다.
+ */
+export function paceNote(goal: GoalInfo, learnEndLabel: string): string | null {
+  if (goal.past) return '기한 없이 새기는 시기, 마음에 오래 남는 속도로'
+  if (goal.remaining === 0 || goal.bufferDays <= 0) return null
+  if (goal.daysLeft <= goal.bufferDays) {
+    return `새 구절 마감(${learnEndLabel})이 지나 마지막 ${goal.bufferDays}일 복습 정착 기간입니다`
+  }
+  return `새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`
+}
+
 export function NewVersePanel({
   goal,
   learnEndLabel,
@@ -134,6 +148,7 @@ export function NewVersePanel({
 }) {
   // 등불은 하나: 이어 할 구절이 있으면 그것이, 없으면 다음 구절이 켜진다
   const lit: 'resume' | 'next' | null = lamp ? (resume ? 'resume' : 'next') : null
+  const note = paceNote(goal, learnEndLabel)
   return (
     <section className="panel">
       <h2>새 구절 학습</h2>
@@ -194,10 +209,12 @@ export function NewVersePanel({
       )}
       <p className="muted small panel-note">
         이번 주 새 구절 {newThisWeek}개
-        <br />
-        {goal.past
-          ? '기한 없이 새기는 시기, 마음에 오래 남는 속도로'
-          : `새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`}
+        {note !== null && (
+          <>
+            <br />
+            {note}
+          </>
+        )}
       </p>
     </section>
   )

@@ -3,6 +3,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { bumpRevision, getRevision, notifying, subscribeRevision } from '../src/app/revision'
+import { computeGoal } from '../src/domain/goal'
+import { paceNote } from '../src/views/home/panels'
 import { parseHash, type Route, TABS, toHash } from '../src/views/router'
 import { installHint } from '../src/views/usePwaInstall'
 
@@ -115,5 +117,39 @@ describe('홈 화면 설치 안내', () => {
   it('이미 설치했거나 닫았으면 보이지 않는다', () => {
     expect(installHint({ ...base, canPrompt: true, standalone: true })).toBeNull()
     expect(installHint({ ...base, ios: true, dismissed: true })).toBeNull()
+  })
+})
+
+describe('홈 목표 보조 문구 (paceNote)', () => {
+  it('기본 정착 기간(0일)에서는 복습 굳히기 문구를 숨긴다', () => {
+    const g = computeGoal('2026-11-22', [], new Date('2026-11-13T12:00:00+09:00'))
+    expect(paceNote(g, '11/22')).toBeNull()
+  })
+
+  it('목표일이 지났으면 기한 없는 시기 문구를 돌려준다', () => {
+    const g = computeGoal('2026-08-26', [], new Date('2026-11-13T12:00:00+09:00'))
+    expect(paceNote(g, '8/26')).toBe('기한 없이 새기는 시기, 마음에 오래 남는 속도로')
+  })
+
+  it('정착 기간을 켰고 마감 전이면 마감일 안내를 보여준다', () => {
+    const g = computeGoal('2026-11-22', [], new Date('2026-11-13T12:00:00+09:00'), 7)
+    expect(paceNote(g, '11/15')).toBe('새 구절은 11/15까지, 마지막 7일은 복습으로 굳히기')
+  })
+
+  it('정착 기간을 켰고 마감 당일(11/15)까지도 마감일 안내를 유지한다', () => {
+    const g = computeGoal('2026-11-22', [], new Date('2026-11-15T20:00:00+09:00'), 7)
+    expect(paceNote(g, '11/15')).toBe('새 구절은 11/15까지, 마지막 7일은 복습으로 굳히기')
+  })
+
+  it('정착 기간 안에 들어오면 마감이 지났음을 알린다', () => {
+    const g = computeGoal('2026-11-22', [], new Date('2026-11-16T09:00:00+09:00'), 7)
+    expect(paceNote(g, '11/15')).toBe(
+      '새 구절 마감(11/15)이 지나 마지막 7일 복습 정착 기간입니다',
+    )
+  })
+
+  it('목표 범위를 다 외웠으면 정착 기간이 있어도 마감 문구를 숨긴다', () => {
+    const g = computeGoal('2026-11-22', [], new Date('2026-11-13T12:00:00+09:00'), 7)
+    expect(paceNote({ ...g, remaining: 0 }, '11/15')).toBeNull()
   })
 })
