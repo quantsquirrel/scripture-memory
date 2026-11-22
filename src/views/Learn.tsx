@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 
 import { getAllLearning, runLadder } from '../app'
 import { Chevron } from '../components/Chevron'
@@ -16,6 +16,7 @@ import { gradeTyping, type TypingGrade } from '../domain/grading'
 import { isGraduated, type LadderCommand, STEP_TITLE, stepOrdinal } from '../domain/ladder'
 import { pickNextVerse } from '../domain/nextVerse'
 import { useLearnProgress } from './hooks'
+import { nextAttempt, RESUMED_ATTEMPT } from './learn/attempt'
 import { FirstLetterStep, GraduatedStep, IntroStep, TypingStep } from './learn/steps'
 
 export function Learn({
@@ -31,9 +32,7 @@ export function Learn({
 }) {
   const verse = VERSE_BY_ID[verseId]
   const { step, setStep } = useLearnProgress(verseId)
-  const [peeks, setPeeks] = useState(0)
-  const [flTry, setFlTry] = useState(0)
-  const [flResult, setFlResult] = useState<number | null>(null)
+  const [fl, flDispatch] = useReducer(nextAttempt, RESUMED_ATTEMPT)
   const [attempt, setAttempt] = useState('')
   const [grade, setGrade] = useState<TypingGrade | null>(null)
   const [dup, setDup] = useState<{ verseId: string; verse: VerseEntry | null } | null>(null)
@@ -82,7 +81,7 @@ export function Learn({
   const send = async (cmd: LadderCommand) => {
     const outcome = await runLadder(verseId, cmd)
     if (outcome.kind === 'stay') {
-      if (outcome.reason === 'peeksExceeded') setFlResult(peeks)
+      if (outcome.reason === 'peeksExceeded') flDispatch({ type: 'failed', peeks: fl.peeks })
     } else {
       setStep(outcome.step)
     }
@@ -125,7 +124,11 @@ export function Learn({
           <IntroStep
             verse={verse}
             duplicateOf={dup?.verseId === verseId ? dup.verse : null}
-            onRecited={() => void send({ step: 'intro', event: 'recited' })}
+            onRecited={() => {
+              // 방금 1단계에서 본문을 읽었으니 2단계는 보드부터
+              flDispatch({ type: 'restart' })
+              void send({ step: 'intro', event: 'recited' })
+            }}
             onSkipToTyping={() => void send({ step: 'intro', event: 'skipToTyping' })}
           />
         )}
@@ -133,18 +136,19 @@ export function Learn({
         {step === 'firstLetter' && (
           <FirstLetterStep
             verse={verse}
-            peeks={peeks}
-            attemptKey={flTry}
-            failedPeeks={flResult}
+            attempt={fl}
             onPeek={() => {
-              setPeeks((p) => p + 1)
+              flDispatch({ type: 'peek' })
             }}
-            onRetry={() => {
-              setPeeks(0)
-              setFlResult(null)
-              setFlTry((t) => t + 1)
+            onReread={() => {
+              flDispatch({ type: 'reread' })
             }}
-            onDone={() => void send({ step: 'firstLetter', event: 'attempted', peeks })}
+            onRestart={() => {
+              flDispatch({ type: 'restart' })
+            }}
+            onDone={() =>
+              void send({ step: 'firstLetter', event: 'attempted', peeks: fl.peeks })
+            }
           />
         )}
 
