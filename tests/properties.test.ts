@@ -557,8 +557,10 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
    */
   function foldOrderMatters(a: ExportBundle, b: ExportBundle, c: ExportBundle): boolean {
     const ab = mergeBundles(a, b)
-    const bc = mergeBundles(b, c)
-    const abc = mergeBundles(ab, c)
+    return orderMatters(ab, mergeBundles(b, c), mergeBundles(ab, c))
+  }
+  /** 위 판정을 이미 접어 둔 a·b, b·c, (a·b)·c로 — 이력 속성이 병합을 다시 하지 않게 */
+  function orderMatters(ab: ExportBundle, bc: ExportBundle, abc: ExportBundle): boolean {
     const pre = (m: ExportBundle, v: string) => {
       const s = stepOf(m, v)
       return s !== undefined && s !== 'graduated'
@@ -584,25 +586,40 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
     orders: readonly ExportBundle[][] = permutations([r1, r2, ...inputs]),
   ) {
     for (const r of [r1, r2]) {
-      expect(keepsInvariant(r)).toBe(true)
-      for (const c of r.cards) expect(stepOf(r, c.verseId)).toBe('graduated')
+      if (!keepsInvariant(r)) expect(stateOf(r)).toBe('카드가 있는 구절은 졸업')
     }
-    const healed = norm(mergeBundles(r1, r2))
-    for (const order of orders) expect(norm(fold(order))).toEqual(healed)
+    const healed = mergeBundles(r1, r2)
+    for (const order of orders) expectSameState(fold(order), healed)
+  }
+
+  /**
+   * 정규형이 같은가. 이력 속성은 비교를 수만 번 하므로 expect는 어긋날 때만 불러
+   * 실패 메시지를 남긴다(매번 toEqual을 부르면 CI 러너에서 5초 제한을 넘었다).
+   */
+  function expectSameState(x: ExportBundle, y: ExportBundle) {
+    const nx = norm(x)
+    const ny = norm(y)
+    if (!isDeepStrictEqual(nx, ny)) expect(nx).toEqual(ny)
   }
 
   it('일관된 이력에서 세 번들 접기 순서 무관: (a·b)·c = a·(b·c) — 알려진 모서리만 예외', () => {
     let differed = 0
     fc.assert(
       fc.property(historyArb, ({ snaps, candidates }) => {
-        for (const s of snaps) expect(keepsInvariant(s)).toBe(true) // 이력이 앱의 불변식을 지킨다
-        for (const a of candidates) {
-          for (const b of candidates) {
-            for (const c of candidates) {
-              const r1 = mergeBundles(mergeBundles(a, b), c)
-              const r2 = mergeBundles(a, mergeBundles(b, c))
-              if (!foldOrderMatters(a, b, c)) {
-                expect(norm(r1)).toEqual(norm(r2))
+        // 이력이 앱의 불변식을 지킨다
+        for (const s of snaps) if (!keepsInvariant(s)) expect(stateOf(s)).toBe('불변식')
+        // 같은 상태(변화 없는 동작은 같은 객체를 남긴다)는 한 번만 본다. (c, b, a)는
+        // 교환으로 (a, b, c)의 두 결과를 맞바꾼 것과 같아 a가 c보다 앞서는 쌍만 본다
+        const distinct = [...new Set(candidates)]
+        for (const [i, a] of distinct.entries()) {
+          for (const b of distinct) {
+            for (const c of distinct.slice(i)) {
+              const ab = mergeBundles(a, b)
+              const bc = mergeBundles(b, c)
+              const r1 = mergeBundles(ab, c)
+              const r2 = mergeBundles(a, bc)
+              if (!orderMatters(ab, bc, r1)) {
+                expectSameState(r1, r2)
                 continue
               }
               if (!isDeepStrictEqual(norm(r1), norm(r2))) differed++
@@ -621,6 +638,8 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
           }
         }
       }),
+      // 이력 300개 × 세 쌍 최대 126개: 로컬 약 0.5초(coverage 계측 포함 약 0.6초), 결과가 실제로
+      // 갈리는 이력 9~21개. 첫 판(세 쌍 216개 × 매번 toEqual)은 로컬 2.4초·CI 6.8초로 5초 제한을 넘었다
       { numRuns: 300 },
     )
     // 생성기가 모서리에 실제로 닿는다 — 닿지 않으면 위 예외 분기는 공허하다
