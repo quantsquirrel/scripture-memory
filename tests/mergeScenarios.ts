@@ -70,9 +70,9 @@ export const bundle = (over: Partial<ExportBundle> = {}): ExportBundle => ({
   ...over,
 })
 
-/** 맥북에서 오래 복습해 온 AS1a:ref — 졸업 08-01, 마지막 복습 10-01 */
+/** 맥북에서 오래 복습해 온 AS1a:ref — 졸업 08-01, 마지막 복습 10-01, 다음 복습 12-01 */
 const macbookAS1a = (verseId = 'AS1a') => ({
-  cards: [stored(`${verseId}:ref`, { reps: 8, due: at('11-15'), last_review: at('10-01') })],
+  cards: [stored(`${verseId}:ref`, { reps: 8, due: at('12-01'), last_review: at('10-01') })],
   learning: [learn(verseId, 'graduated', at('08-01'))],
 })
 
