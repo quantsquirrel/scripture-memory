@@ -181,3 +181,110 @@ test.describe('전체 흐름 왕복', () => {
     await expect(page.getByText(/총 복습 0회/)).toBeVisible()
   })
 })
+
+/**
+ * 첫글자 복원 단계의 '본문 다시 보기'. 1단계를 지나면 본문 전체를 다시 볼 길이 이것뿐이다.
+ * 본문을 본 시도는 무효라, 가리고 돌아오면 엿보기 0회의 새 보드로 시작한다.
+ */
+test.describe('첫글자 단계 본문 다시 보기', () => {
+  /** 1단계에서 본문을 읽어 두고 첫글자 보드까지 간다 */
+  async function openFirstLetter(page: import('@playwright/test').Page) {
+    await page.goto(`${BASE}#/learn/AS1a`)
+    await expect(page.getByText('낭송 규칙 (TMS)')).toBeVisible()
+    const ref = (await page.locator('h2.prompt-main').innerText()).trim()
+    const text = (await page.locator('p.verse').first().innerText()).trim()
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
+    const board = page.locator('.fl-board')
+    await expect(board).toBeVisible()
+    return { ref, text, board, words: await board.getByRole('button').count() }
+  }
+
+  const peekFirst = async (board: import('@playwright/test').Locator, n: number) => {
+    for (let i = 0; i < n; i++) await board.getByRole('button').first().click()
+  }
+
+  test('엿보기 3회로 실패한 뒤 본문을 다시 보고 가리면 새 시도로 통과한다', async ({
+    page,
+  }) => {
+    const { ref, text, board, words } = await openFirstLetter(page)
+    const stepLabel = page.locator('.review-count')
+
+    await peekFirst(board, 3)
+    await page.getByRole('button', { name: '낭송 완료' }).click()
+    const failure = page.getByRole('status').filter({ hasText: '엿보기 3회. 본문을 다시 읽고' })
+    await expect(failure).toBeVisible()
+
+    // 본문 다시 보기: 같은 카드 안에서 장절 → 본문 전체 → 장절, 단계 표시는 그대로
+    await page.getByRole('button', { name: '본문 다시 보기' }).click()
+    await expect(page.locator('.fl-board')).toHaveCount(0)
+    await expect(page.locator('h2.prompt-main')).toHaveText(ref)
+    await expect(page.locator('p.verse')).toHaveText(text)
+    await expect(page.locator('.answer-ref-end')).toHaveText(ref)
+    await expect(stepLabel).toHaveText(/첫글자 복원\s*2\/4/)
+    await expect(page.getByRole('button', { name: '낭송 완료' })).toHaveCount(0)
+
+    // 가리고 돌아오면 엿보기 0회, 모든 어절이 가려진 새 보드, 실패 안내 없음
+    await page.getByRole('button', { name: '본문 가리고 다시 도전' }).click()
+    await expect(page.locator('.fl-peeks')).toHaveText('엿보기 0회')
+    await expect(board.getByRole('button')).toHaveCount(words)
+    await expect(board.locator('.fl-revealed')).toHaveCount(0)
+    await expect(page.locator('.diff-score')).toHaveCount(0)
+
+    // 새 시도로 통과 → 타이핑 검증
+    await peekFirst(board, 1)
+    await page.getByRole('button', { name: '낭송 완료' }).click()
+    await expect(page.locator('textarea.typing-input')).toBeVisible()
+    await expect(stepLabel).toHaveText(/타이핑 검증\s*3\/4/)
+  })
+
+  test('본문을 본 시도의 엿보기 수는 통과 판정에 실리지 않는다', async ({ page }) => {
+    const { board } = await openFirstLetter(page)
+    // 본문을 보기 전 2회 + 가린 뒤 1회 — 합쳐 셌다면 3회로 실패한다
+    await peekFirst(board, 2)
+    await page.getByRole('button', { name: '본문 다시 보기' }).click()
+    await page.getByRole('button', { name: '본문 가리고 다시 도전' }).click()
+    await peekFirst(board, 1)
+    await expect(page.locator('.fl-peeks')).toHaveText('엿보기 1회')
+    await page.getByRole('button', { name: '낭송 완료' }).click()
+    await expect(page.locator('textarea.typing-input')).toBeVisible()
+  })
+
+  test('본문을 보다 나갔다 와도 첫글자 단계로 열리고 저장된 단계도 그대로다', async ({
+    page,
+  }) => {
+    await openFirstLetter(page)
+    await page.getByRole('button', { name: '본문 다시 보기' }).click()
+    await expect(page.getByRole('button', { name: '본문 가리고 다시 도전' })).toBeVisible()
+    await page.getByRole('button', { name: '나가기' }).click()
+    await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
+
+    const step = await page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((ok, no) => {
+        const r = indexedDB.open('tms-krv')
+        r.onsuccess = () => {
+          ok(r.result)
+        }
+        r.onerror = () => {
+          no(r.error ?? new Error('IDB open failed'))
+        }
+      })
+      const row = await new Promise<{ step: string } | undefined>((ok, no) => {
+        const r = db.transaction('learning').objectStore('learning').get('AS1a')
+        r.onsuccess = () => {
+          ok(r.result as { step: string } | undefined)
+        }
+        r.onerror = () => {
+          no(r.error ?? new Error('IDB get failed'))
+        }
+      })
+      db.close()
+      return row?.step
+    })
+    expect(step).toBe('firstLetter')
+
+    await page.goto(`${BASE}#/learn/AS1a`)
+    await expect(page.locator('.fl-board')).toBeVisible()
+    await expect(page.locator('.review-count')).toHaveText(/첫글자 복원\s*2\/4/)
+    await expect(page.locator('.fl-peeks')).toHaveText('엿보기 0회')
+  })
+})

@@ -4,7 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { bumpRevision, getRevision, notifying, subscribeRevision } from '../src/app/revision'
 import { computeGoal } from '../src/domain/goal'
+import { advance } from '../src/domain/ladder'
 import { paceNote } from '../src/views/home/panels'
+import {
+  type AttemptEvent,
+  type FirstLetterAttempt,
+  FRESH_ATTEMPT,
+  nextAttempt,
+} from '../src/views/learn/attempt'
 import { parseHash, type Route, TABS, toHash } from '../src/views/router'
 import { installHint } from '../src/views/usePwaInstall'
 
@@ -151,5 +158,48 @@ describe('홈 목표 보조 문구 (paceNote)', () => {
   it('목표 범위를 다 외웠으면 정착 기간이 있어도 마감 문구를 숨긴다', () => {
     const g = computeGoal('2026-11-22', [], new Date('2026-11-13T12:00:00+09:00'), 7)
     expect(paceNote({ ...g, remaining: 0 }, '11/15')).toBeNull()
+  })
+})
+
+describe('첫글자 단계의 본문 다시 보기 (화면 상태)', () => {
+  const run = (...events: AttemptEvent[]): FirstLetterAttempt =>
+    events.reduce(nextAttempt, FRESH_ATTEMPT)
+  const peek: AttemptEvent = { type: 'peek' }
+  /** '낭송 완료'가 사다리에 싣는 판정 — Learn.tsx의 onDone과 같은 명령 */
+  const judge = (s: FirstLetterAttempt) =>
+    advance({ step: 'firstLetter', event: 'attempted', peeks: s.peeks })
+
+  it('엿보기 3회로 실패한 뒤 본문을 보고 가리면 엿보기 0회의 새 보드, 실패 안내 없음', () => {
+    const failed = run(peek, peek, peek, { type: 'failed', peeks: 3 })
+    expect(failed.failedPeeks).toBe(3)
+
+    const reading = nextAttempt(failed, { type: 'reread' })
+    expect(reading.reading).toBe(true)
+
+    const covered = nextAttempt(reading, { type: 'restart' })
+    expect(covered).toEqual({
+      peeks: 0,
+      board: failed.board + 1,
+      failedPeeks: null,
+      reading: false,
+    })
+  })
+
+  it('본문을 본 시도의 엿보기는 통과 판정에 실리지 않는다', () => {
+    // 본문을 보기 전 2회 + 가린 뒤 1회 — 합치면 3회라 실패지만, 판정에는 새 시도의 1회만 실린다
+    const s = run(peek, peek, { type: 'reread' }, { type: 'restart' }, peek)
+    expect(s.peeks).toBe(1)
+    expect(judge(s)).toEqual({ kind: 'move', step: 'typing' })
+    expect(judge(run(peek, peek, peek))).toMatchObject({
+      kind: 'stay',
+      reason: 'peeksExceeded',
+    })
+  })
+
+  it('다시 시도도 같은 초기화다 — 보드 열쇠가 매번 바뀌어 모든 어절을 다시 가린다', () => {
+    const once = run(peek, { type: 'restart' })
+    const twice = nextAttempt(nextAttempt(once, peek), { type: 'restart' })
+    expect(once).toEqual({ ...FRESH_ATTEMPT, board: 1 })
+    expect(twice).toEqual({ ...FRESH_ATTEMPT, board: 2 })
   })
 })

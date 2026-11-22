@@ -61,6 +61,12 @@ test.describe('터치 타깃 44×44px', () => {
     const { checked, small } = await measureTargets(page)
     expect(checked).toBeGreaterThan(5)
     expect(small, `작은 타깃: ${JSON.stringify(small)}`).toEqual([])
+
+    // 첫글자 단계에서 펼친 본문 화면
+    await page.getByRole('button', { name: '본문 다시 보기' }).click()
+    await expect(page.getByRole('button', { name: '본문 가리고 다시 도전' })).toBeVisible()
+    const reread = await measureTargets(page)
+    expect(reread.small, `작은 타깃: ${JSON.stringify(reread.small)}`).toEqual([])
   })
 })
 
@@ -110,6 +116,35 @@ test.describe('키보드 전용 조작', () => {
     await page.getByRole('button', { name: '졸업하고 복습 큐에 추가' }).focus()
     await page.keyboard.press('Enter')
     await expect(page.getByText(/졸업!/)).toBeVisible()
+  })
+
+  test('첫글자 단계의 본문 다시 보기를 키보드로 열고 닫아도 포커스를 잃지 않는다', async ({
+    page,
+  }) => {
+    await page.goto(`${BASE}#/learn/AS1a`)
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
+    await expect(page.locator('.fl-board')).toBeVisible()
+
+    // 보드의 어절 다음 차례: 본문 다시 보기 → 다시 시도 → 낭송 완료
+    let guard = 0
+    while (guard++ < 60) {
+      if ((await focusedText(page)) === '본문 다시 보기') break
+      await page.keyboard.press('Tab')
+    }
+    expect(guard).toBeLessThan(60)
+    await page.keyboard.press('Tab')
+    expect(await focusedText(page)).toBe('다시 시도')
+    await page.keyboard.press('Tab')
+    expect(await focusedText(page)).toBe('낭송 완료')
+    await page.keyboard.press('Shift+Tab')
+    await page.keyboard.press('Shift+Tab')
+
+    // 누른 버튼이 사라져도 포커스는 맞은편 버튼으로 옮겨 간다
+    await page.keyboard.press('Enter')
+    await expect(page.locator(':focus')).toHaveText('본문 가리고 다시 도전')
+    await page.keyboard.press('Enter')
+    await expect(page.locator('.fl-board')).toBeVisible()
+    await expect(page.locator(':focus')).toHaveText('본문 다시 보기')
   })
 
   test('포커스 표시가 키보드 이동에서 보인다', async ({ page }) => {
