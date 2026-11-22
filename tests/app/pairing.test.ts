@@ -19,6 +19,7 @@ import {
 } from '../../src/domain/pairingCode'
 import type { Store } from '../../src/ports/repositories'
 import relayWorker from '../../worker/pairing-relay'
+import { diverged, stateOf } from '../mergeScenarios'
 
 const RELAY = 'https://relay.test'
 const ORIGIN = 'https://app.test'
@@ -129,6 +130,19 @@ describe('코드 연동 왕복 — 병합은 Gist 동기화와 같은 규칙', (
     expect(result).toEqual({ reviews: 2, cards: 6, learning: 2 })
     expect(await counts(laptop)).toEqual({ reviews: 2, cards: 6 })
     expect(await counts(phone)).toEqual({ reviews: 1, cards: 3 })
+  })
+
+  it('옛 규칙으로 어긋난 맥북이 아이폰 코드를 받으면 카드·단계가 아이폰과 같아진다', async () => {
+    fakeRelay()
+    const phone = new MemoryStore()
+    await phone.importAll(diverged.iphone)
+    const laptop = new MemoryStore()
+    await laptop.importAll(diverged.macbook)
+
+    const { code } = await createPairing(phone, RELAY)
+    await receivePairing(laptop, RELAY, code)
+    expect(stateOf(await laptop.exportAll())).toEqual(stateOf(await phone.exportAll()))
+    expect(stateOf(await phone.exportAll())).toEqual(stateOf(diverged.iphone))
   })
 
   it('같은 코드를 두 번 쓰면 두 번째는 만료 안내를 받는다 (한 번만 읽힌다)', async () => {
