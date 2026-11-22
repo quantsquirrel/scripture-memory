@@ -38,8 +38,15 @@ function emptyBundle(): ExportBundle {
   }
 }
 
-/** 시각 값. 가져온 번들은 ISO 표기가 다를 수 있어(…00Z 대 …00.000Z) 문자열로 비교하지 않는다 */
-const time = (iso: string): number => Date.parse(iso)
+/**
+ * 시각 값. 가져온 번들은 ISO 표기가 다를 수 있어(…00Z 대 …00.000Z) 문자열로 비교하지 않는다.
+ * 읽을 수 없는 시각은 가장 오래된 것으로 친다 — NaN은 어느 쪽과도 '같음'이 되어 순서가 돌고
+ * 돈다. 가져온 번들은 decodeBundle이 막지만 mergeAll의 로컬 행은 거치지 않는다.
+ */
+function time(iso: string): number {
+  const t = Date.parse(iso)
+  return Number.isNaN(t) ? -Infinity : t
+}
 
 const order = (x: number | string, y: number | string): number => (x < y ? -1 : x > y ? 1 : 0)
 

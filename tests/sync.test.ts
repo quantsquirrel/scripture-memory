@@ -68,6 +68,39 @@ describe('mergeBundles', () => {
     expect(pick(fresh, reviewed)).toEqual(fresh)
   })
 
+  it('읽을 수 없는 시각은 가장 오래된 것으로 친다 — 비교가 돌고 돌아 접기 순서를 타지 않는다', () => {
+    // 가져온 번들은 decodeBundle이 막지만 mergeAll의 로컬 행은 거치지 않는다
+    const x = bundle({ learning: [learn('AS1a', 'typing', '2026-01-01T00:00:00Z')] })
+    const y = bundle({ learning: [learn('AS1a', 'firstLetter', 'invalid')] })
+    const z = bundle({ learning: [learn('AS1a', 'intro', '2026-12-01T00:00:00Z')] })
+    const stepOf = (m: typeof x) => required(m.learning[0]).step
+    expect(stepOf(mergeBundles(x, y))).toBe('typing')
+    expect(stepOf(mergeBundles(y, z))).toBe('intro')
+    expect(stepOf(mergeBundles(mergeBundles(x, y), z))).toBe('intro')
+    expect(stepOf(mergeBundles(x, mergeBundles(y, z)))).toBe('intro')
+
+    const cx = bundle({ cards: [stored('A1a:ref', { reps: 0, due: '2026-07-20T00:00:00Z' })] })
+    const cy = bundle({
+      cards: [
+        stored('A1a:ref', { reps: 1, due: '2026-07-01T00:00:00Z', last_review: 'invalid' }),
+      ],
+    })
+    const cz = bundle({
+      cards: [
+        stored('A1a:ref', {
+          reps: 2,
+          due: '2026-07-01T00:00:00Z',
+          last_review: '2026-07-01T00:00:00Z',
+        }),
+      ],
+    })
+    const repsOf = (m: typeof x) => required(m.cards[0]).card.reps
+    expect(repsOf(mergeBundles(cx, cy))).toBe(0)
+    expect(repsOf(mergeBundles(cy, cz))).toBe(2)
+    expect(repsOf(mergeBundles(mergeBundles(cx, cy), cz))).toBe(0)
+    expect(repsOf(mergeBundles(cx, mergeBundles(cy, cz)))).toBe(0)
+  })
+
   it('시각은 표기가 아니라 값으로 비교한다 (…00Z 대 …00.000Z)', () => {
     // 문자열로 비교하면 'Z' > '.'이라 앞쪽이 늦은 것으로 잘못 읽힌다
     const a = bundle({
