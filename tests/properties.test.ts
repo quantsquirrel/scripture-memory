@@ -7,10 +7,16 @@ import { describe, expect, it } from 'vitest'
 
 import { mergeBundles } from '../src/adapters/gist'
 import { VERSES } from '../src/data/verses'
-import { DIRECTIONS, type Rating, type ReviewEntry, type StoredCard } from '../src/domain/card'
+import {
+  DIRECTIONS,
+  type Rating,
+  type ReviewEntry,
+  type SerializedCard,
+  type StoredCard,
+} from '../src/domain/card'
 import { gradeTyping, ratingFromAccuracy, toChars, tokenize } from '../src/domain/grading'
 import { required } from '../src/domain/invariant'
-import type { LadderStep } from '../src/domain/ladder'
+import { type LadderStep, type LearnProgress, stepToLegacy } from '../src/domain/ladder'
 import { parseRef } from '../src/domain/ref'
 import { newCard, rateCard, reviveCard, serializeCard } from '../src/domain/scheduler'
 import type { ExportBundle } from '../src/ports/repositories'
@@ -549,24 +555,72 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
       }))
     })
 
-  /**
-   * 접기 순서가 결과를 바꿀 수 있는 유일한 모양: 두 번들 병합의 학습 단계가 졸업 전인데
-   * 세 번들 전체로는 졸업이다(셋째 번들의 더 늦은 졸업). 앞쪽 접기에서 졸업 전 단계가
-   * 두 번들의 카드를 먼저 버리고, 그 뒤 셋째 번들의 졸업이 이겨도 버린 카드는 돌아오지
-   * 않는다. 삭제 표식 없이는 풀 수 없다 — 아래 '알려진 모서리' 테스트.
-   */
-  function foldOrderMatters(a: ExportBundle, b: ExportBundle, c: ExportBundle): boolean {
-    const ab = mergeBundles(a, b)
-    return orderMatters(ab, mergeBundles(b, c), mergeBundles(ab, c))
+  // --- 모서리 판정: mergeBundles를 부르지 않고 입력에서 계약대로 직접 읽는다 ---
+  // 검사 대상의 결과로 판정하면 그 결과가 틀릴 때 예외도 같이 넓어져 반례를 숨긴다.
+
+  const instantOf = (iso: string): number => {
+    const t = Date.parse(iso)
+    return Number.isNaN(t) ? -Infinity : t
   }
-  /** 위 판정을 이미 접어 둔 a·b, b·c, (a·b)·c로 — 이력 속성이 병합을 다시 하지 않게 */
-  function orderMatters(ab: ExportBundle, bc: ExportBundle, abc: ExportBundle): boolean {
-    const pre = (m: ExportBundle, v: string) => {
-      const s = stepOf(m, v)
-      return s !== undefined && s !== 'graduated'
+  const cmp = (x: number, y: number): number => (x < y ? -1 : x > y ? 1 : 0)
+
+  /** 계약 1: 번들들 중 그 구절의 학습 단계 — updatedAt이 늦은 쪽, 같으면 사다리 순번이 높은 쪽 */
+  function latestStep(bs: readonly ExportBundle[], verseId: string): LadderStep | undefined {
+    let best: LearnProgress | undefined
+    for (const l of bs.flatMap((b) => b.learning)) {
+      if (l.verseId !== verseId) continue
+      const order =
+        best === undefined
+          ? 1
+          : cmp(instantOf(l.updatedAt), instantOf(best.updatedAt)) ||
+            cmp(stepToLegacy(l.step), stepToLegacy(best.step))
+      if (order > 0) best = l
     }
-    return VERSE_IDS.some((v) => stepOf(abc, v) === 'graduated' && (pre(ab, v) || pre(bc, v)))
+    return best?.step
   }
+
+  /** 계약 3: 카드의 변경 시각 */
+  const changedAt = (c: SerializedCard): number =>
+    c.last_review !== undefined
+      ? instantOf(c.last_review)
+      : c.reps === 0
+        ? instantOf(c.due)
+        : -Infinity
+
+  /**
+   * x가 y를 이길 수 있는가: 변경 시각 → reps → due로 늦거나, 셋이 같은데 내용이 다르다
+   * (마지막 동률 깨기 순서는 계약이 정하지 않는다 — 이력에서는 일어나지 않는다)
+   */
+  function mayBeat(x: StoredCard, y: StoredCard): boolean {
+    const order =
+      cmp(changedAt(x.card), changedAt(y.card)) ||
+      cmp(x.card.reps, y.card.reps) ||
+      cmp(instantOf(x.card.due), instantOf(y.card.due))
+    return order > 0 || (order === 0 && !isDeepStrictEqual(x, y))
+  }
+
+  /**
+   * pair를 먼저 접고 third를 나중에 접을 때 구절 v가 알려진 모서리인가: pair의 학습 단계는
+   * 졸업 전, 셋 전체로는 졸업(third의 더 늦은 졸업)이고, pair 쪽에 third보다 나중에 바뀐
+   * (또는 third에 없는) 그 구절 카드가 있다. 졸업 전 단계와 먼저 접으면 그 카드가 버려지고,
+   * 뒤이어 third의 졸업이 이겨도 돌아오지 않는다. 삭제 표식 없이는 풀 수 없다.
+   */
+  function edgeAt(pair: readonly ExportBundle[], third: ExportBundle, v: string): boolean {
+    const step = latestStep(pair, v)
+    if (step === undefined || step === 'graduated') return false
+    if (latestStep([...pair, third], v) !== 'graduated') return false
+    return pair.some((b) =>
+      b.cards.some((x) => {
+        if (x.verseId !== v) return false
+        const y = third.cards.find((c) => c.key === x.key)
+        return y === undefined || mayBeat(x, y)
+      }),
+    )
+  }
+
+  /** (a·b)·c와 a·(b·c)가 갈리는 구절 — 아래 '알려진 모서리' 테스트의 모양 */
+  const edgeVerses = (a: ExportBundle, b: ExportBundle, c: ExportBundle): string[] =>
+    VERSE_IDS.filter((v) => edgeAt([a, b], c, v) || edgeAt([b, c], a, v))
 
   const permutations = <T>(xs: readonly T[]): T[][] =>
     xs.length <= 1
@@ -608,21 +662,33 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
       fc.property(historyArb, ({ snaps, candidates }) => {
         // 이력이 앱의 불변식을 지킨다
         for (const s of snaps) if (!keepsInvariant(s)) expect(stateOf(s)).toBe('불변식')
-        // 같은 상태(변화 없는 동작은 같은 객체를 남긴다)는 한 번만 본다. (c, b, a)는
-        // 교환으로 (a, b, c)의 두 결과를 맞바꾼 것과 같아 a가 c보다 앞서는 쌍만 본다
-        const distinct = [...new Set(candidates)]
-        for (const [i, a] of distinct.entries()) {
-          for (const b of distinct) {
-            for (const c of distinct.slice(i)) {
-              const ab = mergeBundles(a, b)
-              const bc = mergeBundles(b, c)
-              const r1 = mergeBundles(ab, c)
-              const r2 = mergeBundles(a, bc)
-              if (!orderMatters(ab, bc, r1)) {
+        // 서로 다른 후보의 세 쌍만, a가 c보다 앞서는 것만 본다. 같은 후보가 겹치는 쌍은
+        // 교환·멱등((a·b)·b = a·b)으로, (c, b, a)는 교환으로 (a, b, c)의 두 결과를 맞바꾼
+        // 것이라 위 속성들이 이미 덮는다. 같은 객체(변화 없는 동작)는 한 후보로 센다.
+        const d = [...new Set(candidates)]
+        for (let i = 0; i < d.length; i++) {
+          for (let k = i + 1; k < d.length; k++) {
+            for (let j = 0; j < d.length; j++) {
+              if (j === i || j === k) continue
+              const [a, b, c] = [required(d[i]), required(d[j]), required(d[k])]
+              const r1 = mergeBundles(mergeBundles(a, b), c)
+              const r2 = mergeBundles(a, mergeBundles(b, c))
+              const edges = edgeVerses(a, b, c)
+              if (edges.length === 0) {
                 expectSameState(r1, r2)
                 continue
               }
-              if (!isDeepStrictEqual(norm(r1), norm(r2))) differed++
+              // 판정이 정확하다: 모서리면 실제로 갈리고, 모서리 밖(다른 구절·학습·기록)은 같다
+              const outside = (m: ExportBundle) => {
+                const n = norm(m)
+                return { ...n, cards: n.cards.filter((x) => !edges.includes(x.verseId)) }
+              }
+              const [o1, o2] = [outside(r1), outside(r2)]
+              if (!isDeepStrictEqual(o1, o2)) expect(o1).toEqual(o2)
+              if (isDeepStrictEqual(norm(r1), norm(r2))) {
+                expect({ a, b, c, edges }).toBe('모서리라면 두 접기 결과가 갈려야 한다')
+              }
+              differed++
               expectConverges(
                 r1,
                 r2,
@@ -638,8 +704,8 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
           }
         }
       }),
-      // 이력 300개 × 세 쌍 최대 126개: 로컬 약 0.5초(coverage 계측 포함 약 0.6초), 결과가 실제로
-      // 갈리는 이력 9~21개. 첫 판(세 쌍 216개 × 매번 toEqual)은 로컬 2.4초·CI 6.8초로 5초 제한을 넘었다
+      // 이력 300개 × 세 쌍 최대 60개 — 로컬 측정은 커밋 본문. 첫 판(세 쌍 216개 × 매번
+      // toEqual)은 로컬 2.4초·CI 6.8초로 vitest 기본 5초 제한을 넘었다
       { numRuns: 300 },
     )
     // 생성기가 모서리에 실제로 닿는다 — 닿지 않으면 위 예외 분기는 공허하다
@@ -693,7 +759,7 @@ describe('mergeBundles 병합 속성 (나중에 바뀐 쪽 우선)', () => {
 
     for (const { name, a, b, c } of cases) {
       it(name, () => {
-        expect(foldOrderMatters(a, b, c)).toBe(true)
+        expect(edgeVerses(a, b, c)).toEqual(['AS1a'])
         const r1 = mergeBundles(mergeBundles(a, b), c)
         const r2 = mergeBundles(a, mergeBundles(b, c))
         // 앞쪽 접기는 a의 졸업 전 단계가 b의 카드를 먼저 버려 c의 카드만 남는다
