@@ -16,7 +16,7 @@ import { gradeTyping, type TypingGrade } from '../domain/grading'
 import { isGraduated, type LadderCommand, STEP_TITLE, stepOrdinal } from '../domain/ladder'
 import { pickNextVerse } from '../domain/nextVerse'
 import { useLearnProgress } from './hooks'
-import { FRESH_ATTEMPT, nextAttempt } from './learn/attempt'
+import { nextAttempt, RESUMED_ATTEMPT } from './learn/attempt'
 import { FirstLetterStep, GraduatedStep, IntroStep, TypingStep } from './learn/steps'
 
 export function Learn({
@@ -32,7 +32,7 @@ export function Learn({
 }) {
   const verse = VERSE_BY_ID[verseId]
   const { step, setStep } = useLearnProgress(verseId)
-  const [fl, flDispatch] = useReducer(nextAttempt, FRESH_ATTEMPT)
+  const [fl, flDispatch] = useReducer(nextAttempt, RESUMED_ATTEMPT)
   const [attempt, setAttempt] = useState('')
   const [grade, setGrade] = useState<TypingGrade | null>(null)
   const [dup, setDup] = useState<{ verseId: string; verse: VerseEntry | null } | null>(null)
@@ -124,7 +124,11 @@ export function Learn({
           <IntroStep
             verse={verse}
             duplicateOf={dup?.verseId === verseId ? dup.verse : null}
-            onRecited={() => void send({ step: 'intro', event: 'recited' })}
+            onRecited={() => {
+              // 방금 1단계에서 본문을 읽었으니 2단계는 보드부터
+              flDispatch({ type: 'restart' })
+              void send({ step: 'intro', event: 'recited' })
+            }}
             onSkipToTyping={() => void send({ step: 'intro', event: 'skipToTyping' })}
           />
         )}

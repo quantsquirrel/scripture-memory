@@ -11,6 +11,7 @@ import {
   type FirstLetterAttempt,
   FRESH_ATTEMPT,
   nextAttempt,
+  RESUMED_ATTEMPT,
 } from '../src/views/learn/attempt'
 import { parseHash, type Route, TABS, toHash } from '../src/views/router'
 import { installHint } from '../src/views/usePwaInstall'
@@ -194,6 +195,18 @@ describe('첫글자 단계의 본문 다시 보기 (화면 상태)', () => {
       kind: 'stay',
       reason: 'peeksExceeded',
     })
+  })
+
+  it('저장된 단계로 다시 들어오면 본문부터, 1단계에서 넘어오면 보드부터 연다', () => {
+    expect(RESUMED_ATTEMPT).toMatchObject({ reading: true, peeks: 0, failedPeeks: null })
+    // Learn.tsx의 1단계 '낭송했어요'는 restart를 먼저 보낸다
+    expect(nextAttempt(RESUMED_ATTEMPT, { type: 'restart' }).reading).toBe(false)
+    // 다시 들어와 본문을 읽은 뒤 가리면 엿보기 0회부터 센다
+    const s = [peek, peek, peek].reduce(
+      nextAttempt,
+      nextAttempt(RESUMED_ATTEMPT, { type: 'restart' }),
+    )
+    expect(judge(s)).toMatchObject({ kind: 'stay', reason: 'peeksExceeded' })
   })
 
   it('다시 시도도 같은 초기화다 — 보드 열쇠가 매번 바뀌어 모든 어절을 다시 가린다', () => {

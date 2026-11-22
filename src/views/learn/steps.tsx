@@ -63,7 +63,8 @@ export function IntroStep({
  *
  * 1단계를 지나면 본문 전체를 볼 길이 '본문 다시 보기' 하나뿐이다. 펼치면 같은 카드
  * 안에서 1단계와 같은 낭송의 틀(장절 → 말씀 → 장절)이 서고, 다시 가리면 그 시도는
- * 무효라 엿보기 0회의 새 보드로 시작한다. 사다리 단계는 그대로 firstLetter다.
+ * 무효라 엿보기 0회의 새 보드로 시작한다. 저장된 단계로 다시 들어오면 이 본문
+ * 화면부터 열린다. 어느 쪽이든 사다리 단계는 그대로 firstLetter다.
  */
 export function FirstLetterStep({
   verse,
@@ -91,7 +92,7 @@ export function FirstLetterStep({
         <p className="verse">{verse.text}</p>
         <p className="answer-ref answer-ref-end">{verse.ref}</p>
         <div className="stage-foot">
-          <p className="muted small">다시 가리면 엿보기 0회부터 새로 셉니다.</p>
+          <p className="muted small">본문을 가리면 엿보기 0회부터 셉니다.</p>
           <button
             ref={coverRef}
             className="btn btn-primary"
@@ -108,6 +109,9 @@ export function FirstLetterStep({
   }
 
   const failedPeeks = attempt.failedPeeks
+  // 실패 안내가 떠 있는 동안 등불은 '본문 다시 보기'로 옮긴다(안내가 권하는 다음 걸음).
+  // 버튼 자리와 키보드 차례는 그대로 두고 강조만 옮긴다 — 같은 자리를 누르면 늘 같은 동작이다
+  const lampOnReread = failedPeeks !== null
   return (
     <>
       <h2 className="prompt-main">{verse.ref}</h2>
@@ -129,7 +133,7 @@ export function FirstLetterStep({
         <div className="btn-row">
           <button
             ref={rereadRef}
-            className="btn"
+            className={lampOnReread ? 'btn btn-primary' : 'btn'}
             onClick={() => {
               flushSync(onReread)
               coverRef.current?.focus()
@@ -141,7 +145,7 @@ export function FirstLetterStep({
             다시 시도
           </button>
         </div>
-        <button className="btn btn-primary" onClick={onDone}>
+        <button className={lampOnReread ? 'btn' : 'btn btn-primary'} onClick={onDone}>
           낭송 완료
         </button>
       </div>

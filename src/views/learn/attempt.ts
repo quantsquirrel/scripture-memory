@@ -27,6 +27,13 @@ export const FRESH_ATTEMPT: FirstLetterAttempt = {
   reading: false,
 }
 
+/**
+ * 저장된 단계로 첫글자 단계에 다시 들어올 때의 시작 — 본문부터 본다. 1단계만 하고
+ * 나갔다가, 또는 2단계 도중에 나갔다가 돌아온 사람은 본문을 다시 읽고 시작한다.
+ * 같은 방문에서 1단계를 마치고 넘어오면 restart로 보드부터다(방금 본문을 읽었다).
+ */
+export const RESUMED_ATTEMPT: FirstLetterAttempt = { ...FRESH_ATTEMPT, reading: true }
+
 export function nextAttempt(s: FirstLetterAttempt, e: AttemptEvent): FirstLetterAttempt {
   switch (e.type) {
     case 'peek':

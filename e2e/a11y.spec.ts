@@ -147,6 +147,25 @@ test.describe('키보드 전용 조작', () => {
     await expect(page.locator(':focus')).toHaveText('본문 다시 보기')
   })
 
+  test('첫글자 실패 뒤 등불이 옮겨 가도 버튼 차례와 포커스는 그대로다', async ({ page }) => {
+    await page.goto(`${BASE}#/learn/AS1a`)
+    await page.getByRole('button', { name: '낭송했어요, 다음으로' }).click()
+    const board = page.locator('.fl-board')
+    for (let i = 0; i < 3; i++) await board.getByRole('button').first().click()
+
+    const done = page.getByRole('button', { name: '낭송 완료' })
+    await done.focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('status').filter({ hasText: '엿보기 3회' })).toBeVisible()
+    // 누른 자리에 포커스가 남고, 실패 안내가 권하는 '본문 다시 보기'가 등불이 된다
+    await expect(done).toBeFocused()
+    await expect(page.locator('.stage-foot .btn-primary')).toHaveText('본문 다시 보기')
+    await page.keyboard.press('Shift+Tab')
+    expect(await focusedText(page)).toBe('다시 시도')
+    await page.keyboard.press('Shift+Tab')
+    expect(await focusedText(page)).toBe('본문 다시 보기')
+  })
+
   test('포커스 표시가 키보드 이동에서 보인다', async ({ page }) => {
     await page.goto(`${BASE}#/home`)
     await page.keyboard.press('Tab')
