@@ -8,7 +8,8 @@ import { mergeBundles, type SyncResult } from './gist'
  *
  * 릴레이는 코드를 키로 번들을 10분 맡아 두고, 한 번 읽히면 지운다. 받는 쪽은
  * Gist 동기화와 같은 mergeBundles를 mergeAll 트랜잭션 안에서 적용한다 — 복습
- * 기록은 합집합, 카드·사다리는 더 진행된 쪽. 보내는 쪽 데이터는 바뀌지 않는다.
+ * 기록은 합집합, 카드·사다리는 나중에 바뀐 쪽(강등도 전해진다). 보내는 쪽 데이터는
+ * 바뀌지 않는다.
  */
 export interface Pairing {
   code: string

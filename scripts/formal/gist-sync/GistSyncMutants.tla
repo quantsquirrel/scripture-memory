@@ -10,7 +10,10 @@ EXTENDS GistSync
 MutMergeReviewsRemoteOnly(a, b) == b
 
 \* gist.ts mergeBundles가 카드 비교 조건 없이 원격 카드로 덮는다 (if 조건 제거)
-MutMergeRepsRemoteWins(a, b) == b
+MutMergeCardRemoteWins(a, b) == b
+
+\* gist.ts mergeBundles가 옛 규칙으로 돌아간다: reps 많은 쪽, 같으면 그대로
+MutMergeCardMoreReps(a, b) == IF b.reps > a.reps THEN b ELSE a
 
 \* indexeddb.ts commitRating이 cards.put을 reviews.add보다 먼저 한다
 MutCardFirst == FALSE

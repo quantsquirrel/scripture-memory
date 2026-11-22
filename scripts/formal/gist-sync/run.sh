@@ -24,9 +24,10 @@ EXPECT=(
   "f4-two-syncs-one-device.cfg|GistSync|pass"
   "mutant-merge-drops-local-reviews.cfg|GistSyncMutants|EvidenceSurvives"
   "mutant-merge-remote-card-wins.cfg|GistSyncMutants|ProgressSurvives"
+  "mutant-merge-more-reps-wins.cfg|GistSyncMutants|ProgressSurvives"
   "mutant-commit-card-first.cfg|GistSyncMutants|EvidenceBacksState"
   "mutant-merge-reads-before-fetch.cfg|GistSyncMutants|EvidenceSurvives"
-  "mutant-commit-no-base-check.cfg|GistSyncMutants|ProgressSurvives"
+  "mutant-commit-no-base-check.cfg|GistSyncMutants|CommitExtendsStored"
   "mutant-shared-gist-file.cfg|GistSyncMutants|SyncedStaysSynced"
   "mutant-no-sync-lock.cfg|GistSyncMutants|SyncedStaysSynced"
 )

@@ -1,5 +1,5 @@
-import type { ReviewEntry, StoredCard } from '../domain/card'
-import { type LearnProgress, stepToLegacy } from '../domain/ladder'
+import type { ReviewEntry, SerializedCard, StoredCard } from '../domain/card'
+import { isGraduated, type LearnProgress, stepToLegacy } from '../domain/ladder'
 import { type ExportBundle, SCHEMA_VERSION, type Store } from '../ports/repositories'
 import { decodeBundle } from './bundle'
 import { mergeGoalPrefs } from './goalPrefs'
@@ -38,36 +38,107 @@ function emptyBundle(): ExportBundle {
   }
 }
 
-/** 리뷰는 합집합, 카드/학습 상태는 더 진행된 쪽 우선, 암송 목표는 나중에 바꾼 쪽. */
+/**
+ * 시각 값. 가져온 번들은 ISO 표기가 다를 수 있어(…00Z 대 …00.000Z) 문자열로 비교하지 않는다.
+ * 읽을 수 없는 시각은 가장 오래된 것으로 친다 — NaN은 어느 쪽과도 '같음'이 되어 순서가 돌고
+ * 돈다. 가져온 번들은 decodeBundle이 막지만 mergeAll의 로컬 행은 거치지 않는다.
+ */
+function time(iso: string): number {
+  const t = Date.parse(iso)
+  return Number.isNaN(t) ? -Infinity : t
+}
+
+const order = (x: number | string, y: number | string): number => (x < y ? -1 : x > y ? 1 : 0)
+
+/**
+ * 카드가 마지막으로 바뀐 시각: 마지막 복습. 복습 전 새 카드(reps 0)는 발행 시각인 due.
+ * last_review 없이 reps가 있는 옛 카드(옛 버전이 남긴 모양 — 기존 fixture의 AS1a:text)는
+ * 언제 바뀌었는지 모르므로 가장 오래된 것으로 친다.
+ */
+function changedAt(c: SerializedCard): number {
+  if (c.last_review !== undefined) return time(c.last_review)
+  return c.reps === 0 ? time(c.due) : -Infinity
+}
+
+/** 마지막 동률 깨기. 필드 순서를 고정해 객체의 키 순서와 무관하게 한다 */
+const canonical = (c: StoredCard): string =>
+  JSON.stringify([
+    c.verseId,
+    c.direction,
+    c.card.due,
+    c.card.last_review ?? null,
+    c.card.stability,
+    c.card.difficulty,
+    c.card.elapsed_days,
+    c.card.scheduled_days,
+    c.card.reps,
+    c.card.lapses,
+    c.card.learning_steps,
+    c.card.state,
+  ])
+
+/** 같은 키의 카드끼리: 나중에 바뀐 쪽 → reps 많은 쪽 → due 늦은 쪽 → 정규 표기 */
+const compareCards = (x: StoredCard, y: StoredCard): number =>
+  order(changedAt(x.card), changedAt(y.card)) ||
+  order(x.card.reps, y.card.reps) ||
+  order(time(x.card.due), time(y.card.due)) ||
+  order(canonical(x), canonical(y))
+
+/** 같은 구절의 학습 행끼리: 나중에 바뀐 쪽 → 사다리 순번 높은 쪽 → 같은 시각의 다른 표기 */
+const compareLearning = (x: LearnProgress, y: LearnProgress): number =>
+  order(time(x.updatedAt), time(y.updatedAt)) ||
+  order(stepToLegacy(x.step), stepToLegacy(y.step)) ||
+  order(x.updatedAt, y.updatedAt)
+
+/** 키마다 compare가 가장 큰 행. 전순서라 행의 순서와 무관하게 같은 행이 남는다 */
+function latest<T>(
+  rows: readonly T[],
+  keyOf: (row: T) => string,
+  compare: (x: T, y: T) => number,
+): Map<string, T> {
+  const out = new Map<string, T>()
+  for (const row of rows) {
+    const prev = out.get(keyOf(row))
+    if (!prev || compare(row, prev) > 0) out.set(keyOf(row), row)
+  }
+  return out
+}
+
+/**
+ * 두 번들을 합친다 — 간편 연동(receivePairing)과 Gist 동기화(fetchRemote·syncNow)가
+ * 같이 쓴다. 복습 기록은 합집합(키 `cardKey|ts|rating`), 암송 목표는 나중에 바꾼 쪽
+ * (mergeGoalPrefs). 카드·학습 상태는 구절마다 "나중에 바뀐 쪽"을 고른다:
+ *
+ * 1. 학습 단계: updatedAt이 늦은 쪽. 같으면 사다리 순번이 높은 쪽.
+ * 2. 고른 단계가 졸업 전이면 그 구절의 카드는 넣지 않는다 — 강등(demoteToLadder:
+ *    카드 삭제 + firstLetter)이 이렇게 다른 기기로 전해진다.
+ * 3. 졸업이면 카드 키마다 변경 시각(changedAt)이 늦은 쪽. 같으면 reps 많은 쪽, due 늦은
+ *    쪽, 그다음 인자 순서와 무관한 정규 표기 순.
+ * 4. 학습 행이 어느 쪽에도 없는 구절의 카드는 지우지 않고 3번처럼 고른다(하드 경계 3).
+ *
+ * 있는 상태 중에서 고르기만 한다 — FSRS 상태를 새로 계산하거나 복습 기록을 재생해
+ * 카드를 만들지 않는다(하드 경계 1). 교환·멱등과 접기 순서는 tests/properties.test.ts.
+ *
+ * 알고 받아들인 대가:
+ * - 오래 연동하지 않은 기기의 더 늦은 복습이 더 진행된(reps 많은) 카드를 덮을 수 있다.
+ *   복습 기록은 남는다.
+ * - 연동하지 않은 기기에서 이미 다른 기기가 졸업한 구절을 새로 배우기 시작하면, 그
+ *   사다리 진행이 더 늦은 변경이므로 병합 결과에서 그 구절 카드가 내려간다.
+ * - 되살아난 옛 카드를 다른 기기의 재졸업보다 늦게 복습했다면 그 카드는 복습한 쪽
+ *   상태가 남는다.
+ */
 export function mergeBundles(a: ExportBundle, b: ExportBundle): ExportBundle {
   const reviews = new Map<string, ReviewEntry>()
   for (const r of [...a.reviews, ...b.reviews]) {
     const { id: _id, ...rest } = r
     reviews.set(`${r.cardKey}|${r.ts}|${r.rating}`, rest)
   }
-  const cards = new Map<string, StoredCard>()
-  for (const c of [...a.cards, ...b.cards]) {
-    const prev = cards.get(c.key)
-    if (
-      !prev ||
-      c.card.reps > prev.card.reps ||
-      (c.card.reps === prev.card.reps && c.card.due > prev.card.due)
-    ) {
-      cards.set(c.key, c)
-    }
+  const learning = latest([...a.learning, ...b.learning], (l) => l.verseId, compareLearning)
+  const kept = (c: StoredCard): boolean => {
+    const l = learning.get(c.verseId)
+    return l === undefined || isGraduated(l)
   }
-  const learning = new Map<string, LearnProgress>()
-  for (const l of [...a.learning, ...b.learning]) {
-    const prev = learning.get(l.verseId)
-    // 사다리 단계는 문자열이므로 순서 비교는 사다리 순번으로 한다
-    if (
-      !prev ||
-      stepToLegacy(l.step) > stepToLegacy(prev.step) ||
-      (l.step === prev.step && l.updatedAt > prev.updatedAt)
-    ) {
-      learning.set(l.verseId, l)
-    }
-  }
+  const cards = latest([...a.cards, ...b.cards].filter(kept), (c) => c.key, compareCards)
   const merged: ExportBundle = {
     app: 'scripture-memory',
     version: SCHEMA_VERSION,
