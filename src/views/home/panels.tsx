@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { Chevron } from '../../components/Chevron'
 import { Crumb } from '../../components/Crumb'
 import { fillStyle } from '../../components/fill'
@@ -62,9 +64,11 @@ export function TodayReviewPanel({
               {todayReviews > 0 && <li>오늘 {todayReviews}회 복습</li>}
             </ul>
           )}
-          <button className="btn btn-primary" onClick={onReview}>
-            복습 시작
-          </button>
+          <HomeAction>
+            <button className="btn btn-primary" onClick={onReview}>
+              복습 시작
+            </button>
+          </HomeAction>
         </>
       ) : (
         <>
@@ -78,13 +82,25 @@ export function TodayReviewPanel({
               <li>오늘 {todayReviews}회 복습</li>
             </ul>
           )}
-          <button className="btn btn-primary" onClick={onReview}>
-            지금 이어서 복습
-          </button>
+          <HomeAction>
+            <button className="btn btn-primary" onClick={onReview}>
+              지금 이어서 복습
+            </button>
+          </HomeAction>
         </>
       )}
     </section>
   )
+}
+
+/**
+ * 오늘의 주 행동(금색 버튼 하나)을 감싸는 자리. PC에서는 카드 안 제자리에 서고,
+ * 폰에서는 독 바로 위 쟁반으로 내려선다(home.css) — 무대의 주 행동과 같은 엄지 자리.
+ * 문서 순서는 카드 안 그대로라 낭독기와 탭 순서는 "오늘 몇 구절 → 복습 시작"으로 읽힌다.
+ * 켜지지 않은 보조 버튼은 감싸지 않는다.
+ */
+function HomeAction({ lit = true, children }: { lit?: boolean; children: ReactNode }) {
+  return lit ? <div className="home-action">{children}</div> : children
 }
 
 /** "10월 29일 목요일" — 하루치 복습이라는 것을 날짜로 먼저 알린다 */
@@ -210,14 +226,16 @@ export function NewVersePanel({
               />
             ))}
           </ol>
-          <button
-            className={lit === 'resume' ? 'btn btn-primary' : 'btn'}
-            onClick={() => {
-              onLearn(resume.id)
-            }}
-          >
-            이어서: {resume.label}
-          </button>
+          <HomeAction lit={lit === 'resume'}>
+            <button
+              className={lit === 'resume' ? 'btn btn-primary' : 'btn'}
+              onClick={() => {
+                onLearn(resume.id)
+              }}
+            >
+              이어서: {resume.label}
+            </button>
+          </HomeAction>
         </div>
       )}
       {next && (
@@ -228,14 +246,16 @@ export function NewVersePanel({
           </p>
           <h3 className="learn-ref">{next.ref}</h3>
           <p className="verse learn-preview">{next.text}</p>
-          <button
-            className={lit === 'next' ? 'btn btn-primary' : 'btn'}
-            onClick={() => {
-              onLearn(next.id)
-            }}
-          >
-            다음 구절: {next.label}
-          </button>
+          <HomeAction lit={lit === 'next'}>
+            <button
+              className={lit === 'next' ? 'btn btn-primary' : 'btn'}
+              onClick={() => {
+                onLearn(next.id)
+              }}
+            >
+              다음 구절: {next.label}
+            </button>
+          </HomeAction>
         </div>
       )}
     </section>

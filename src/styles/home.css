@@ -98,6 +98,62 @@
   margin-top: var(--space-8);
 }
 
+/*
+ * 폰: 오늘의 주 행동은 독 바로 위 쟁반에 선다 — 무대의 주 행동과 같은 엄지 자리.
+ * 홈에서 '복습 시작'을 누른 엄지가 무대의 '정답 보기'까지 거의 움직이지 않는다.
+ * 쟁반은 떠 있는 면이 아니라 바닥의 아래 끝이다: 바닥과 같은 면 + 헤어라인 하나,
+ * 밑으로 지나가는 글은 비치지 않는다(반투명·블러는 독 하나뿐).
+ * 화면이 낮으면(가로로 눕힌 폰) 쟁반이 화면을 다 먹으므로 카드 안 제자리로 돌아간다.
+ */
+@media (max-width: 768px) and (min-height: 520px) {
+  .home-action {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 90;
+    /* 좌우는 독과 같은 폭(독의 좌우 여백 space-6) — 버튼과 독이 한 묶음으로 선다 */
+    padding: var(--space-6) var(--space-6)
+      calc(var(--dock-gap) + var(--dock-height) + var(--space-6));
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-line);
+  }
+
+  .home-action .btn {
+    max-width: calc(var(--layout-max) - var(--space-8));
+    margin: 0 auto;
+  }
+
+  /* 버튼이 쟁반으로 내려가면 오늘의 복습에는 누를 것이 남지 않는다 — 카드가 아니라
+     바닥의 머리글로 선다(쉬는 날의 .today-rest와 같은 자리, 같은 모습).
+     홈의 카드는 손에 쥘 구절 하나(새 구절)만 남는다 */
+  .panel.today {
+    margin-bottom: var(--space-12);
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .panel.today .today-head {
+    margin-bottom: var(--space-4);
+  }
+
+  /* 쟁반 높이만큼 바닥을 비운다 — 맨 아래 줄이 쟁반 밑에 깔리지 않게.
+     쟁반과의 틈은 진행률 묶음(.ground)의 아래 여백이 맡는다 */
+  .app:has(.home-action) {
+    padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--touch-primary) + 2 * var(--space-6)
+    );
+  }
+
+  /* 키보드로 옮겨 간 포커스가 쟁반 뒤에 숨지 않게 */
+  html:has(.home-action) {
+    scroll-padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--touch-primary) + 2 * var(--space-6) +
+        var(--space-8)
+    );
+  }
+}
+
 /* 할 일이 없는 날 — 카드 없이 바닥에 두 줄. 화면의 카드는 새 구절 하나만 남는다 */
 .today-rest p {
   margin: 0;
