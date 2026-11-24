@@ -13,8 +13,9 @@ import { describe, expect, it } from 'vitest'
 
 import { MemoryStore } from '../src/adapters/memory'
 import * as appIndex from '../src/app'
+import { modeFor } from '../src/app/queries'
 import { submitReview } from '../src/app/review'
-import type { ReviewMode, StoredCard } from '../src/domain/card'
+import { DIRECTIONS, type Rating, type ReviewMode, type StoredCard } from '../src/domain/card'
 import { required } from '../src/domain/invariant'
 import { reviewMode } from '../src/domain/policy'
 import * as scheduler from '../src/domain/scheduler'
@@ -27,6 +28,25 @@ const read = (rel: string): string =>
 const NOW = new Date('2026-07-31T10:00:00.000Z')
 
 const graduate = (store: MemoryStore) => store.graduate('AS1a', ['topic', 'ref', 'text'], NOW)
+
+const STATES = [
+  scheduler.State.New,
+  scheduler.State.Learning,
+  scheduler.State.Review,
+  scheduler.State.Relearning,
+] as const
+
+/** 결정적 의사 난수 (mulberry32) — 실패한 시드를 그대로 재현할 수 있다 */
+function seeded(seed: number): () => number {
+  let s = seed >>> 0
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0
+    let t = s
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
 describe('경계 1 — 증거 없는 등급 적용 금지', () => {
   it('applyRating은 어느 모듈에서도 import할 수 없다 (domain 내부에만 존재)', () => {
@@ -152,14 +172,18 @@ describe('경계 1 — 증거 없는 등급 적용 금지', () => {
 })
 
 describe('경계 2 — 자가 채점은 감사와 함께만', () => {
-  it('연속 5회 창에 반드시 객관 모드가 하나 이상 낀다 (모든 방향·모든 시작점)', () => {
-    for (const dir of ['topic', 'ref', 'text'] as const) {
-      for (let start = 0; start <= 500; start++) {
-        const window = [0, 1, 2, 3, 4].map((i) => reviewMode(dir, start + i))
-        expect(
-          window.some((m) => m !== 'recite'),
-          `${dir} reps ${start}~${start + 4}가 전부 recite`,
-        ).toBe(true)
+  it('연속 5회 창에 반드시 객관 모드가 하나 이상 낀다 (모든 방향·상태·시작점)', () => {
+    for (const dir of DIRECTIONS) {
+      for (const state of STATES) {
+        for (let start = 0; start <= 500; start++) {
+          const window = [0, 1, 2, 3, 4].map((i) =>
+            reviewMode(dir, { state, reps: start + i }, []),
+          )
+          expect(
+            window.some((m) => m !== 'recite'),
+            `${dir} state ${String(state)} reps ${start}~${start + 4}가 전부 recite`,
+          ).toBe(true)
+        }
       }
     }
   })
@@ -172,7 +196,7 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
 
     // 정책이 정하는 모드로만 30회 복습한다 (뷰가 모드를 고르지 않는다)
     for (let i = 0; i < 30; i++) {
-      const mode = reviewMode(card.direction, card.card.reps)
+      const mode = await modeFor(store, card)
       used.push(mode)
       card = await submitReview(
         store,
@@ -183,7 +207,7 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
           accuracy: mode === 'typing' ? 1 : mode === 'refInput' ? 1 : null,
           peeks: mode === 'firstLetter' ? 0 : null,
         },
-        new Date(NOW.getTime() + i * 86400_000),
+        new Date(Math.max(NOW.getTime() + i * 86400_000, Date.parse(card.card.due))),
       )
     }
 
@@ -198,16 +222,87 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
     expect(used.filter((m) => m === 'typing').length).toBeGreaterThan(0)
   })
 
+  /**
+   * 무작위 등급 불변식. 화면과 같은 길(modeFor → submitReview)로 한 카드를 60회씩
+   * 채점하며, 매 회차 방식을 상태 기계로 따로 계산한 기대값과 맞춰 본다.
+   * - 규칙 A: 분 단위 단계는 첫글자, Review 상태는 낭송·타이핑 감사뿐
+   * - 규칙 B: 간격 복습에서 '다시' 뒤로는 타이핑 감사를 통과할 때까지 Review마다 감사
+   * - 경계 2: 어떤 등급 순서에서도 recite가 5회 연속 나오지 않는다
+   */
+  it('무작위 등급 순서에서도 방식 규칙이 지켜지고 자가 채점은 4회 연속이 최대다', async () => {
+    const SEQUENCES = 3000
+    const STEPS = 60
+    const RATINGS: readonly Rating[] = [1, 2, 3, 4]
+    let longestRecite = 0
+    let debtAudits = 0
+    for (let seed = 0; seed < SEQUENCES; seed++) {
+      const rand = seeded(seed)
+      const store = new MemoryStore()
+      await graduate(store)
+      const key = seed % 2 === 0 ? 'AS1a:topic' : 'AS1a:ref'
+      let card = required(await store.cards.get(key))
+      let debt = false
+      let run = 0
+      let longest = 0
+      const used: ReviewMode[] = []
+      for (let i = 0; i < STEPS; i++) {
+        const { state, reps } = card.card
+        const expected: ReviewMode =
+          state !== scheduler.State.Review
+            ? 'firstLetter'
+            : (reps + 1) % 5 === 0 || debt
+              ? 'typing'
+              : 'recite'
+        const mode = await modeFor(store, card)
+        expect(mode, `seed ${seed} 회차 ${i} (state ${String(state)}, reps ${reps})`).toBe(
+          expected,
+        )
+        if (mode === 'typing' && (reps + 1) % 5 !== 0) debtAudits++
+        const rating = required(RATINGS[Math.floor(rand() * RATINGS.length)])
+        if (mode === 'typing') debt = rating === 1
+        else if (mode === 'recite' && rating === 1) debt = true
+        run = mode === 'recite' ? run + 1 : 0
+        longest = Math.max(longest, run)
+        used.push(mode)
+        card = await submitReview(
+          store,
+          card,
+          {
+            mode,
+            rating,
+            accuracy: mode === 'typing' ? (rating === 1 ? 0.3 : 1) : null,
+            peeks: mode === 'firstLetter' ? 4 - rating : null,
+          },
+          new Date(Date.parse(card.card.due) + 1000),
+        )
+      }
+      expect(longest, `seed ${seed}: recite ${longest}회 연속`).toBeLessThanOrEqual(4)
+      longestRecite = Math.max(longestRecite, longest)
+      // 화면에 낸 방식이 그대로 증거에 남았다
+      expect((await store.reviews.ofCard(key)).map((e) => e.mode)).toEqual(used)
+    }
+    // 위 단정이 공허하지 않다: 자가 채점이 4회까지는 이어졌고, 5회 차례가 아닌
+    // 감사(빚 때문에 나온 감사)도 실제로 나왔다
+    expect(longestRecite).toBe(4)
+    expect(debtAudits).toBeGreaterThan(0)
+  }, 30_000)
+
   it('말씀→장절 방향은 언제나 객관 채점(장절 입력)이다', () => {
-    for (const reps of [0, 1, 2, 3, 4, 5, 50, 500]) {
-      expect(reviewMode('text', reps)).toBe('refInput')
+    for (const state of STATES) {
+      for (const reps of [0, 1, 2, 3, 4, 5, 50, 500]) {
+        expect(reviewMode('text', { state, reps }, [])).toBe('refInput')
+      }
     }
   })
 
-  it('감사 주기가 정책에 상수로 남아 있다 (제거되면 실패)', () => {
+  it('감사 주기·규칙 A·감사 빚이 정책에 남아 있다 (제거되면 실패)', () => {
     const src = read('src/domain/policy.ts')
     expect(src).toMatch(/% 5 === 0/)
-    expect(src).toMatch(/< 3/)
+    // 규칙 A: 분 단위 단계(Review가 아닌 상태)만 첫글자 힌트
+    expect(src).toMatch(/if \(card\.state !== State\.Review\) return 'firstLetter'/)
+    // 규칙 B: 감사 빚은 5회 주기와 같은 줄에서 타이핑 감사로 간다
+    expect(src).toMatch(/% 5 === 0 \|\| hasAuditDebt\(history\)\) return 'typing'/)
+    expect(src).toMatch(/Math\.floor\(card\.reps\)/)
   })
 
   /**
@@ -217,18 +312,48 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
    * 영속 값이므로 실제로 도달 가능한 경로였다.
    */
   it('소수·비정상 reps에서도 5회 창에 객관 모드가 낀다', () => {
-    const starts = [0.5, 2.5, 3.1, 4.9, 5.5, 9.999, 100.25, -1, -0.5, Number.EPSILON]
+    // 2^53 근처: 그 이상은 `count + 1 === count`라 주기가 멈춘다 (가져온 백업에서 온 구멍)
+    const starts = [
+      0.5,
+      2.5,
+      3.1,
+      4.9,
+      5.5,
+      9.999,
+      100.25,
+      -1,
+      -0.5,
+      Number.EPSILON,
+      2 ** 53 - 6,
+      2 ** 53 - 3,
+      2 ** 53 - 1,
+      2 ** 53,
+      2 ** 53 + 2,
+      1e16,
+    ]
     for (const dir of ['topic', 'ref'] as const) {
-      for (const start of starts) {
-        const window = [0, 1, 2, 3, 4].map((i) => reviewMode(dir, start + i))
-        expect(
-          window.some((m) => m !== 'recite'),
-          `${dir} reps ${String(start)}부터 5회가 전부 recite`,
-        ).toBe(true)
-      }
-      // NaN·Infinity도 자가 채점 무한 루프로 빠지지 않는다
-      for (const weird of [Number.NaN, Number.POSITIVE_INFINITY]) {
-        expect(reviewMode(dir, weird)).not.toBe('recite')
+      for (const state of STATES) {
+        for (const start of starts) {
+          const window = [0, 1, 2, 3, 4].map((i) =>
+            reviewMode(dir, { state, reps: start + i }, []),
+          )
+          expect(
+            window.some((m) => m !== 'recite'),
+            `${dir} state ${String(state)} reps ${String(start)}부터 5회가 전부 recite`,
+          ).toBe(true)
+        }
+        // NaN·Infinity·셀 수 없이 큰 값도 자가 채점 무한 루프로 빠지지 않는다
+        for (const weird of [
+          Number.NaN,
+          Number.POSITIVE_INFINITY,
+          Number.NEGATIVE_INFINITY,
+          Number.MAX_SAFE_INTEGER,
+          Number.MAX_SAFE_INTEGER + 1,
+          Number.MIN_SAFE_INTEGER - 1,
+          Number.MAX_VALUE,
+        ]) {
+          expect(reviewMode(dir, { state, reps: weird }, [])).not.toBe('recite')
+        }
       }
     }
   })
@@ -266,6 +391,78 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
     const firstCard = required(negative.cards[0])
     firstCard.card.reps = -3
     await expect(store.importAll(negative)).rejects.toThrow(/정수/)
+    // 2^53 이상은 정수여도 거부한다 — 더해도 늘지 않아 감사 주기가 멈춘다
+    const huge = structuredClone(bundle)
+    required(huge.cards[0]).card.reps = 2 ** 53
+    await expect(store.importAll(huge)).rejects.toThrow(/정수/)
+  })
+
+  /**
+   * 리뷰가 찾은 구멍의 회귀 테스트. reps ≥ 2^53이면 `reps + 1 === reps`라 ts-fsrs도
+   * 횟수를 늘리지 못하고 `(reps + 1) % 5`가 한 값에 멈춰 낭송이 끝없이 이어졌다.
+   * 가져오기는 이제 막지만, 병합의 로컬 행처럼 검증을 거치지 않고 저장소에 이미
+   * 들어온 값에도 정책이 감사로 닫혀야 한다.
+   */
+  it('저장소에 셀 수 없이 큰 reps가 있어도 실제 채점 루프에서 낭송이 이어지지 않는다', async () => {
+    const key = 'AS1a:topic'
+    /** 그 카드를 reps만 바꾼 Review 카드로 — 졸업 직후 카드에서 출발 */
+    const asReview = (c: StoredCard, reps: number): StoredCard => ({
+      ...c,
+      card: {
+        ...c.card,
+        state: scheduler.State.Review,
+        reps,
+        stability: 10,
+        difficulty: 5,
+        scheduled_days: 10,
+        last_review: new Date(NOW.getTime() - 10 * 86400_000).toISOString(),
+      },
+    })
+    const cases = [
+      // MAX_SAFE_INTEGER는 가져오기를 통과한다 — 한 번 채점하면 2^53이 되어 멈춘다
+      {
+        reps: Number.MAX_SAFE_INTEGER,
+        inject: async (store: MemoryStore) => {
+          const bundle = await store.exportAll(NOW)
+          await store.importAll({
+            ...bundle,
+            cards: bundle.cards.map((c) =>
+              c.key === key ? asReview(c, Number.MAX_SAFE_INTEGER) : c,
+            ),
+          })
+        },
+      },
+      // 2^53은 가져오기가 막지만, mergeAll은 merge가 돌려준 로컬 행을 그대로 쓴다
+      {
+        reps: 2 ** 53,
+        inject: (store: MemoryStore) =>
+          store.mergeAll((local) => ({
+            ...local,
+            cards: local.cards.map((c) => (c.key === key ? asReview(c, 2 ** 53) : c)),
+          })),
+      },
+    ]
+    for (const { reps, inject } of cases) {
+      const store = new MemoryStore()
+      await graduate(store)
+      await inject(store)
+      let card = required(await store.cards.get(key))
+      expect(card.card.reps).toBe(reps)
+      const used: ReviewMode[] = []
+      for (let i = 0; i < 12; i++) {
+        const mode = await modeFor(store, card)
+        used.push(mode)
+        card = await submitReview(
+          store,
+          card,
+          { mode, rating: 3, accuracy: mode === 'typing' ? 1 : null, peeks: null },
+          new Date(Math.max(NOW.getTime(), Date.parse(card.card.due)) + 1000),
+        )
+      }
+      // 횟수는 2^53에서 더 늘지 않는다 — 그래도 매번 객관 감사다
+      expect(card.card.reps, String(reps)).toBe(2 ** 53)
+      expect(used, String(reps)).toEqual(Array.from({ length: 12 }, () => 'typing'))
+    }
   })
 
   it('recite만 accuracy·peeks 둘 다 null로 남을 수 있다', async () => {

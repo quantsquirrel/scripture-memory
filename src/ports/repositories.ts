@@ -33,6 +33,11 @@ export interface ReviewLog {
   all(): Promise<ReviewEntry[]>
   /** ts >= sinceIso 인 복습 기록 */
   since(sinceIso: string): Promise<ReviewEntry[]>
+  /**
+   * 카드 한 장의 복습 기록 (복습 방식의 감사 빚 판정용). 기록은 수년치로 쌓이므로
+   * 구현은 전체를 훑지 않고 cardKey로 좁혀 읽는다. 순서는 보장하지 않는다.
+   */
+  ofCard(cardKey: string): Promise<ReviewEntry[]>
   count(): Promise<number>
 }
 

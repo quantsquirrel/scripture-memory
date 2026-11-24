@@ -8,6 +8,7 @@ import {
   loadHome,
   loadReviewQueue,
   loadSettings,
+  type QueuedCard,
   reloadQueuedCard,
   type SettingsData,
 } from '../app/queries'
@@ -15,7 +16,6 @@ import { loadRecalibrateUnits, type RecalibrateUnit } from '../app/recalibrate'
 import { openLadder } from '../app/review'
 import { getRevision, subscribeRevision } from '../app/revision'
 import { VERSE_BY_ID } from '../data/verses'
-import type { StoredCard } from '../domain/card'
 import type { LadderStep } from '../domain/ladder'
 
 /**
@@ -98,14 +98,14 @@ const isReviewable = (verseId: string): boolean => VERSE_BY_ID[verseId] !== unde
 /**
  * 복습 큐. 리비전으로 자동 재조회하지 않는다 — 매 채점이 리비전을 올리므로
  * 자동 재조회는 카드를 넘기는 중에 큐를 갈아치운다. 큐 교체는 세션이 소진된
- * 시점에 Review 뷰가 명시적으로 요청한다.
+ * 시점에 Review 뷰가 명시적으로 요청한다. 카드마다 이번 회차 방식이 함께 실린다.
  */
 export function useDueCards(): {
-  queue: StoredCard[] | null
-  refill: () => Promise<StoredCard[]>
+  queue: QueuedCard[] | null
+  refill: () => Promise<QueuedCard[]>
   reload: (key: string) => Promise<boolean>
 } {
-  const [queue, setQueue] = useState<StoredCard[] | null>(null)
+  const [queue, setQueue] = useState<QueuedCard[] | null>(null)
   useEffect(() => {
     let alive = true
     void loadReviewQueue(store, isReviewable).then((cards) => {
@@ -115,20 +115,23 @@ export function useDueCards(): {
       alive = false
     }
   }, [])
-  const refill = async (): Promise<StoredCard[]> => {
+  const refill = async (): Promise<QueuedCard[]> => {
     const next = await loadReviewQueue(store, isReviewable)
     setQueue(next)
     return next
   }
-  /** 큐의 카드 사본 하나를 저장소 최신값으로 바꾼다. 더 출제할 카드가 아니면 빼고 false. */
+  /**
+   * 큐의 카드 사본 하나를 저장소 최신값(과 그 상태로 다시 정한 방식)으로 바꾼다.
+   * 더 출제할 카드가 아니면 빼고 false.
+   */
   const reload = async (key: string): Promise<boolean> => {
     const fresh = await reloadQueuedCard(store, key)
     setQueue((q) =>
       q === null
         ? q
         : fresh
-          ? q.map((c) => (c.key === key ? fresh : c))
-          : q.filter((c) => c.key !== key),
+          ? q.map((c) => (c.sc.key === key ? fresh : c))
+          : q.filter((c) => c.sc.key !== key),
     )
     return fresh !== null
   }

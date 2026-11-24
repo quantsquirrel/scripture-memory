@@ -1,7 +1,7 @@
 import { type SectionInfo, sectionOf, sectionsOf, VERSES } from '../data/verses'
 import { cardKey, DIRECTIONS, type Rating, type StoredCard } from '../domain/card'
-import { reviewMode } from '../domain/policy'
 import type { Store } from '../ports/repositories'
+import { modeFor } from './queries'
 import { submitReview } from './review'
 import { bumpRevision } from './revision'
 
@@ -13,8 +13,9 @@ import { bumpRevision } from './revision'
  * - shaky: 낭송 카드에 자가 채점 '다시' (미래 일정이라도 재학습 단계로 보낸다)
  * - forgotten: 카드를 지우고 사다리 첫글자 단계로 강등
  *
- * 자가 채점은 정책이 그 회차를 recite로 정한 카드에만 매긴다. 말씀→장절 방향과
- * 첫글자·타이핑 감사 차례인 카드는 손대지 않고 복습 큐에 남겨 객관 채점을 받게
+ * 자가 채점은 정책이 그 회차를 recite로 정한 카드에만 매긴다 — 복습 탭과 같은
+ * modeFor(카드 상태 + 그 카드의 기록)로 정한다. 말씀→장절 방향, 분 단위 단계(첫글자),
+ * 5회 감사 차례·감사 빚이 있는 카드는 손대지 않고 복습 큐에 남겨 객관 채점을 받게
  * 한다 — 개정 모드가 감사 주기를 건너뛰는 통로가 되면 안 된다(하드 경계 2).
  */
 export type RecalibrateVerdict = 'solid' | 'shaky' | 'forgotten'
@@ -48,7 +49,8 @@ export async function verseRecalibrateKind(
 ): Promise<VerseRecalibrateKind> {
   const cards = await cardsOf(store, verseId)
   if (cards.length === 0) return 'none'
-  const reciteCards = cards.filter((c) => reviewMode(c.direction, c.card.reps) === 'recite')
+  const modes = await Promise.all(cards.map((c) => modeFor(store, c)))
+  const reciteCards = cards.filter((_, i) => modes[i] === 'recite')
   if (reciteCards.length === 0) return 'auditOnly'
   const iso = now.toISOString()
   return reciteCards.some((c) => c.card.due <= iso) ? 'recite' : 'future'
@@ -71,7 +73,7 @@ export async function recalibrateVerse(
   } else {
     const iso = now.toISOString()
     for (const card of cards) {
-      if (reviewMode(card.direction, card.card.reps) !== 'recite') {
+      if ((await modeFor(store, card)) !== 'recite') {
         result.deferred++
         continue
       }

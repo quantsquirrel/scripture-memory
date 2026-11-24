@@ -84,6 +84,7 @@ export class MemoryStore implements Store {
   readonly reviews: ReviewLog = {
     all: () => Promise.resolve([...this.reviewRows]),
     since: (sinceIso) => Promise.resolve(this.reviewRows.filter((r) => r.ts >= sinceIso)),
+    ofCard: (key) => Promise.resolve(this.reviewRows.filter((r) => r.cardKey === key)),
     count: () => Promise.resolve(this.reviewRows.length),
   }
 

@@ -1,13 +1,13 @@
 import { useCallback, useState } from 'react'
 
 import { nextDueAt, submitReview } from '../app'
+import type { QueuedCard } from '../app/queries'
 import { Chevron } from '../components/Chevron'
 import { fillStyle } from '../components/fill'
 import { LampMark } from '../components/LampMark'
 import { VERSE_BY_ID } from '../data/verses'
-import type { Rating, ReviewMode, StoredCard } from '../domain/card'
+import type { Rating, ReviewMode } from '../domain/card'
 import { required } from '../domain/invariant'
-import { reviewMode } from '../domain/policy'
 import { formatInterval, StaleCardError } from '../domain/scheduler'
 import { useDueCards } from './hooks'
 import { CardFace } from './review/CardFace'
@@ -20,7 +20,7 @@ export function Review({ onExit }: { onExit: () => void }) {
   // 다음 복습까지 남은 시간은 '읽은 순간' 기준 라벨로 굳혀 둔다 (렌더는 순수하게)
   const [nextDueLabel, setNextDueLabel] = useState<string | null>(null)
 
-  const current: StoredCard | null = queue && idx < queue.length ? (queue[idx] ?? null) : null
+  const current: QueuedCard | null = queue && idx < queue.length ? (queue[idx] ?? null) : null
 
   const rate = useCallback(
     async (r: Rating, mode: ReviewMode, accuracy: number | null, peeks: number | null) => {
@@ -38,11 +38,12 @@ export function Review({ onExit }: { onExit: () => void }) {
       }
       const hasNext = queue !== null && idx + 1 < queue.length
       try {
-        await submitReview(current, { mode, rating: r, accuracy, peeks })
+        await submitReview(current.sc, { mode, rating: r, accuracy, peeks })
       } catch (e) {
         if (!(e instanceof StaleCardError)) throw e
-        // 커밋되지 않았다. 바뀐 카드는 모드(policy.ts)도 달라질 수 있어 처음부터 다시 출제한다
-        const kept = await reload(current.key)
+        // 커밋되지 않았다. 바뀐 카드는 방식(policy.ts)도 달라질 수 있어 새 상태로 방식을
+        // 다시 정해 처음부터 출제한다
+        const kept = await reload(current.sc.key)
         setNotice(
           kept
             ? '다른 탭이나 기기에서 이 카드가 갱신되어, 갱신된 상태로 다시 출제합니다.'
@@ -110,7 +111,7 @@ export function Review({ onExit }: { onExit: () => void }) {
   }
 
   // useDueCards가 본문 없는 카드를 걸러낸 뒤이므로 반드시 존재한다
-  const verse = required(VERSE_BY_ID[current.verseId], `구절 ${current.verseId}`)
+  const verse = required(VERSE_BY_ID[current.sc.verseId], `구절 ${current.sc.verseId}`)
   const remaining = queue.length - idx
 
   return (
@@ -138,11 +139,12 @@ export function Review({ onExit }: { onExit: () => void }) {
           {notice}
         </p>
       )}
+      {/* 방식은 큐가 카드 상태·기록으로 정해 실어 온 값이다 — 화면과 증거가 같은 방식을 쓴다 */}
       <CardFace
-        key={`${current.key}:${current.card.reps}:${current.card.last_review ?? ''}`}
-        sc={current}
+        key={`${current.sc.key}:${current.sc.card.reps}:${current.sc.card.last_review ?? ''}`}
+        sc={current.sc}
         verse={verse}
-        mode={reviewMode(current.direction, current.card.reps)}
+        mode={current.mode}
         onRate={(r, m, accuracy, peeks) => {
           void rate(r, m, accuracy, peeks)
         }}

@@ -23,7 +23,8 @@ export type RateFn = (
 ) => void
 
 /** 자가 채점: 정답을 보고 스스로 등급을 매긴다. 증거는 null이고, 그 예외가 허용되는
- *  근거는 policy.ts가 5회마다 끼워 넣는 타이핑 감사다. */
+ *  근거는 policy.ts가 5회마다(그리고 간격 복습에서 '다시' 뒤로는 통과할 때까지)
+ *  끼워 넣는 타이핑 감사다. */
 export function ReciteMode({
   sc,
   verse,

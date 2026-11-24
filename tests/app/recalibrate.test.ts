@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 
 import { idbStore } from '../../src/adapters/indexeddb'
 import { MemoryStore } from '../../src/adapters/memory'
+import { modeFor } from '../../src/app/queries'
 import {
   loadRecalibrateUnits,
   recalibrateVerse,
@@ -14,7 +15,6 @@ import { runLadder, submitReview } from '../../src/app/review'
 import { getRevision } from '../../src/app/revision'
 import { cardKey, DIRECTIONS, type StoredCard } from '../../src/domain/card'
 import { required } from '../../src/domain/invariant'
-import { reviewMode } from '../../src/domain/policy'
 import type { Store } from '../../src/ports/repositories'
 
 const NOW = new Date('2026-10-27T10:00:00.000Z')
@@ -27,14 +27,14 @@ const graduate = (store: Store, verseId = V, now = NOW) =>
 const cardOf = async (store: Store, dir: StoredCard['direction']) =>
   required(await store.cards.get(cardKey(V, dir)))
 
-/** 정책이 정한 모드와 그 모드의 증거로 reps가 target이 될 때까지 복습한다 */
+/** 정책(복습 탭과 같은 modeFor)이 정한 방식과 그 증거로 reps가 target이 될 때까지 복습한다 */
 async function reviewUntil(store: Store, target: number): Promise<Date> {
   let at = NOW
   for (const dir of DIRECTIONS) {
     let card = await cardOf(store, dir)
     while (card.card.reps < target) {
       at = new Date(Math.max(at.getTime(), new Date(card.card.due).getTime()) + 60_000)
-      const mode = reviewMode(dir, card.card.reps)
+      const mode = await modeFor(store, card)
       card = await submitReview(
         store,
         card,
@@ -196,7 +196,7 @@ describe('recalibrateVerse — 경계', () => {
     // reps 4 → (4 + 1) % 5 === 0 이므로 topic·ref 모두 타이핑 감사 차례
     const now = later(await reviewUntil(store, 4))
     for (const dir of DIRECTIONS) {
-      expect(reviewMode(dir, (await cardOf(store, dir)).card.reps)).not.toBe('recite')
+      expect(await modeFor(store, await cardOf(store, dir))).not.toBe('recite')
     }
     const before = await store.reviews.count()
 
@@ -205,6 +205,69 @@ describe('recalibrateVerse — 경계', () => {
       expect(r).toEqual({ rated: 0, deferred: 3, demoted: false })
     }
     expect(await store.reviews.count()).toBe(before)
+  })
+
+  it('감사 빚이 있는 카드는 5회 차례가 아니어도 자가 판정으로 넘기지 않는다 (경계 2)', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    let at = await reviewUntil(store, 3)
+    // topic만 낭송에서 '다시' → 첫글자 재도전 통과 → 다시 간격 복습 궤도로
+    let topic = await cardOf(store, 'topic')
+    at = new Date(new Date(topic.card.due).getTime() + 60_000)
+    expect(await modeFor(store, topic)).toBe('recite')
+    topic = await submitReview(
+      store,
+      topic,
+      { mode: 'recite', rating: 1, accuracy: null, peeks: null },
+      at,
+    )
+    at = new Date(new Date(topic.card.due).getTime() + 60_000)
+    expect(await modeFor(store, topic)).toBe('firstLetter')
+    topic = await submitReview(
+      store,
+      topic,
+      { mode: 'firstLetter', rating: 3, accuracy: null, peeks: 0 },
+      at,
+    )
+    expect(topic.card.state).toBe(State.Review)
+    // reps 5는 5회 차례가 아니지만 빚 때문에 타이핑 감사 차례다
+    expect(topic.card.reps).toBe(5)
+    expect(await modeFor(store, topic)).toBe('typing')
+    expect(await modeFor(store, await cardOf(store, 'ref'))).toBe('recite')
+
+    const now = later(at)
+    expect(await verseRecalibrateKind(store, V, now)).toBe('recite')
+    const before = await store.reviews.count()
+    const r = await recalibrateVerse(store, V, 'solid', now)
+    // ref만 자가 판정, topic(빚)과 text(장절 입력)는 복습 큐에 남는다
+    expect(r).toEqual({ rated: 1, deferred: 2, demoted: false })
+    const added = (await store.reviews.all()).slice(before)
+    expect(added.map((e) => [e.direction, e.mode])).toEqual([['ref', 'recite']])
+    expect((await cardOf(store, 'topic')).card).toEqual(topic.card)
+  })
+
+  it('빚만 남은 구절(나머지는 객관 차례)은 객관 감사 전용으로 분류한다', async () => {
+    const store = new MemoryStore()
+    await graduate(store)
+    let at = await reviewUntil(store, 3)
+    for (const dir of ['topic', 'ref'] as const) {
+      let c = await cardOf(store, dir)
+      at = new Date(Math.max(at.getTime(), new Date(c.card.due).getTime()) + 60_000)
+      c = await submitReview(
+        store,
+        c,
+        { mode: 'recite', rating: 1, accuracy: null, peeks: null },
+        at,
+      )
+      at = new Date(new Date(c.card.due).getTime() + 60_000)
+      await submitReview(
+        store,
+        c,
+        { mode: 'firstLetter', rating: 3, accuracy: null, peeks: 0 },
+        at,
+      )
+    }
+    expect(await verseRecalibrateKind(store, V, later(at))).toBe('auditOnly')
   })
 
   it('갓 졸업한 카드(첫글자 훈련 차례)도 자가 판정하지 않는다', async () => {
@@ -225,7 +288,7 @@ describe('recalibrateVerse — 경계', () => {
       // 개정이 남긴 객관 차례는 복습 탭이 처리한다 — 같은 정책으로 흉내낸다
       for (const dir of DIRECTIONS) {
         const card = await cardOf(store, dir)
-        const mode = reviewMode(dir, card.card.reps)
+        const mode = await modeFor(store, card)
         if (mode === 'recite') continue
         await submitReview(
           store,

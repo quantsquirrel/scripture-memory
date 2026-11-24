@@ -92,12 +92,13 @@ function num(v: unknown, what: string): number {
 
 /**
  * 횟수·단계처럼 정수여야 하는 필드. 소수가 섞이면 정책 계산이 깨진다 —
- * reps가 5.5이면 policy.ts의 5회 감사 주기가 한 번도 맞지 않는다.
+ * reps가 5.5이면 policy.ts의 5회 감사 주기가 한 번도 맞지 않는다. 2^53 이상도
+ * 같다: `reps + 1 === reps`라 횟수가 늘지 않아 주기가 멈춘다(안전한 정수만 받는다).
  * 음수도 거부한다(횟수는 뒤로 갈 수 없다).
  */
 function count(v: unknown, what: string): number {
   const n = num(v, what)
-  if (!Number.isInteger(n) || n < 0) {
+  if (!Number.isSafeInteger(n) || n < 0) {
     throw new Error(`백업의 ${what}이(가) 0 이상의 정수가 아닙니다: ${String(n)}`)
   }
   return n

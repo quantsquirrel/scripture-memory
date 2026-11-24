@@ -182,7 +182,8 @@ describe('동기화와 복습이 엇갈릴 때', () => {
   it('거절된 카드는 아직 출제할 때면 새 상태로 다시 읽고, 이미 복습돼 밀려났으면 뺀다', async () => {
     const store = new MemoryStore()
     const card = await graduated(store)
-    expect(await reloadQueuedCard(store, KEY, T0)).toEqual(card)
+    // 새 카드는 분 단위 단계라 첫글자 힌트로 다시 출제된다 — 방식도 다시 읽은 상태로 정한다
+    expect(await reloadQueuedCard(store, KEY, T0)).toEqual({ sc: card, mode: 'firstLetter' })
 
     await submitReview(store, card, { ...RECITE, rating: 4 }, T0)
     expect(await reloadQueuedCard(store, KEY, T0)).toBeNull()

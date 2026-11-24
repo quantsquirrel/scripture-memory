@@ -10,12 +10,13 @@ import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { closeConnection, idbStore } from '../src/adapters/indexeddb'
+import { modeFor } from '../src/app/queries'
 import { openLadder, runLadder, submitReview } from '../src/app/review'
 import { VERSE_BY_ID } from '../src/data/verses'
 import type { StoredCard } from '../src/domain/card'
 import { gradeTyping, ratingFromAccuracy, ratingFromPeeks } from '../src/domain/grading'
 import { required } from '../src/domain/invariant'
-import { LEARN_AHEAD_MS, reviewMode } from '../src/domain/policy'
+import { LEARN_AHEAD_MS } from '../src/domain/policy'
 import { State } from '../src/domain/scheduler'
 
 const VERSE_ID = 'AS1a'
@@ -110,9 +111,9 @@ describe('사다리 전체 생애주기 (실제 트랜잭션 경로)', () => {
     expect(cards.map((c) => c.direction).sort()).toEqual(['ref', 'text', 'topic'])
     expect(cards.every((c) => c.card.state === State.New)).toBe(true)
 
-    // ── 7. 첫 복습: 어린 카드는 첫글자 모드, 증거는 엿보기 횟수
+    // ── 7. 첫 복습: 새 카드(분 단위 단계)는 첫글자 모드, 증거는 엿보기 횟수
     let topic = required(await store.cards.get(`${VERSE_ID}:topic`))
-    expect(reviewMode(topic.direction, topic.card.reps)).toBe('firstLetter')
+    expect(await modeFor(store, topic)).toBe('firstLetter')
     topic = await submitReview(
       store,
       topic,
@@ -122,9 +123,11 @@ describe('사다리 전체 생애주기 (실제 트랜잭션 경로)', () => {
     expect(topic.card.reps).toBe(1)
     expect(await store.reviews.count()).toBe(1)
 
-    // ── 8. Review 상태까지 올린다
+    // ── 8. Review 상태까지 올린다: 학습 단계는 첫글자, 간격 복습부터는 낭송
+    const climbed: string[] = []
     for (let i = 0; i < 3; i++) {
-      const mode = reviewMode(topic.direction, topic.card.reps)
+      const mode = await modeFor(store, topic)
+      climbed.push(mode)
       topic = await submitReview(
         store,
         topic,
@@ -137,10 +140,12 @@ describe('사다리 전체 생애주기 (실제 트랜잭션 경로)', () => {
         new Date(new Date(topic.card.due).getTime() + 1000),
       )
     }
+    expect(climbed).toEqual(['firstLetter', 'recite', 'recite'])
     expect(topic.card.state).toBe(State.Review)
     const lapsesBefore = topic.card.lapses
 
-    // ── 9. lapse: 타이핑 감사에서 크게 틀리면 Again → 재학습
+    // ── 9. lapse: 타이핑 감사(reps 4 → 5회 차례)에서 크게 틀리면 Again → 재학습
+    expect(await modeFor(store, topic)).toBe('typing')
     const failed = gradeTyping(verse.text, '전혀 다른 문장')
     expect(ratingFromAccuracy(failed)).toBe(1)
     const lapseAt = new Date(new Date(topic.card.due).getTime() + 1000)
@@ -162,14 +167,28 @@ describe('사다리 전체 생애주기 (실제 트랜잭션 경로)', () => {
     const ahead = await store.cards.upcomingLearning(LEARN_AHEAD_MS, lapseAt)
     expect(ahead.map((c) => c.key)).toContain(topic.key)
 
-    // ── 11. 재학습을 통과하면 복습 궤도로 복귀한다
+    // ── 11. 재학습(분 단위 재도전)은 첫글자 힌트이고, 통과하면 복습 궤도로 복귀한다
+    expect(await modeFor(store, topic)).toBe('firstLetter')
+    topic = await submitReview(
+      store,
+      topic,
+      { mode: 'firstLetter', rating: 3, accuracy: null, peeks: 0 },
+      new Date(new Date(topic.card.due).getTime() + 1000),
+    )
+    expect(topic.card.state).toBe(State.Review)
+
+    // ── 11-1. 재도전은 감사를 대신하지 않는다: 다음 간격 복습은 감사 빚으로 타이핑 감사
+    // (reps 6은 5회 차례가 아니다 — 빚은 cardKey 인덱스로 읽은 기록에서 나온다)
+    expect(topic.card.reps).toBe(6)
+    expect(await modeFor(store, topic)).toBe('typing')
     topic = await submitReview(
       store,
       topic,
       { mode: 'typing', rating: 3, accuracy: 1, peeks: null },
       new Date(new Date(topic.card.due).getTime() + 1000),
     )
-    expect(topic.card.state).toBe(State.Review)
+    // 감사를 통과하면 빚이 갚아져 낭송으로 돌아간다
+    expect(await modeFor(store, topic)).toBe('recite')
 
     // ── 12. 모든 등급에 증거가 남아 있다 (경계 1)
     const reviews = await store.reviews.all()
@@ -194,7 +213,7 @@ describe('사다리 전체 생애주기 (실제 트랜잭션 경로)', () => {
     let text: StoredCard = required(await store.cards.get(`${VERSE_ID}:text`))
     const modes: string[] = []
     for (let i = 0; i < 12; i++) {
-      const mode = reviewMode(text.direction, text.card.reps)
+      const mode = await modeFor(store, text)
       modes.push(mode)
       text = await submitReview(
         store,
