@@ -354,8 +354,8 @@ h3 {
  * 카드 한 장이 화면 안에 머문다 — 앱 셸이 화면 높이에 맞춰 서고(.app:has(.stage)),
  * 카드가 남은 높이를 채우며, 말씀이 길면 카드 안에서 흐른다. 카드가 화면을 넘쳐
  * 페이지째 흐르던 때에는 붙어 있는 주 행동 묶음 아래로 본문이 새어 독 뒤까지 비쳤다.
- * 무대에서는 모바일 헤더의 화면 이름을 눈에서만 감춘다 — 윗줄(나가기·진행·남은 수)이
- * 머리를 맡아 그 한 줄만큼 말씀이 더 선다.
+ * 윗줄(나가기·진행·남은 수)이 있는 무대에서는 모바일 헤더의 화면 이름을 눈에서만
+ * 감춘다 — 윗줄이 머리를 맡아 그 한 줄만큼 말씀이 더 선다.
  * 입력란이 있는 단계는 화면 키보드가 버튼을 덮지 않도록 .stage-foot을 쓰지 않고
  * 입력란 바로 아래에 버튼을 둔다.
  */
@@ -434,17 +434,20 @@ h3 {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* 키보드로 옮겨 간 요소가 붙어 있는 쟁반 뒤에 숨지 않게 — 한 줄 쟁반의 높이만큼 비운다 */
+    scroll-padding-bottom: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
   }
 }
 
+/* 윗줄이 있는 무대에서만 — 윗줄 없이 서는 마침 장면(복습 완료)은 화면 이름을 그대로 둔다 */
 @media (max-width: 768px) {
-  .app:has(.stage) .app-header {
+  .app:has(.stage > .review-top) .app-header {
     padding: 0;
   }
 
-  .app:has(.stage) .screen-title {
+  .app:has(.stage > .review-top) .screen-title {
     position: absolute;
     width: 1px;
     height: 1px;

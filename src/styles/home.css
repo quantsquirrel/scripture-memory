@@ -137,8 +137,11 @@
   color: var(--color-muted);
 }
 
-.learn-crumb {
-  margin-bottom: var(--space-2);
+/* 좁아서 한 줄에 못 서면 경로가 둘째 줄 오른쪽 끝으로 내려간다 */
+.learn-crumb,
+.learn-step {
+  margin-left: auto;
+  text-align: right;
 }
 
 .learn-step {

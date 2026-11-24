@@ -7,6 +7,7 @@ import {
   DAY,
   graduate,
   HOUR,
+  LONG,
   MIN,
   oneOff,
   partial,
@@ -43,6 +44,21 @@ export async function openReview(s: Session, sd: Seed, mode: string): Promise<vo
   await s.seed(sd)
   await s.open('#/review')
   await s.page.locator('.mode-tag', { hasText: mode }).waitFor()
+}
+
+/**
+ * 무대 카드를 안에서 내린다 — 긴 말씀은 페이지가 아니라 카드 안에서 흐른다.
+ * 맨 아래로, 또는 고른 요소가 보이는 데까지. 폭이 바뀌어 다시 짜여도(390 → 360) 그 자리를 지킨다.
+ */
+export async function scrollCard(s: Session, selector?: string): Promise<void> {
+  await s.page.locator('.stage-card').evaluate((card, target) => {
+    const place = () => {
+      if (target === null) card.scrollTo(0, card.scrollHeight)
+      else card.querySelector(target)?.scrollIntoView({ block: 'center' })
+    }
+    place()
+    new ResizeObserver(place).observe(card)
+  }, selector ?? null)
 }
 
 const MODE = {
@@ -84,6 +100,24 @@ function recite(dir: 'topic' | 'ref'): StateDef[] {
         await s.page.locator('.rating-bar').waitFor()
       },
     ),
+    // 긴 말씀은 카드 안에서 흐른다 — 끝까지 내린 모습(닫는 장절이 쟁반 위에 선다)
+    ...(dir === 'ref'
+      ? [
+          {
+            ...stage,
+            id: 'review-recite-ref-revealed-long-end',
+            view: 'keep',
+            title: '낭송 × 장절 카드: 가장 긴 구절의 정답을 카드 안에서 끝까지 내린 모습',
+            how: '정답을 연 뒤 카드를 맨 아래로 스크롤',
+            run: async (s: Session) => {
+              await openReview(s, reviewSeed(LONG, dir), MODE.recite)
+              await s.click('정답 보기')
+              await s.page.locator('.rating-bar').waitFor()
+              await scrollCard(s)
+            },
+          },
+        ]
+      : []),
   ]
 }
 
