@@ -31,9 +31,10 @@ export function reviewMode(
   // 있다. 소수(예: 5.5)가 섞이면 `(reps + 1) % 5 === 0`이 영원히 거짓이 되어
   // 타이핑 감사가 한 번도 끼지 않는다 — 자가 채점이 무한정 이어지는 구멍이었다.
   // 정수로 내림해 주기를 계산하므로 어떤 실수 값에서도 5회 창이 성립한다.
-  // NaN·Infinity는 주기를 셀 수 없으니 객관 채점 쪽(감사)으로 닫는다.
-  if (!Number.isFinite(card.reps)) return 'typing'
+  // 주기를 셀 수 없는 값은 객관 채점 쪽(감사)으로 닫는다: NaN·±Infinity, 그리고
+  // 안전한 정수 범위 밖처럼 `count + 1 === count`가 되는 값(reps가 늘지 않아 주기가 멈춘다).
   const count = Math.floor(card.reps)
+  if (!Number.isSafeInteger(count) || !Number.isSafeInteger(count + 1)) return 'typing'
   if ((count + 1) % 5 === 0 || hasAuditDebt(history)) return 'typing'
   return 'recite'
 }
@@ -45,16 +46,31 @@ export function reviewMode(
  *
  * 분 단위 재도전(firstLetter)은 감사를 대신하지 않고, 거기서 받은 '다시'도 빚을
  * 만들지 않는다. 저장하지 않고 기록에서 파생하므로 저장·export 형식이 그대로다.
- * 순서는 ts로 본다 — 병합·가져오기를 거친 기록은 저장 순서가 시간 순이라는 보장이 없다.
+ * 순서는 ts가 가리키는 시각으로 본다 — 병합·가져오기를 거친 기록은 저장 순서가 시간
+ * 순이라는 보장이 없고, 가져온 ts는 표기가 다를 수 있다(…00Z 대 …00.500Z, +09:00 오프셋).
+ * 통과와 같은 시각의 '다시'는 빚으로 본다(객관 감사 쪽으로 닫는다 — 두 기기 기록이
+ * 병합되면 같은 시각의 통과와 '다시'가 함께 남을 수 있다).
  */
 export function hasAuditDebt(history: readonly ReviewEntry[]): boolean {
-  let lastPass = ''
+  let lastPass = Number.NEGATIVE_INFINITY
   for (const e of history) {
-    if (e.mode === 'typing' && e.rating !== 1 && e.ts > lastPass) lastPass = e.ts
+    const at = time(e.ts)
+    if (e.mode === 'typing' && e.rating !== 1 && at > lastPass) lastPass = at
   }
   return history.some(
-    (e) => (e.mode === 'recite' || e.mode === 'typing') && e.rating === 1 && e.ts > lastPass,
+    (e) =>
+      (e.mode === 'recite' || e.mode === 'typing') && e.rating === 1 && time(e.ts) >= lastPass,
   )
+}
+
+/**
+ * 기록 시각. 읽을 수 없는 시각은 가장 오래된 것으로 친다(adapters/gist.ts와 같은 관례) —
+ * 그런 통과는 빚을 갚지 못하고, 그런 '다시'는 통과 기록이 없으면 빚으로 남는다.
+ * 가져온 번들은 decodeBundle이 막지만 병합의 로컬 행은 거치지 않는다.
+ */
+function time(iso: string): number {
+  const t = Date.parse(iso)
+  return Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t
 }
 
 /**

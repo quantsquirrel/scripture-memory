@@ -127,11 +127,12 @@ test.describe('복습 방식 — 카드 상태와 기록', () => {
     expect((await storedModes(page)).at(-1)).toBe('typing')
   })
 
-  test('타이핑 감사를 통과한 뒤로는 낭송으로 돌아간다', async ({ page }) => {
-    // reps 4 감사 통과 → reps 5는 낭송 차례
+  test('빚을 타이핑 감사 통과로 갚은 뒤로는 낭송으로 돌아간다', async ({ page }) => {
+    // reps 3 낭송 '다시'(빚) → 첫글자 재도전 → reps 5 빚 감사 통과 → reps 6은 낭송 차례
     await seed(page, [
       ...CLIMB,
-      { daysAgo: 46, mode: 'recite', rating: 3 },
+      { daysAgo: 30, mode: 'recite', rating: 1 },
+      { daysAgo: 29.99, mode: 'firstLetter', rating: 3 },
       { daysAgo: 11, mode: 'typing', rating: 3 },
     ])
     await page.goto(`${BASE}#/review`)

@@ -170,6 +170,40 @@ describe('hasAuditDebt — 감사 빚 판정', () => {
     const laterFail = entry('typing', 1, '2026-03-09T00:00:00.000Z')
     expect(hasAuditDebt([laterFail, pass, fail])).toBe(true)
   })
+
+  it('문자열이 아니라 시각으로 비교한다 — 가져온 ts의 시간대 오프셋에도 앞뒤가 맞다', () => {
+    // 통과 10:00+09:00(=01:00Z) 뒤의 05:00Z '다시'는 빚이다 (문자열로는 앞으로 보인다)
+    const pass = entry('typing', 3, '2026-06-01T10:00:00+09:00')
+    const fail = entry('recite', 1, '2026-06-01T05:00:00.000Z')
+    expect(hasAuditDebt([pass, fail])).toBe(true)
+    // 반대로 00:30Z '다시'는 그 통과보다 앞이라 갚은 것이다
+    expect(hasAuditDebt([pass, entry('recite', 1, '2026-06-01T00:30:00.000Z')])).toBe(false)
+  })
+
+  it('밀리초 유무가 섞인 표기도 시각으로 비교한다 (…00Z 대 …00.500Z)', () => {
+    // 문자열로는 'Z'(90) > '.'(46)이라 0.5초 뒤의 '다시'가 앞으로 보였다
+    const pass = entry('typing', 3, '2026-03-01T10:00:00Z')
+    expect(hasAuditDebt([pass, entry('recite', 1, '2026-03-01T10:00:00.500Z')])).toBe(true)
+    // 반대로 '다시' 0.5초 뒤의 통과는 빚을 갚는다
+    const fail = entry('recite', 1, '2026-03-01T10:00:00Z')
+    expect(hasAuditDebt([fail, entry('typing', 3, '2026-03-01T10:00:00.500Z')])).toBe(false)
+  })
+
+  it('통과와 같은 시각의 다시는 빚으로 본다 (객관 감사 쪽으로 닫는다)', () => {
+    const ts = '2026-06-01T01:00:00.000Z'
+    expect(hasAuditDebt([entry('typing', 3, ts), entry('recite', 1, ts)])).toBe(true)
+    // 표기만 다른 같은 시각도 같다
+    expect(
+      hasAuditDebt([entry('typing', 3, '2026-06-01T10:00:00+09:00'), entry('typing', 1, ts)]),
+    ).toBe(true)
+  })
+
+  it('읽을 수 없는 시각: 그런 통과는 빚을 갚지 못하고, 그런 다시는 통과가 없으면 빚이다', () => {
+    expect(hasAuditDebt([entry('recite', 1, 'not-a-date')])).toBe(true)
+    expect(hasAuditDebt([entry('recite', 1), entry('typing', 3, 'not-a-date')])).toBe(true)
+    // 제대로 된 통과 뒤에는 시각을 모르는 '다시'를 가장 오래된 것으로 친다
+    expect(hasAuditDebt([entry('recite', 1, 'not-a-date'), entry('typing', 3)])).toBe(false)
+  })
 })
 
 // 가드레일: 복습 큐가 같은 구절의 카드를 연달아 내보내면, 직전 카드가 장절 답을

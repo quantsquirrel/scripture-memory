@@ -219,6 +219,28 @@ describe.each(STORES)('복습 큐의 방식 차례 (%s)', (_name, makeStore) => 
     // 다른 탭이 남긴 '다시'가 빚이 되어 다음 간격 복습은 타이핑 감사다
     expect((await pick(store, nextAt(back))).mode).toBe('typing')
   })
+
+  it('재출제(reloadQueuedCard)도 그 카드의 기록으로 감사 빚을 본다', async () => {
+    // 화면이 간격 복습 낭송 차례 사본을 들고 있는 동안
+    await walk(store, [3, 3, 3])
+    const onScreen = await pick(store, nextAt(required(await store.cards.get(KEY))))
+    expect(onScreen.mode).toBe('recite')
+
+    // 다른 기기가 낭송 '다시' → 첫글자 재도전 통과까지 마쳐 Review 상태로 돌려놨다
+    const at = new Date(onScreen.sc.card.due)
+    const relearning = await submitReview(store, onScreen.sc, evidence('recite', 1), at)
+    const synced = await submitReview(store, relearning, evidence('firstLetter', 3), at)
+    expect(synced.card.state).toBe(State.Review)
+    expect(synced.card.reps).toBe(5) // 5회 차례가 아니다
+
+    // 그 카드가 기한이 된 뒤 옛 사본으로 채점하면 거절되고, 다시 읽은 카드는 빚 때문에 감사다
+    const due = new Date(synced.card.due)
+    await expect(
+      submitReview(store, onScreen.sc, evidence('recite', 3), due),
+    ).rejects.toMatchObject({ name: 'StaleCardError' })
+    const reloaded = required(await reloadQueuedCard(store, KEY, due))
+    expect(reloaded).toEqual({ sc: synced, mode: 'typing' })
+  })
 })
 
 /** 정책이 정한 방식으로 한 번 채점한다 (새 카드는 졸업 시각, 그 뒤로는 due에) */

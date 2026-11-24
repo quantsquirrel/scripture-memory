@@ -312,7 +312,25 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
    * 영속 값이므로 실제로 도달 가능한 경로였다.
    */
   it('소수·비정상 reps에서도 5회 창에 객관 모드가 낀다', () => {
-    const starts = [0.5, 2.5, 3.1, 4.9, 5.5, 9.999, 100.25, -1, -0.5, Number.EPSILON]
+    // 2^53 근처: 그 이상은 `count + 1 === count`라 주기가 멈춘다 (가져온 백업에서 온 구멍)
+    const starts = [
+      0.5,
+      2.5,
+      3.1,
+      4.9,
+      5.5,
+      9.999,
+      100.25,
+      -1,
+      -0.5,
+      Number.EPSILON,
+      2 ** 53 - 6,
+      2 ** 53 - 3,
+      2 ** 53 - 1,
+      2 ** 53,
+      2 ** 53 + 2,
+      1e16,
+    ]
     for (const dir of ['topic', 'ref'] as const) {
       for (const state of STATES) {
         for (const start of starts) {
@@ -324,8 +342,16 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
             `${dir} state ${String(state)} reps ${String(start)}부터 5회가 전부 recite`,
           ).toBe(true)
         }
-        // NaN·Infinity도 자가 채점 무한 루프로 빠지지 않는다
-        for (const weird of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+        // NaN·Infinity·셀 수 없이 큰 값도 자가 채점 무한 루프로 빠지지 않는다
+        for (const weird of [
+          Number.NaN,
+          Number.POSITIVE_INFINITY,
+          Number.NEGATIVE_INFINITY,
+          Number.MAX_SAFE_INTEGER,
+          Number.MAX_SAFE_INTEGER + 1,
+          Number.MIN_SAFE_INTEGER - 1,
+          Number.MAX_VALUE,
+        ]) {
           expect(reviewMode(dir, { state, reps: weird }, [])).not.toBe('recite')
         }
       }
@@ -365,6 +391,78 @@ describe('경계 2 — 자가 채점은 감사와 함께만', () => {
     const firstCard = required(negative.cards[0])
     firstCard.card.reps = -3
     await expect(store.importAll(negative)).rejects.toThrow(/정수/)
+    // 2^53 이상은 정수여도 거부한다 — 더해도 늘지 않아 감사 주기가 멈춘다
+    const huge = structuredClone(bundle)
+    required(huge.cards[0]).card.reps = 2 ** 53
+    await expect(store.importAll(huge)).rejects.toThrow(/정수/)
+  })
+
+  /**
+   * 리뷰가 찾은 구멍의 회귀 테스트. reps ≥ 2^53이면 `reps + 1 === reps`라 ts-fsrs도
+   * 횟수를 늘리지 못하고 `(reps + 1) % 5`가 한 값에 멈춰 낭송이 끝없이 이어졌다.
+   * 가져오기는 이제 막지만, 병합의 로컬 행처럼 검증을 거치지 않고 저장소에 이미
+   * 들어온 값에도 정책이 감사로 닫혀야 한다.
+   */
+  it('저장소에 셀 수 없이 큰 reps가 있어도 실제 채점 루프에서 낭송이 이어지지 않는다', async () => {
+    const key = 'AS1a:topic'
+    /** 그 카드를 reps만 바꾼 Review 카드로 — 졸업 직후 카드에서 출발 */
+    const asReview = (c: StoredCard, reps: number): StoredCard => ({
+      ...c,
+      card: {
+        ...c.card,
+        state: scheduler.State.Review,
+        reps,
+        stability: 10,
+        difficulty: 5,
+        scheduled_days: 10,
+        last_review: new Date(NOW.getTime() - 10 * 86400_000).toISOString(),
+      },
+    })
+    const cases = [
+      // MAX_SAFE_INTEGER는 가져오기를 통과한다 — 한 번 채점하면 2^53이 되어 멈춘다
+      {
+        reps: Number.MAX_SAFE_INTEGER,
+        inject: async (store: MemoryStore) => {
+          const bundle = await store.exportAll(NOW)
+          await store.importAll({
+            ...bundle,
+            cards: bundle.cards.map((c) =>
+              c.key === key ? asReview(c, Number.MAX_SAFE_INTEGER) : c,
+            ),
+          })
+        },
+      },
+      // 2^53은 가져오기가 막지만, mergeAll은 merge가 돌려준 로컬 행을 그대로 쓴다
+      {
+        reps: 2 ** 53,
+        inject: (store: MemoryStore) =>
+          store.mergeAll((local) => ({
+            ...local,
+            cards: local.cards.map((c) => (c.key === key ? asReview(c, 2 ** 53) : c)),
+          })),
+      },
+    ]
+    for (const { reps, inject } of cases) {
+      const store = new MemoryStore()
+      await graduate(store)
+      await inject(store)
+      let card = required(await store.cards.get(key))
+      expect(card.card.reps).toBe(reps)
+      const used: ReviewMode[] = []
+      for (let i = 0; i < 12; i++) {
+        const mode = await modeFor(store, card)
+        used.push(mode)
+        card = await submitReview(
+          store,
+          card,
+          { mode, rating: 3, accuracy: mode === 'typing' ? 1 : null, peeks: null },
+          new Date(Math.max(NOW.getTime(), Date.parse(card.card.due)) + 1000),
+        )
+      }
+      // 횟수는 2^53에서 더 늘지 않는다 — 그래도 매번 객관 감사다
+      expect(card.card.reps, String(reps)).toBe(2 ** 53)
+      expect(used, String(reps)).toEqual(Array.from({ length: 12 }, () => 'typing'))
+    }
   })
 
   it('recite만 accuracy·peeks 둘 다 null로 남을 수 있다', async () => {
