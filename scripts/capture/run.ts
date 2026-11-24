@@ -155,33 +155,43 @@ async function waitUp(url: string): Promise<void> {
   throw new Error(`${url}이 뜨지 않는다`)
 }
 
-/** worktree를 빌드해 빈 포트의 vite preview로 띄운다 — 기본 빌드와 연동 서버 주소를 넣은 빌드 */
+/**
+ * worktree를 빌드해 빈 포트의 vite preview로 띄운다 — 기본 빌드와 연동 서버 주소를 넣은 빌드.
+ * 둘 다 임시 폴더에 빌드하고 끝나면 지운다(대상 worktree의 dist/를 건드리지 않는다).
+ */
 async function serve(root: string): Promise<{ base: string; relay: string; stop: () => void }> {
+  const appDir = mkdtempSync(join(tmpdir(), 'ivan-capture-app-'))
   const relayDir = mkdtempSync(join(tmpdir(), 'ivan-capture-relay-'))
+  const children: ChildProcess[] = []
+  const stop = () => {
+    for (const c of children) c.kill()
+    rmSync(appDir, { recursive: true, force: true })
+    rmSync(relayDir, { recursive: true, force: true })
+  }
   const env = { ...process.env }
   delete env['VITE_PAIRING_RELAY_URL']
-  await exec(root, ['build', '--logLevel', 'warn'], env)
-  await exec(root, ['build', '--logLevel', 'warn', '--outDir', relayDir, '--emptyOutDir'], {
-    ...env,
-    VITE_PAIRING_RELAY_URL: RELAY_URL,
-  })
-  const children: ChildProcess[] = []
-  const up = async (outDir: string[]): Promise<string> => {
+  const build = (outDir: string, extra: NodeJS.ProcessEnv) =>
+    exec(root, ['build', '--logLevel', 'warn', '--outDir', outDir, '--emptyOutDir'], {
+      ...env,
+      ...extra,
+    })
+  const up = async (outDir: string): Promise<string> => {
     const port = await freePort()
     const vite = join(root, 'node_modules', 'vite', 'bin', 'vite.js')
     const args = ['preview', '--port', String(port), '--strictPort', '--host', '127.0.0.1']
-    const child = spawn(process.execPath, [vite, ...args, ...outDir], { cwd: root, env })
+    const child = spawn(process.execPath, [vite, ...args, '--outDir', outDir], {
+      cwd: root,
+      env,
+    })
     children.push(child)
     const base = `http://127.0.0.1:${String(port)}/scripture-memory/`
     await waitUp(base)
     return base
   }
-  const stop = () => {
-    for (const c of children) c.kill()
-    rmSync(relayDir, { recursive: true, force: true })
-  }
   try {
-    return { base: await up([]), relay: await up(['--outDir', relayDir]), stop }
+    await build(appDir, {})
+    await build(relayDir, { VITE_PAIRING_RELAY_URL: RELAY_URL })
+    return { base: await up(appDir), relay: await up(relayDir), stop }
   } catch (e) {
     stop()
     throw e
@@ -283,13 +293,17 @@ async function capture(
       const size = VIEWPORTS[vp]
       await page.setViewportSize(size)
       const view = state.view ?? 'top'
+      // 글꼴이 다 실려 레이아웃이 선 뒤에 스크롤할 자리를 잰다 — 먼저 재면 페이지 높이가 바뀌어
+      // 스크롤 끝 위치가 실행마다 달랐다(learn-intro-duplicate PC)
+      await settle(page)
       await position(page, view)
       await settle(page)
       const key = `${theme}-${vp}`
       await page.screenshot({ ...SHOT, path: join(dir, `${key}.png`) })
       into.shots.push(`${key}.png`)
       into.metrics[key] = await measure(page, state.screen === 'focus')
-      if (view !== 'focus' && view !== 'keep' && (await fullShot(page, size, dir, key))) {
+      // 마우스 올림('keep')은 뷰포트를 늘리면 마우스 아래 요소가 바뀌어 전체 그림을 찍지 않는다
+      if (view !== 'keep' && (await fullShot(page, size, dir, key))) {
         into.shots.push(`${key}-full.png`)
       }
     }
@@ -348,9 +362,11 @@ async function main(): Promise<void> {
   const server = local
     ? await serve(args.root)
     : { base: args.url ?? '', relay: args.relayUrl, stop: () => undefined }
-  const browser = await chromium.launch({ args: RASTER_ARGS })
   const results = new Map<string, Collected>()
+  let browser: Browser | null = null
   try {
+    browser = await chromium.launch({ args: RASTER_ARGS })
+    const launched = browser
     mkdirSync(args.out, { recursive: true })
     for (const s of states) {
       rmSync(join(args.out, s.id), { recursive: true, force: true })
@@ -373,7 +389,7 @@ async function main(): Promise<void> {
       if (base === null) {
         into.errors.push('연동 서버 주소를 넣은 빌드가 없다(--relay-url)')
       } else {
-        await capture(browser, job, base, join(args.out, job.state.id), into)
+        await capture(launched, job, base, join(args.out, job.state.id), into)
       }
       const rest = (left.get(job.state.id) ?? 1) - 1
       left.set(job.state.id, rest)
@@ -386,7 +402,7 @@ async function main(): Promise<void> {
       }
     })
   } finally {
-    await browser.close()
+    await browser?.close()
     server.stop()
   }
 
@@ -394,7 +410,16 @@ async function main(): Promise<void> {
   const metricsFile = join(args.out, 'metrics.json')
   const before = readJson<Manifest | null>(manifestFile, null)
   const metrics = readJson<Metrics>(metricsFile, {})
-  const entries = new Map((before?.states ?? []).map((s) => [s.id, s]))
+  // 목록에서 빠진 상태 id(이름을 바꿨거나 지운 상태)는 예전 그림·측정값과 함께 걷어 낸다
+  const known = new Set(STATES.map((s) => s.id))
+  for (const s of before?.states ?? []) {
+    if (known.has(s.id)) continue
+    // metrics.json은 아래에서 매니페스트에 남은 상태만 다시 쓴다
+    rmSync(join(args.out, s.id), { recursive: true, force: true })
+  }
+  const entries = new Map(
+    (before?.states ?? []).filter((s) => known.has(s.id)).map((s) => [s.id, s]),
+  )
   for (const s of states) {
     const r = results.get(s.id)
     if (!r) continue

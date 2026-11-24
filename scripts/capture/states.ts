@@ -47,6 +47,10 @@ export const UNCAPTURED: readonly { what: string; why: string }[] = [
     why: '같은 자리·같은 모양에 문구만 다르다. 404·500 하나씩(settings-pairing-failed, settings-pairing-create-failed, settings-sync-failed)으로 모양을 남긴다',
   },
   {
+    what: '말씀 상태 개정의 판정 저장 중(판정 버튼 disabled={busy})',
+    why: '로컬 IndexedDB 쓰기 한 번(수 ms) 동안만 선다. 저장을 멈춰 두는 장치는 판정 자체를 실패로 만들어(recal-notice-failed) 비활성 모습이 남지 않는다',
+  },
+  {
     what: '마우스 올림 상태의 폰 폭',
     why: '폰에는 hover가 없다(hover: none 미디어 쿼리). hover-* 상태는 PC 폭에서만 찍는다',
   },

@@ -75,7 +75,7 @@ async function gist(s: Session, get: number | 'hang'): Promise<void> {
 
 const SYNC_SEED = seed({
   settings: [
-    { key: 'syncToken', value: 'ghp_capture0000000000000000000000000000' },
+    { key: 'syncToken', value: 'capture-token-not-real' },
     { key: 'syncGistId', value: '0123456789abcdef0123456789abcdef' },
     { key: 'lastSyncAt', value: at(-26 * HOUR) },
   ],

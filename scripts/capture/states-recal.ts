@@ -43,6 +43,7 @@ export const RECAL: StateDef[] = [
   {
     id: 'recal-loading',
     screen: 'recal',
+    stage: true,
     title: '불러오는 중',
     how: 'IndexedDB 열기를 멈춘 채 #/recalibrate',
     stall: true,

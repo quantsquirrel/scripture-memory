@@ -19,16 +19,22 @@ async function toTyping(s: Session, v: string): Promise<void> {
   await s.page.locator('#learn-typing').waitFor()
 }
 
-async function gradeTyping(s: Session, text: string): Promise<void> {
+/** 채점하고, 정확도 칸이 기대한 등급(완벽 good·90% 이상 warn·그 아래 bad)인지까지 */
+async function gradeTyping(
+  s: Session,
+  text: string,
+  score: 'good' | 'warn' | 'bad',
+): Promise<void> {
   await s.page.locator('#learn-typing').fill(text)
   await s.click('채점 (word-perfect 통과)')
-  await s.page.locator('.diff-view').waitFor()
+  await s.page.locator(`.diff-view .diff-score.${score}`).waitFor()
 }
 
 export const LEARN: StateDef[] = [
   {
     id: 'learn-loading',
     screen: 'learn',
+    stage: true,
     title: '불러오는 중',
     how: 'IndexedDB 열기를 멈춘 채 #/learn/AS1a',
     stall: true,
@@ -177,7 +183,7 @@ export const LEARN: StateDef[] = [
     },
     (v) => async (s) => {
       await toTyping(s, v)
-      await gradeTyping(s, verse(v).text)
+      await gradeTyping(s, verse(v).text, 'good')
       await s.button('졸업하고 복습 큐에 추가').waitFor()
     },
   ),
@@ -192,7 +198,7 @@ export const LEARN: StateDef[] = [
     },
     (v) => async (s) => {
       await toTyping(s, v)
-      await gradeTyping(s, oneOff(verse(v).text))
+      await gradeTyping(s, oneOff(verse(v).text), 'warn')
       await s.button('그냥 넘어가기').waitFor()
     },
   ),
@@ -206,7 +212,7 @@ export const LEARN: StateDef[] = [
     },
     (v) => async (s) => {
       await toTyping(s, v)
-      await gradeTyping(s, partial(verse(v).text, 0.4))
+      await gradeTyping(s, partial(verse(v).text, 0.4), 'bad')
       await s.button('그냥 넘어가기').waitFor()
     },
   ),
@@ -220,7 +226,7 @@ export const LEARN: StateDef[] = [
     },
     (v) => async (s) => {
       await toTyping(s, v)
-      await gradeTyping(s, verse(v).text)
+      await gradeTyping(s, verse(v).text, 'good')
       await s.click('졸업하고 복습 큐에 추가')
       await s.button(/^다음 구절:/).waitFor()
     },
@@ -238,7 +244,7 @@ export const LEARN: StateDef[] = [
         }),
       )
       await s.open(`#/learn/${last}`)
-      await gradeTyping(s, verse(last).text)
+      await gradeTyping(s, verse(last).text, 'good')
       await s.click('졸업하고 복습 큐에 추가')
       await s.page.getByRole('heading', { name: /졸업!$/ }).waitFor()
       // 다음 구절은 효과가 비동기로 고른다 — 고를 것이 없어 버튼이 끝내 서지 않는지 잠시 본다

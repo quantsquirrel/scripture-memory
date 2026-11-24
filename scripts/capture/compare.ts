@@ -28,8 +28,17 @@ if (second === undefined) {
   const out = resolve(flag('out') ?? join(second, 'compare.html'))
   const r = writeCompare(first, second, readNotes(notes === null ? null : resolve(notes)), out)
   console.log(`전후 비교: ${r.out}`)
+  const extra = [
+    ...(r.missing > 0 ? [`그림 없는 쌍 ${String(r.missing)}`] : []),
+    ...(r.failed > 0 ? [`실패한 상태 ${String(r.failed)}`] : []),
+  ]
   console.log(
-    `바뀐 그림 ${String(r.changed)}장 · 같은 그림 ${String(r.unchanged)}장 · 한쪽에만 있는 상태 ${String(r.oneSided)}개`,
+    [
+      `바뀐 쌍 ${String(r.changed)}`,
+      `같은 쌍 ${String(r.unchanged)}`,
+      `한쪽에만 있는 상태 ${String(r.oneSided)}`,
+      ...extra,
+    ].join(' · ') + ' (쌍 = 상태 하나의 테마·폭 하나, 전체 그림 포함)',
   )
   if (r.regressions.length === 0) console.log('접근성 측정값에서 나빠진 항목 없음')
   else {
