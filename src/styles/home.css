@@ -137,14 +137,13 @@
   color: var(--color-muted);
 }
 
-/* 좁아서 한 줄에 못 서면 경로가 둘째 줄 오른쪽 끝으로 내려간다 */
-.learn-crumb,
-.learn-step {
-  margin-left: auto;
-  text-align: right;
+/* 경로는 장절 위에 선다 — 무대 카드의 머리줄 자리. 긴 경로(DEP의 네 마디)도 꺾여서 제자리에 선다 */
+.learn-crumb {
+  margin-bottom: var(--space-2);
 }
 
 .learn-step {
+  margin-left: auto;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

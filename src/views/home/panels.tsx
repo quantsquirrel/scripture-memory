@@ -222,13 +222,11 @@ export function NewVersePanel({
       )}
       {next && (
         <div className="learn-item">
-          {/* 무대 카드 머리줄과 같은 짝 — 왼쪽은 무엇인지(장절), 오른쪽은 어디에 있는지(경로) */}
-          <div className="learn-item-head">
-            <h3 className="learn-ref">{next.ref}</h3>
-            <span className="learn-crumb">
-              <Crumb parts={next.crumb} />
-            </span>
-          </div>
+          {/* 학습 1단계 카드와 같은 차례 — 경로(카드 머리줄) → 장절 → 말씀 */}
+          <p className="learn-crumb">
+            <Crumb parts={next.crumb} />
+          </p>
+          <h3 className="learn-ref">{next.ref}</h3>
           <p className="verse learn-preview">{next.text}</p>
           <button
             className={lit === 'next' ? 'btn btn-primary' : 'btn'}
