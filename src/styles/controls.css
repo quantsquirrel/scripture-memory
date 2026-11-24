@@ -39,8 +39,9 @@
 }
 
 /* ── 등급 버튼 ───────────────────────────────────────────────
- * 객관 채점이 제안한 등급(.suggested)이 이 화면의 등불이다 — 금색 테두리로 켜고,
- * 나머지 셋은 보조 버튼처럼 물러선다. 라벨 색은 결과 상태색(bad/warn/ok/info).
+ * 객관 채점이 제안한 등급(.suggested)이 이 화면의 등불이다 — 금색 테두리와 한 단 밝은
+ * 면으로 켜고, 나머지 셋은 보조 버튼과 같이 채움 없이 물러선다(채움이 넷이면 말씀보다
+ * 무거웠다). 라벨 색은 결과 상태색(bad/warn/ok/info).
  */
 .rating-bar {
   display: grid;
@@ -67,7 +68,7 @@
   padding: var(--space-4) var(--space-2);
   border-radius: var(--radius);
   border: 1px solid var(--color-border);
-  background: var(--color-panel-alt);
+  background: transparent;
   color: var(--color-text);
   cursor: pointer;
   transition:
@@ -112,7 +113,7 @@
 .rate.suggested {
   border: 2px solid var(--color-accent);
   padding: calc(var(--space-4) - 1px) calc(var(--space-2) - 1px);
-  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-panel-alt));
+  background: var(--color-panel-alt);
 }
 
 /* "제안" 표지 — 색만으로 알리지 않도록 글자 한 줄을 칸 위에 얹는다 */
@@ -245,6 +246,6 @@
   }
 
   .rate:not(.suggested):hover {
-    background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 7%);
+    background: var(--color-panel-alt);
   }
 }

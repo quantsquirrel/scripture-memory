@@ -1,4 +1,5 @@
 import { Chevron } from '../../components/Chevron'
+import { Crumb } from '../../components/Crumb'
 import { fillStyle } from '../../components/fill'
 import type { GoalInfo } from '../../domain/goal'
 import { formatInterval } from '../../domain/scheduler'
@@ -24,14 +25,30 @@ export function TodayReviewPanel({
   onReview: () => void
 }) {
   const untilNext = nextDue === null ? null : formatInterval(new Date(nextDue).getTime() - now)
+  const head = (
+    <>
+      <h2>오늘의 복습</h2>
+      <time className="today-date" dateTime={dateAttr(now)}>
+        {todayLabel(now)}
+      </time>
+    </>
+  )
+  // 누를 것이 없으면 카드가 아니다 — 손으로 다루는 것만 카드에 담고, 알림 두 줄은 바닥에 선다
+  if (due === 0 && upcoming === 0) {
+    return (
+      <section className="ground today-rest">
+        <div className="ground-head">{head}</div>
+        <p>
+          {todayReviews > 0 ? `오늘 ${todayReviews}회 복습 완료! ` : ''}
+          대기 중인 카드가 없습니다.
+        </p>
+        {untilNext !== null && <p className="muted small">다음 복습: {untilNext} 후</p>}
+      </section>
+    )
+  }
   return (
     <section className="panel today">
-      <div className="today-head">
-        <h2>오늘의 복습</h2>
-        <time className="today-date" dateTime={dateAttr(now)}>
-          {todayLabel(now)}
-        </time>
-      </div>
+      <div className="today-head">{head}</div>
       {due > 0 ? (
         <>
           <p className="today-figure">
@@ -49,11 +66,12 @@ export function TodayReviewPanel({
             복습 시작
           </button>
         </>
-      ) : upcoming > 0 ? (
+      ) : (
         <>
           <p className="today-line">
             다시 도전할 카드 <strong>{upcoming}</strong>장이 잠시 후 돌아옵니다
-            {untilNext !== null && ` (${untilNext} 후)`}
+            {/* 괄호 묶음은 한 덩어리로 넘어간다 — "(10분"과 "후)"가 갈라지지 않게 */}
+            {untilNext !== null && <span className="nowrap"> ({untilNext} 후)</span>}
           </p>
           {todayReviews > 0 && (
             <ul className="today-meta">
@@ -63,16 +81,6 @@ export function TodayReviewPanel({
           <button className="btn btn-primary" onClick={onReview}>
             지금 이어서 복습
           </button>
-        </>
-      ) : (
-        <>
-          <p className="today-rest">
-            {todayReviews > 0 ? `오늘 ${todayReviews}회 복습 완료! ` : ''}
-            대기 중인 카드가 없습니다.
-          </p>
-          {untilNext !== null && (
-            <p className="muted small today-rest">다음 복습: {untilNext} 후</p>
-          )}
         </>
       )}
     </section>
@@ -112,6 +120,21 @@ export function RecalibrateBanner({ onOpen }: { onOpen: () => void }) {
 export interface LearnTarget {
   id: string
   label: string
+  /** 줄이지 않은 장절 — 카드 안에서 구절의 이름으로 선다 */
+  ref: string
+}
+
+/** 사다리를 타던 구절. 본문은 싣지 않는다(타이핑 검증을 앞둔 구절의 정답이라서) */
+export interface ResumeTarget extends LearnTarget {
+  stepTitle: string
+  nth: number
+  total: number
+}
+
+/** 아직 배우지 않은 다음 구절. 경로(과정 › 단원 › 주제)와 말씀을 함께 비춘다 */
+export interface NextTarget extends LearnTarget {
+  crumb: readonly string[]
+  text: string
 }
 
 /**
@@ -128,31 +151,131 @@ export function paceNote(goal: GoalInfo, learnEndLabel: string): string | null {
   return `새 구절은 ${learnEndLabel}까지, 마지막 ${goal.bufferDays}일은 복습으로 굳히기`
 }
 
+/**
+ * 새 구절 — 손으로 다루는 카드. 다음에 새길 구절이 학습 1단계 카드와 같은 차례
+ * (경로 → 장절 → 말씀)로 작게 서고, 그 아래 버튼이 그 구절로 들어간다.
+ * 목표 페이싱 숫자는 읽는 기록이라 진행률 묶음(바닥)으로 내려갔다.
+ */
 export function NewVersePanel({
-  goal,
-  learnEndLabel,
-  newThisWeek,
   resume,
   next,
   lamp,
   onLearn,
 }: {
-  goal: GoalInfo
-  learnEndLabel: string
-  newThisWeek: number
-  resume: LearnTarget | null
-  next: LearnTarget | null
+  resume: ResumeTarget | null
+  next: NextTarget | null
   /** 이 패널이 오늘의 주 행동을 맡는가 — 복습할 카드가 남았으면 그쪽이 등불이다 */
   lamp: boolean
   onLearn: (verseId: string) => void
 }) {
+  // 누를 것이 없으면 카드가 아니다 — 오늘의 복습과 같은 규칙
+  if (!resume && !next) {
+    return (
+      <section className="ground">
+        <div className="ground-head">
+          <h2>새 구절 학습</h2>
+        </div>
+        <p>모든 구절을 학습했습니다! 이제 유지 복습만 하면 됩니다.</p>
+      </section>
+    )
+  }
   // 등불은 하나: 이어 할 구절이 있으면 그것이, 없으면 다음 구절이 켜진다
   const lit: 'resume' | 'next' | null = lamp ? (resume ? 'resume' : 'next') : null
-  const note = paceNote(goal, learnEndLabel)
   return (
     <section className="panel">
       <h2>새 구절 학습</h2>
-      {/* 목표일 페이싱 — D-day 한 줄과 숫자 묶음. 지표는 물러서 있다(원칙 3) */}
+      {resume && (
+        <div className="learn-item">
+          <div className="learn-item-head">
+            <h3 className="learn-ref">{resume.ref}</h3>
+            <span className="learn-step">
+              {resume.stepTitle}{' '}
+              <span className="step-of">
+                {resume.nth}/{resume.total}
+              </span>
+            </span>
+          </div>
+          {/* 무대 윗줄과 같은 사다리 네 칸 — 글자 안내가 옆에 있어 막대는 장식이다 */}
+          <ol className="ladder" aria-hidden="true">
+            {Array.from({ length: resume.total }, (_, i) => (
+              <li
+                key={i}
+                className={
+                  i + 1 < resume.nth
+                    ? 'is-done'
+                    : i + 1 === resume.nth
+                      ? 'is-current'
+                      : undefined
+                }
+              />
+            ))}
+          </ol>
+          <button
+            className={lit === 'resume' ? 'btn btn-primary' : 'btn'}
+            onClick={() => {
+              onLearn(resume.id)
+            }}
+          >
+            이어서: {resume.label}
+          </button>
+        </div>
+      )}
+      {next && (
+        <div className="learn-item">
+          <p className="learn-crumb">
+            <Crumb parts={next.crumb} />
+          </p>
+          <h3 className="learn-ref">{next.ref}</h3>
+          <p className="verse learn-preview">{next.text}</p>
+          <button
+            className={lit === 'next' ? 'btn btn-primary' : 'btn'}
+            onClick={() => {
+              onLearn(next.id)
+            }}
+          >
+            다음 구절: {next.label}
+          </button>
+        </div>
+      )}
+    </section>
+  )
+}
+
+export interface ProgressBarRow {
+  key: string
+  label: string
+  done: number
+  total: number
+}
+
+/**
+ * 진행률 — 읽는 기록이라 카드에 담지 않고 바닥에 둔다. 목표일 페이싱(D-day 한 줄과
+ * 숫자 묶음), 전체 막대, 과정별 표가 한 묶음이다. 지표는 물러서 있다(원칙 3).
+ */
+export function ProgressPanel({
+  goal,
+  learnEndLabel,
+  newThisWeek,
+  overall,
+  rows,
+  onOpen,
+}: {
+  goal: GoalInfo
+  learnEndLabel: string
+  newThisWeek: number
+  overall: { done: number; total: number }
+  rows: readonly ProgressBarRow[]
+  onOpen: () => void
+}) {
+  const note = paceNote(goal, learnEndLabel)
+  return (
+    <section className="ground">
+      <div className="ground-head">
+        <h2>진행률</h2>
+        <button className="btn-ghost" onClick={onOpen}>
+          목록에서 구절 보기
+        </button>
+      </div>
       {!goal.past && goal.remaining > 0 && (
         <div className="goal">
           <p className="goal-line">
@@ -180,34 +303,12 @@ export function NewVersePanel({
         </div>
       )}
       {!goal.past && goal.remaining === 0 && (
-        <p className="muted small">
+        <p className="muted small goal-done">
           목표 범위({goal.scopeLabel}까지)를 모두 외웠습니다. 설정에서 다음 목표를 정할 수
           있습니다.
         </p>
       )}
-      {resume && (
-        <button
-          className={lit === 'resume' ? 'btn btn-primary' : 'btn'}
-          onClick={() => {
-            onLearn(resume.id)
-          }}
-        >
-          이어서: {resume.label}
-        </button>
-      )}
-      {next ? (
-        <button
-          className={lit === 'next' ? 'btn btn-primary' : 'btn'}
-          onClick={() => {
-            onLearn(next.id)
-          }}
-        >
-          다음 구절: {next.label}
-        </button>
-      ) : (
-        !resume && <p>모든 구절을 학습했습니다! 이제 유지 복습만 하면 됩니다.</p>
-      )}
-      <p className="muted small panel-note">
+      <p className="muted small pace-note">
         이번 주 새 구절 {newThisWeek}개
         {note !== null && (
           <>
@@ -216,35 +317,6 @@ export function NewVersePanel({
           </>
         )}
       </p>
-    </section>
-  )
-}
-
-export interface ProgressBarRow {
-  key: string
-  label: string
-  done: number
-  total: number
-}
-
-/** 진행률 — 읽는 기록이라 카드에 담지 않고 바닥에 헤어라인 표로 둔다 */
-export function ProgressPanel({
-  overall,
-  rows,
-  onOpen,
-}: {
-  overall: { done: number; total: number }
-  rows: readonly ProgressBarRow[]
-  onOpen: () => void
-}) {
-  return (
-    <section className="ground">
-      <div className="ground-head">
-        <h2>진행률</h2>
-        <button className="btn-ghost" onClick={onOpen}>
-          목록에서 구절 보기
-        </button>
-      </div>
       <div
         className="progress"
         role="progressbar"
@@ -266,7 +338,7 @@ export function ProgressPanel({
             className={row.done === row.total ? 'col-row is-complete' : 'col-row'}
           >
             <span className="col-label">{row.label}</span>
-            <span className="progress progress-ink" aria-hidden="true">
+            <span className="progress progress-ink progress-thin" aria-hidden="true">
               <span className="progress-fill" style={fillStyle(row.done, row.total)} />
             </span>
             <span className="col-count">

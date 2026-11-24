@@ -23,7 +23,8 @@
   white-space: nowrap;
 }
 
-.review-count .step-of {
+.review-count .step-of,
+.learn-step .step-of {
   margin-left: var(--space-2);
 }
 
@@ -32,6 +33,20 @@
 .mode-tag {
   font-weight: 600;
   color: var(--color-info);
+}
+
+/*
+ * 물음 — 카드 윗단. 아래의 점선이 "아직 열리지 않은 것"의 경계다: 답을 열기 전부터
+ * 서 있고, 열리면 그 아래에서 말씀이 나타난다(물음은 자리를 지킨다).
+ */
+.prompt {
+  padding-bottom: var(--space-8);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+/* 쟁반은 제 여백(auto)으로 카드 아랫단에 내려가므로 뺀다 */
+.prompt + :not(.stage-foot) {
+  margin-top: var(--space-8);
 }
 
 /* 화면당 하나뿐인 물음 — 장절이나 주제. 답(본문)이 나타나면 본문이 주인공이다 */
@@ -69,20 +84,39 @@
 /*
  * 정답 — 낭송의 틀. TMS 낭송 순서(주제 → 장절 → 말씀 → 장절)대로 선다:
  * 여는 장절은 왼쪽, 말씀, 닫는 장절은 오른쪽 끝 — 카드 아랫단에 다시 찍힌 장절처럼.
- * 공개 전 경계는 점선(아직 열리지 않은 것의 관례).
+ * 틀은 물음과 쟁반 사이의 빈 자리를 다 차지하고, 말씀 묶음이 그 가운데에 선다 —
+ * 짧은 구절이 카드 위쪽에 몰리고 아래가 통째로 비지 않게.
  */
 .answer {
-  border-top: 1px dashed var(--color-border);
-  margin-top: var(--space-12);
-  padding-top: var(--space-10);
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   animation: reveal var(--dur-short) var(--ease-out) both;
 }
 
-@media (max-width: 768px) {
-  .answer {
-    margin-top: var(--space-8);
-    padding-top: var(--space-8);
-  }
+.prompt + .answer {
+  margin-top: 0;
+  padding-block: var(--space-8);
+}
+
+/* 채점 결과 다음에 서는 정답 — 점수 한 줄 뒤에는 그대로 잇고, 틀린 곳을 표시한 본문
+   뒤에는 헤어라인으로 가른다(위는 내가 적은 것, 아래는 말씀). 점선은 물음 아래 하나뿐이다 */
+.diff-view + .answer,
+.diff-score + .answer {
+  margin-top: 0;
+  padding-block: var(--space-8);
+}
+
+.diff-view:has(.diff-words):not(:has(.diff-score.good)) + .answer {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-line);
+}
+
+/* 완벽한 타이핑 결과 — 표시할 차이가 없는 본문은 바로 아래 낭송의 틀과 같은 글이라
+   점수 한 줄만 남긴다 */
+.diff-view:has(.diff-score.good):has(+ .answer) .diff-words {
+  display: none;
 }
 
 .answer-head {
@@ -108,12 +142,11 @@
   color: var(--color-muted);
 }
 
+/* 장절은 어디서나 같은 글자다 — 물음 제목의 장절과 같은 비례 숫자, 자간 0 */
 .answer-ref {
   color: var(--color-info);
   font-weight: 600;
   margin: 0;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
 }
 
 .answer .verse {
@@ -181,6 +214,24 @@
 .fl-peeks {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* 쟁반 안의 실패 안내 — 버튼 바로 위. 쟁반의 위 여백이 이미 띄우므로 제 여백은 뺀다 */
+.stage-foot [role='status'] .diff-score {
+  margin-top: 0;
+}
+
+/* 채점 결과 아래의 설명 두 줄 — 쟁반 밖, 본문의 끝 */
+.stage-notes {
+  margin-top: var(--space-6);
+}
+
+.stage-notes p {
+  margin: 0;
+}
+
+.stage-notes p + p {
+  margin-top: var(--space-2);
 }
 
 /* 학습 1단계의 낭송 규칙 — 카드 안의 옅은 우물. 띠를 두르지 않는다 */

@@ -1,12 +1,13 @@
 import { PROGRESS_ROWS } from '../app/queries'
-import { collectionOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import { stepOrdinal } from '../domain/ladder'
+import { collectionOf, crumbOf, topicOf, VERSE_BY_ID, VERSES } from '../data/verses'
+import { STEP_TITLE, stepOrdinal } from '../domain/ladder'
 import {
-  type LearnTarget,
   NewVersePanel,
+  type NextTarget,
   ProgressPanel,
   RECALIBRATE_DUE_THRESHOLD,
   RecalibrateBanner,
+  type ResumeTarget,
   TodayReviewPanel,
 } from './home/panels'
 import { useHomeData } from './hooks'
@@ -28,17 +29,28 @@ export function Home({
 
   const { graduatedIds, inProgress, goal } = data
   const inProgressVerse = inProgress ? VERSE_BY_ID[inProgress.verseId] : undefined
-  const resume: LearnTarget | null =
+  // 이어 하는 구절은 본문을 싣지 않는다 — 타이핑 검증을 앞둔 구절의 정답이 홈에 비치면 안 된다
+  const resume: ResumeTarget | null =
     inProgress && inProgressVerse
       ? {
           id: inProgressVerse.id,
           label: `${inProgressVerse.refAbbr} (단계 ${stepOrdinal(inProgress.step).nth}/${stepOrdinal(inProgress.step).total})`,
+          ref: inProgressVerse.ref,
+          stepTitle: STEP_TITLE[inProgress.step],
+          ...stepOrdinal(inProgress.step),
         }
       : null
 
+  // 아직 배우지 않은 다음 구절은 말씀 첫머리까지 비춘다 — 학습 1단계가 어차피 본문부터 연다
   const nextNew = data.nextNewId ? VERSE_BY_ID[data.nextNewId] : undefined
-  const next: LearnTarget | null = nextNew
-    ? { id: nextNew.id, label: `${nextNew.refAbbr} (${collectionOf(nextNew).short})` }
+  const next: NextTarget | null = nextNew
+    ? {
+        id: nextNew.id,
+        label: `${nextNew.refAbbr} (${collectionOf(nextNew).short})`,
+        ref: nextNew.ref,
+        crumb: [...crumbOf(nextNew), topicOf(nextNew).title],
+        text: nextNew.text,
+      }
     : null
 
   const learnEnd = new Date(
@@ -46,7 +58,7 @@ export function Home({
   )
 
   return (
-    <div>
+    <div className="home">
       {data.due >= RECALIBRATE_DUE_THRESHOLD && <RecalibrateBanner onOpen={onRecalibrate} />}
       <TodayReviewPanel
         due={data.due}
@@ -59,9 +71,6 @@ export function Home({
         onReview={onReview}
       />
       <NewVersePanel
-        goal={goal}
-        learnEndLabel={`${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`}
-        newThisWeek={data.newThisWeek}
         resume={resume}
         next={next}
         // 복습 시작 버튼이 떠 있지 않을 때만 새 구절 학습이 오늘의 주 행동이 된다
@@ -69,6 +78,9 @@ export function Home({
         onLearn={onLearn}
       />
       <ProgressPanel
+        goal={goal}
+        learnEndLabel={`${learnEnd.getMonth() + 1}/${learnEnd.getDate()}`}
+        newThisWeek={data.newThisWeek}
         overall={{ done: graduatedIds.size, total: VERSES.length }}
         rows={PROGRESS_ROWS.map((row) => ({
           key: row.key,

@@ -120,16 +120,17 @@ export function FirstLetterStep({
         <span>첫 글자만 보고 낭송하세요. 막힌 어절만 탭</span>
         <span className="fl-peeks">엿보기 {attempt.peeks}회</span>
       </p>
-      {/* 실패 안내는 '낭송 완료'를 누른 자리에서 들려야 한다 — 알림 영역은 늘 서 있고 내용만 바뀐다 */}
-      <div role="status">
-        {failedPeeks !== null && (
-          <div className="diff-score bad">
-            엿보기 {failedPeeks}회. 본문을 다시 읽고 재도전하세요 ({MAX_PEEKS_TO_PASS}회 이하
-            통과)
-          </div>
-        )}
-      </div>
       <div className="stage-foot">
+        {/* 실패 안내는 '낭송 완료'를 누른 자리에서 보이고 들려야 한다 — 쟁반 안, 버튼 바로 위에
+            선다(보드가 길면 쟁반 밖의 안내는 버튼 뒤로 가려졌다). 알림 영역은 늘 서 있고 내용만 바뀐다 */}
+        <div role="status">
+          {failedPeeks !== null && (
+            <div className="diff-score bad">
+              엿보기 {failedPeeks}회. 본문을 다시 읽고 재도전하세요 ({MAX_PEEKS_TO_PASS}회 이하
+              통과)
+            </div>
+          )}
+        </div>
         <div className="btn-row">
           <button
             ref={rereadRef}
@@ -186,22 +187,23 @@ export function TypingStep({
               </button>
             </div>
           ) : (
-            <div className="stage-foot">
-              <p className="muted small">
-                틀린 곳을 확인했으면 정답을 가리고 기억만으로 다시 도전하세요.
-              </p>
-              <div className="btn-row">
-                <button className="btn btn-primary" onClick={onRetry}>
-                  다시 도전 <span className="btn-sub">정답 가리고 재입력</span>
-                </button>
-                <button className="btn" onClick={onAccept}>
-                  그냥 넘어가기
-                </button>
+            <>
+              {/* 설명은 읽는 글이라 본문 쪽에 둔다 — 쟁반에는 버튼만 남아 틀린 곳을 덜 가린다 */}
+              <div className="stage-notes muted small">
+                <p>틀린 곳을 확인했으면 정답을 가리고 기억만으로 다시 도전하세요.</p>
+                <p>오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다. 그대로 졸업합니다.</p>
               </div>
-              <p className="muted small">
-                오타처럼 의식하지 못한 실수였다면 넘어가도 됩니다. 그대로 졸업합니다.
-              </p>
-            </div>
+              <div className="stage-foot">
+                <div className="btn-row">
+                  <button className="btn btn-primary" onClick={onRetry}>
+                    다시 도전 <span className="btn-sub">정답 가리고 재입력</span>
+                  </button>
+                  <button className="btn" onClick={onAccept}>
+                    그냥 넘어가기
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </>
       ) : (

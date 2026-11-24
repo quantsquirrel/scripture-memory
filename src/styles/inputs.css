@@ -31,6 +31,9 @@
   font-size: var(--text-md);
   line-height: var(--leading-relaxed);
   resize: vertical;
+  /* 적은 만큼 자란다 — 긴 구절을 적다가 첫 줄이 칸 위로 잘려 올라가지 않게.
+     모르는 브라우저는 rows가 정한 높이에서 안쪽으로 흐른다 */
+  field-sizing: content;
 }
 
 .typing-input::placeholder,
