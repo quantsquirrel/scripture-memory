@@ -137,6 +137,16 @@
     margin-bottom: var(--space-4);
   }
 
+  /* 복귀 안내(우물) 바로 아래에 설 때 — 카드끼리의 틈이 아니라 바닥 묶음의 틈으로 */
+  .notice-row + .panel.today {
+    margin-top: var(--space-12);
+  }
+
+  /* 설치 안내(main 밖의 카드) 아래도 같은 틈 — 안내의 아래 여백(space-6)에 더한다 */
+  .install-banner ~ main .panel.today:first-child {
+    margin-top: var(--space-6);
+  }
+
   /* 쟁반 높이만큼 바닥을 비운다 — 맨 아래 줄이 쟁반 밑에 깔리지 않게.
      쟁반과의 틈은 진행률 묶음(.ground)의 아래 여백이 맡는다 */
   .app:has(.home-action) {
