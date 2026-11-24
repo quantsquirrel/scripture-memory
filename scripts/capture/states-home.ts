@@ -59,6 +59,19 @@ export const HOME: StateDef[] = [
     },
   },
   {
+    id: 'home-due-reviewed',
+    screen: 'home',
+    title: '복습 대기 + 오늘 복습 횟수만(밀린 카드 없음)',
+    how: 'home-due와 같은 시드에 오늘 복습 기록 3줄',
+    run: async (s) => {
+      await s.seed(seed(HOME_DUE, { reviews: todayLogs(3, 'AS3a:topic') }))
+      await s.open('#/')
+      await s.see('오늘 3회 복습')
+      if ((await s.page.getByText(/^밀린 카드/).count()) > 0)
+        throw new Error('밀린 카드가 섰다')
+    },
+  },
+  {
     id: 'home-due-overdue',
     screen: 'home',
     title: '복습 대기 + 밀린 카드만, 이어서·다음 구절 버튼 둘(등불 없음), 목표일 지남',

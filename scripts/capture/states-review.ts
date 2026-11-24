@@ -124,9 +124,10 @@ function recite(dir: 'topic' | 'ref'): StateDef[] {
 function firstLetter(dir: 'topic' | 'ref'): StateDef[] {
   const open = (s: Session, v: string) =>
     openReview(s, reviewSeed(v, dir, 'firstLetter'), MODE.firstLetter)
-  const reveal = async (s: Session) => {
+  /** 정답을 열고, 엿보기 수가 정하는 제안 등급(0회 좋음·1~2회 어려움·3회 이상 다시)이 맞는지까지 */
+  const reveal = async (s: Session, suggested: 1 | 2 | 3) => {
     await s.click('낭송 완료, 정답 확인')
-    await s.page.locator('.rate.suggested').waitFor()
+    await s.page.locator(`button.rate-${String(suggested)}.suggested`).waitFor()
   }
   return [
     ...vary(
@@ -169,7 +170,7 @@ function firstLetter(dir: 'topic' | 'ref'): StateDef[] {
       (v) => async (s) => {
         await open(s, v)
         if (dir === 'topic') await peek(s, 1)
-        await reveal(s)
+        await reveal(s, dir === 'topic' ? 2 : 3)
       },
     ),
     ...(dir === 'topic'
@@ -184,7 +185,7 @@ function firstLetter(dir: 'topic' | 'ref'): StateDef[] {
           (v) => async (s) => {
             await open(s, v)
             await peek(s, 3)
-            await reveal(s)
+            await reveal(s, 1)
           },
         )
       : []),
@@ -194,10 +195,13 @@ function firstLetter(dir: 'topic' | 'ref'): StateDef[] {
 function typing(dir: 'topic' | 'ref'): StateDef[] {
   const open = (s: Session, v: string) =>
     openReview(s, reviewSeed(v, dir, 'typing'), MODE.typing)
-  const grade = async (s: Session, text: string) => {
+  /** 채점하고, 정확도 칸(완벽 good·90% 이상 warn·그 아래 bad)과 제안 등급이 맞는지까지 */
+  const grade = async (s: Session, text: string, score: 'good' | 'warn' | 'bad') => {
     await s.page.locator('#review-typing').fill(text)
     await s.click('채점')
-    await s.page.locator('.diff-view').waitFor()
+    await s.page.locator(`.diff-view .diff-score.${score}`).waitFor()
+    const suggested = { good: 3, warn: 2, bad: 1 }[score]
+    await s.page.locator(`button.rate-${String(suggested)}.suggested`).waitFor()
   }
   const name = DIR_NAME[dir]
   return [
@@ -236,7 +240,7 @@ function typing(dir: 'topic' | 'ref'): StateDef[] {
       },
       (v) => async (s) => {
         await open(s, v)
-        await grade(s, verse(v).text)
+        await grade(s, verse(v).text, 'good')
       },
     ),
     ...vary(
@@ -251,7 +255,7 @@ function typing(dir: 'topic' | 'ref'): StateDef[] {
       },
       (v) => async (s) => {
         await open(s, v)
-        await grade(s, oneOff(verse(v).text))
+        await grade(s, oneOff(verse(v).text), 'warn')
       },
     ),
     ...vary(
@@ -264,7 +268,7 @@ function typing(dir: 'topic' | 'ref'): StateDef[] {
       },
       (v) => async (s) => {
         await open(s, v)
-        await grade(s, partial(verse(v).text, 0.4))
+        await grade(s, partial(verse(v).text, 0.4), 'bad')
       },
     ),
   ]
@@ -272,10 +276,12 @@ function typing(dir: 'topic' | 'ref'): StateDef[] {
 
 function refInput(): StateDef[] {
   const open = (s: Session, v: string) => openReview(s, reviewSeed(v, 'text'), MODE.refInput)
-  const answer = async (s: Session, text: string) => {
+  /** 확인하고, 정오 칸(정답 good·오답 bad)과 제안 등급(좋음·다시)이 맞는지까지 */
+  const answer = async (s: Session, text: string, ok: boolean) => {
     await s.page.locator('#review-ref').fill(text)
     await s.click('확인')
-    await s.page.locator('.rate.suggested').waitFor()
+    await s.page.locator(`.diff-score.${ok ? 'good' : 'bad'}`).waitFor()
+    await s.page.locator(`button.rate-${ok ? '3' : '1'}.suggested`).waitFor()
   }
   return [
     ...vary(
@@ -313,7 +319,7 @@ function refInput(): StateDef[] {
       },
       (v) => async (s) => {
         await open(s, v)
-        await answer(s, verse(v).refAbbr)
+        await answer(s, verse(v).refAbbr, true)
       },
     ),
     ...vary(
@@ -326,7 +332,7 @@ function refInput(): StateDef[] {
       },
       (v) => async (s) => {
         await open(s, v)
-        await answer(s, '요 3:16')
+        await answer(s, '요 3:16', false)
       },
     ),
   ]
@@ -342,6 +348,7 @@ export const REVIEW: StateDef[] = [
   {
     id: 'review-loading',
     screen: 'review',
+    stage: true,
     title: '불러오는 중',
     how: 'IndexedDB 열기를 멈춘 채 복습 탭',
     stall: true,
@@ -408,7 +415,7 @@ export const REVIEW: StateDef[] = [
     ...stage,
     id: 'review-stale-skip-empty',
     title: '다른 탭에서 이미 복습한 카드 안내(건너뜀) — 한 장도 못 넘긴 빈 상태 + 다음 복습',
-    how: '카드 한 장뿐. 정답을 연 뒤 DB의 그 카드를 열흘 뒤 due로 바꾸고 좋음',
+    how: "카드 한 장뿐. 정답을 연 뒤 DB의 그 카드를 열흘 뒤 due로 바꾸고 좋음(문구의 '다음 복습'은 같은 구절의 장절·말씀 카드, 5일 뒤)",
     run: async (s) => {
       await openReview(s, reviewSeed('AS1a', 'topic', 'recite', false), MODE.recite)
       await s.click('정답 보기')
@@ -438,6 +445,31 @@ export const REVIEW: StateDef[] = [
       await s.page.locator('button.rate-3').click()
       await s.page.getByRole('heading', { name: '복습 완료!' }).waitFor()
       await s.see(/이미 복습한 카드라 건너뜁니다/)
+      if ((await s.page.getByText(/^다음 복습:/).count()) > 0)
+        throw new Error('다음 복습 문구가 섰다')
+    },
+  },
+  {
+    ...stage,
+    id: 'review-stale-skip-finale-next',
+    title: '복습 완료 장면 + 건너뜀 안내 + 다음 복습 문구(셋이 함께)',
+    how: '두 장 중 한 장을 넘긴 뒤, 남은 카드를 DB에서 열흘 뒤 due로 바꾸고 좋음',
+    run: async (s) => {
+      await openReview(
+        s,
+        seed(reviewSeed('AS1a', 'topic', 'recite', false), {
+          cards: [card('AS2a', 'topic', -HOUR)],
+        }),
+        MODE.recite,
+      )
+      await passRecite(s)
+      await s.see('남은 카드 1')
+      await s.click('정답 보기')
+      await s.put({ cards: [card('AS2a', 'topic', 10 * DAY)] })
+      await s.page.locator('button.rate-3').click()
+      await s.page.getByRole('heading', { name: '복습 완료!' }).waitFor()
+      await s.see(/이미 복습한 카드라 건너뜁니다/)
+      await s.see(/^다음 복습: .+ 후$/)
     },
   },
   {

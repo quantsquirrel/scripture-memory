@@ -65,8 +65,7 @@ export function fixtures(f: Fixtures): void {
   if (f.stall) {
     // idb의 openDB는 success·error 리스너로 끝을 기다린다 — 그 둘만 붙지 않게 해 영원히 기다리게 한다
     // 원래 메서드는 this 없이 꺼내 두고 apply로만 부른다
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    const open = IDBFactory.prototype.open
+    const open = Reflect.get(IDBFactory.prototype, 'open')
     IDBFactory.prototype.open = function (...args: Parameters<IDBFactory['open']>) {
       const req = open.apply(this, args)
       const add = req.addEventListener.bind(req)
@@ -81,8 +80,7 @@ export function fixtures(f: Fixtures): void {
   // - stale: 바로 앞에 다른 탭이 카드를 고쳐 쓴 것처럼 모든 카드의 due를 1초 당겨 둔다
   //          (같은 범위의 트랜잭션은 만든 순서대로 돈다 → 커밋이 바뀐 카드를 보고 거절한다)
   // - fail:  트랜잭션 자체가 열리지 않게 한다(저장 실패)
-  // eslint-disable-next-line @typescript-eslint/unbound-method
-  const tx = IDBDatabase.prototype.transaction
+  const tx = Reflect.get(IDBDatabase.prototype, 'transaction')
   IDBDatabase.prototype.transaction = function (
     this: IDBDatabase,
     ...args: Parameters<IDBDatabase['transaction']>
@@ -274,26 +272,47 @@ export interface Metric {
   checked: number
   /** 44×44px 미만 — e2e/a11y.spec.ts의 measureTargets와 같은 잣대 */
   small: Target[]
-  /** 가로 넘침: scrollWidth > innerWidth */
+  /**
+   * 가로 넘침. 앱이 html·body를 overflow-x: clip으로 두어 documentElement.scrollWidth는 늘
+   * 뷰포트 폭이다 — 그래서 잘라 주는 조상(overflow-x ≠ visible, body·html 말고)이 없는 보이는
+   * 요소의 오른쪽 끝과 body.scrollWidth 중 큰 값이 뷰포트를 넘는지 본다.
+   */
   overflowX: boolean
+  /** 가장 멀리 나간 오른쪽 끝(px, 반올림)과 그 요소(tag.class). 예전 측정값에는 없다 */
+  overflowRight?: number
+  overflowAt?: string
   scrollWidth: number
   innerWidth: number
-  /** 포커스 대표 캡처일 때만: 포커스한 요소와 그 링 */
-  focus?: { label: string; visible: boolean; outline: string }
+  /**
+   * 포커스 대표 캡처일 때만. visible은 :focus-visible에 걸리고(focusVisible) 링이 실제로
+   * 그려질 때(outline-style ≠ none·outline-width ≥ 2px·색 알파 > 0, 또는 box-shadow ≠ none) 참이다
+   * — e2e/a11y.spec.ts의 포커스 표시 검사와 같은 잣대.
+   */
+  focus?: {
+    label: string
+    focusVisible: boolean
+    visible: boolean
+    outline: string
+    shadow: string
+  }
 }
 
 /** 화면에 보이는 대화형 요소의 렌더 크기, 가로 넘침, 포커스 링 */
 export async function measure(page: Page, withFocus: boolean): Promise<Metric> {
   return page.evaluate(
-    ({ min, withFocus }) => {
+    ({ min, withFocus }): Metric => {
+      const visibleBox = (el: Element): DOMRect | null => {
+        const style = getComputedStyle(el)
+        if (style.display === 'none' || style.visibility === 'hidden') return null
+        const r = el.getBoundingClientRect()
+        return r.width === 0 && r.height === 0 ? null : r
+      }
       const selector = 'a, button, input:not([type=hidden]), textarea, select, summary'
-      const small: { tag: string; label: string; w: number; h: number }[] = []
+      const small: Target[] = []
       let checked = 0
       for (const el of Array.from(document.querySelectorAll(selector))) {
-        const style = getComputedStyle(el)
-        if (style.display === 'none' || style.visibility === 'hidden') continue
-        const r = el.getBoundingClientRect()
-        if (r.width === 0 && r.height === 0) continue
+        const r = visibleBox(el)
+        if (!r) continue
         checked++
         // 확장된 누름 영역(::after)까지 고려한다
         const after = getComputedStyle(el, '::after')
@@ -308,31 +327,69 @@ export async function measure(page: Page, withFocus: boolean): Promise<Metric> {
           })
         }
       }
-      const doc = document.documentElement
-      const metric: {
-        checked: number
-        small: typeof small
-        overflowX: boolean
-        scrollWidth: number
-        innerWidth: number
-        focus?: { label: string; visible: boolean; outline: string }
-      } = {
+
+      const vw = window.innerWidth
+      const describe = (el: Element): string => {
+        const cls = (el.getAttribute('class') ?? '').trim().split(/\s+/).filter(Boolean)
+        return [el.tagName.toLowerCase(), ...cls].join('.')
+      }
+      // 가장 멀리 나간 요소를 찾는다 — 오른쪽 끝은 그것과 body.scrollWidth(의사 요소까지 든다) 중 큰 값
+      let elementRight = 0
+      let at = ''
+      for (const el of Array.from(document.body.querySelectorAll('*'))) {
+        const r = visibleBox(el)
+        if (!r || r.width === 0 || r.right <= Math.max(elementRight, vw + 0.5)) continue
+        // 잘라 주는 조상이 있으면 넘침은 그 조상의 몫이다(조상 자신도 이 반복에서 잰다)
+        let clipped = false
+        for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+          if (getComputedStyle(p).overflowX !== 'visible') {
+            clipped = true
+            break
+          }
+        }
+        if (clipped) continue
+        elementRight = r.right
+        at = describe(el)
+      }
+      const right = Math.max(elementRight, document.body.scrollWidth)
+      if (at === '' && right > vw + 0.5) at = 'body'
+
+      const metric: Metric = {
         checked,
         small,
-        overflowX: doc.scrollWidth > window.innerWidth,
-        scrollWidth: doc.scrollWidth,
-        innerWidth: window.innerWidth,
+        overflowX: right > vw + 0.5,
+        overflowRight: Math.round(right),
+        overflowAt: at,
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: vw,
       }
+
       const active = document.activeElement
       if (withFocus && active instanceof HTMLElement && active !== document.body) {
         const s = getComputedStyle(active)
         // 이름이 글자에 없는 입력란은 placeholder, 그것도 없으면 id로 부른다
         const text = active.innerText.trim()
         const name = text !== '' ? text : (active.getAttribute('placeholder') ?? active.id)
+        // 계산된 색은 rgb()/rgba() — 넷째 값이 알파다(없으면 불투명)
+        const alpha = (color: string): number => {
+          const parts =
+            /\(([^)]*)\)/
+              .exec(color)?.[1]
+              ?.split(/[\s,/]+/)
+              .filter(Boolean) ?? []
+          return parts.length >= 4 ? parseFloat(parts[3] ?? '1') : 1
+        }
+        const outlined =
+          s.outlineStyle !== 'none' &&
+          parseFloat(s.outlineWidth) >= 2 &&
+          alpha(s.outlineColor) > 0
+        const focusVisible = active.matches(':focus-visible')
         metric.focus = {
           label: (active.getAttribute('aria-label') ?? name).trim().slice(0, 30),
-          visible: active.matches(':focus-visible'),
+          focusVisible,
+          visible: focusVisible && (outlined || s.boxShadow !== 'none'),
           outline: `${s.outlineStyle} ${s.outlineWidth} ${s.outlineColor}`,
+          shadow: s.boxShadow,
         }
       }
       return metric
