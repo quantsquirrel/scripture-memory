@@ -137,7 +137,7 @@ export function writeGallery(dir: string): string {
   const screens = screensOf(manifest.states, manifest.screens)
   const nav = screens.map(([k, name]) => `<a href="#${k}">${esc(name)}</a>`).join('')
   const shots = manifest.states.reduce((n, s) => n + s.shots.length, 0)
-  let body = `<p class="muted">커밋 ${esc(short(manifest.commit))}${manifest.dirty ? ' (커밋 안 된 변경 포함)' : ''} · 고정 시각 ${esc(manifest.fixedNow)} (${esc(manifest.timezone)}) · 상태 ${String(manifest.states.length)}개 · 그림 ${String(shots)}장</p>`
+  let body = `<p class="muted">커밋 ${esc(short(manifest.commit))}${manifest.dirty ? ' (커밋 안 된 변경 포함)' : ''} · 고정 시각 ${esc(new Date(manifest.fixedNow).toLocaleString('ko-KR', { timeZone: manifest.timezone }))} (${esc(manifest.timezone)}) · 상태 ${String(manifest.states.length)}개 · 그림 ${String(shots)}장</p>`
   for (const [screen, name] of screens) {
     body += `<h2 id="${screen}">${esc(name)}</h2>`
     for (const s of manifest.states.filter((x) => x.screen === screen)) {
