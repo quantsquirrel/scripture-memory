@@ -243,6 +243,35 @@ test.describe('말씀 상태 개정', () => {
     await expect(page.locator('.recal-verdicts')).toHaveCount(0)
   })
 
+  test('다음 구절이 화면에 나타난 바로 그 순간의 Space도 본문을 연다', async ({ page }) => {
+    await page.goto(BASE)
+    await seedGraduatedVerses(page, [
+      { id: 'AS1a', reps: 3, dueDays: -5 },
+      { id: 'AS2a', reps: 3, dueDays: -5 },
+    ])
+    await page.goto(`${BASE}#/recalibrate`)
+
+    await page.getByRole('button', { name: /그리스도인의 확신/ }).click()
+    await expect(page.locator('.card-code')).toHaveText('AS-1')
+    await page.keyboard.press('Space')
+    await expect(page.locator('.recal-solid')).toBeVisible()
+
+    // 구절 코드가 AS-2로 바뀌는 DOM 변경 직후(그리기 전)에 Space를 보낸다. 키 처리기가
+    // 화면보다 늦게 바뀌면 이전 구절(본문 펼침)의 처리기가 이 Space를 버린다.
+    await page.evaluate(() => {
+      const seen = new MutationObserver(() => {
+        if (document.querySelector('.card-code')?.textContent !== 'AS-2') return
+        seen.disconnect()
+        document.body.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+      })
+      seen.observe(document.body, { subtree: true, childList: true, characterData: true })
+    })
+    await page.keyboard.press('1')
+
+    await expect(page.locator('.card-code')).toHaveText('AS-2')
+    await expect(page.locator('.recal-solid')).toBeVisible()
+  })
+
   test('320px 좁은 모바일 화면에서도 가로 넘침 없이 판정 버튼과 완료 집계가 정렬된다', async ({
     page,
   }) => {
