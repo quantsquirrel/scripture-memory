@@ -1,5 +1,5 @@
 import { collectionOf, sectionOf, sectionsOf, VERSES } from '../data/verses'
-import type { StoredCard } from '../domain/card'
+import type { ReviewMode, StoredCard } from '../domain/card'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
@@ -10,7 +10,7 @@ import {
 } from '../domain/goal'
 import { isGraduated, isInProgress, type LearnProgress } from '../domain/ladder'
 import { latestGraduatedId, pickNextVerse } from '../domain/nextVerse'
-import { LEARN_AHEAD_MS, orderQueue } from '../domain/policy'
+import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../domain/policy'
 import type { Store } from '../ports/repositories'
 
 const startOfDay = (now: Date): Date => {
@@ -139,34 +139,59 @@ export async function loadBrowse(store: Store, now: Date = new Date()): Promise<
   }
 }
 
+/** 출제할 카드 한 장과 이번 회차의 복습 방식 — 화면에 보인 방식이 곧 증거에 남는 방식이다 */
+export interface QueuedCard {
+  sc: StoredCard
+  mode: ReviewMode
+}
+
+/**
+ * 카드 한 장의 이번 회차 방식(domain/policy.ts). 복습 기록은 낭송 차례를 타이핑
+ * 감사로 바꿀 수만 있으므로(감사 빚), 빈 기록으로 정한 방식이 낭송일 때만 그 카드의
+ * 기록을 cardKey 인덱스로 읽는다 — 수년치 기록 전체를 훑지 않는다.
+ */
+export async function modeFor(store: Store, sc: StoredCard): Promise<ReviewMode> {
+  const mode = reviewMode(sc.direction, sc.card, [])
+  if (mode !== 'recite') return mode
+  return reviewMode(sc.direction, sc.card, await store.reviews.ofCard(sc.key))
+}
+
+const queued = async (store: Store, sc: StoredCard): Promise<QueuedCard> => ({
+  sc,
+  mode: await modeFor(store, sc),
+})
+
 /**
  * 복습 큐. due가 비어 있으면 learn-ahead 창의 학습·재학습 카드를 쓴다 —
  * 방금 틀려 몇 분 뒤로 잡힌 카드를 같은 세션에서 이어 도전하기 위한 것이고,
- * 며칠 간격의 복습 카드는 당기지 않는다.
+ * 며칠 간격의 복습 카드는 당기지 않는다. 방식은 큐를 읽을 때의 카드 상태와
+ * 기록으로 정한다 — 다시 채운 큐의 카드는 방금 매긴 등급까지 반영해 다시 정해진다.
  */
 export async function loadReviewQueue(
   store: Store,
   isReviewable: (verseId: string) => boolean,
   now: Date = new Date(),
-): Promise<StoredCard[]> {
+): Promise<QueuedCard[]> {
   const due = await store.cards.due(now)
   const source = due.length > 0 ? due : await store.cards.upcomingLearning(LEARN_AHEAD_MS, now)
-  return orderQueue(source.filter((c) => isReviewable(c.verseId)))
+  const ordered = orderQueue(source.filter((c) => isReviewable(c.verseId)))
+  return Promise.all(ordered.map((sc) => queued(store, sc)))
 }
 
 /**
  * 큐에 든 카드 한 장을 저장소에서 다시 읽는다 — 채점이 StaleCardError로 거절됐을 때.
- * 그 사이 다른 곳에서 복습돼 learn-ahead 창 밖으로 밀려났거나 사라졌으면 null.
+ * 방식도 새 상태·새 기록으로 다시 정한다. 그 사이 다른 곳에서 복습돼 learn-ahead 창
+ * 밖으로 밀려났거나 사라졌으면 null.
  */
 export async function reloadQueuedCard(
   store: Store,
   key: string,
   now: Date = new Date(),
-): Promise<StoredCard | null> {
+): Promise<QueuedCard | null> {
   const fresh = await store.cards.get(key)
   if (!fresh) return null
   const horizon = new Date(now.getTime() + LEARN_AHEAD_MS).toISOString()
-  return fresh.card.due <= horizon ? fresh : null
+  return fresh.card.due <= horizon ? queued(store, fresh) : null
 }
 
 export interface SettingsData {

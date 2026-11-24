@@ -46,9 +46,13 @@ records on the device without requiring an account.
   a whitespace-delimited word-unit LCS diff, ignoring punctuation, to suggest an
   FSRS rating (Again, Hard, or Good). First-letter mode uses the number of peeks;
   reference entry uses correctness. The user confirms the final rating.
-- **Review-mode policy:** Young cards (`reps < 3`) use first-letter recall, followed
-  by recitation and self-grading, with a typing audit every fifth review.
-  Verse-to-reference cards always require reference entry.
+- **Review-mode policy:** The mode follows the card's FSRS state, not its review
+  count. Minute-scale steps (new, learning, relearning) use first-letter recall;
+  spaced reviews (Review state) use recitation and self-grading, with a typing
+  audit every fifth review. A spaced review rated Again puts the card on typing
+  audits at every spaced review until one passes; first-letter retries never
+  stand in for that audit. This audit debt is derived from the card's review log,
+  not stored. Verse-to-reference cards always require reference entry.
 
 ## Scripture Data
 

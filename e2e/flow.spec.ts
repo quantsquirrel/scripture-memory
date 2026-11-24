@@ -38,7 +38,7 @@ test.describe('전체 흐름 왕복', () => {
     await expect(page.getByRole('button', { name: '복습 시작' })).toBeVisible()
     await expect(page.getByText(/카드 3장이 기다리고 있습니다/)).toBeVisible()
 
-    // ── 복습: 첫 카드를 채점한다 (어린 카드 → 첫글자 또는 장절 입력)
+    // ── 복습: 첫 카드를 채점한다 (새 카드 → 첫글자 또는 장절 입력)
     await page.getByRole('button', { name: '복습 시작' }).click()
     await expect(page.locator('.mode-tag')).toBeVisible()
     const modeText = await page.locator('.mode-tag').innerText()

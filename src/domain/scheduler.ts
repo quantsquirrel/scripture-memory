@@ -118,8 +118,8 @@ export interface RatedCard {
 
 /**
  * 채점 기준이 된 카드가 저장소에서 이미 바뀌었다. 커밋하지 않았으므로 카드를
- * 다시 읽어 다시 출제해야 한다 — 새 상태에 옛 증거를 얹으면 reps로 정하는
- * 복습 모드(policy.ts)가 어긋나 타이핑 감사를 건너뛸 수 있다.
+ * 다시 읽어 다시 출제해야 한다 — 새 상태에 옛 증거를 얹으면 카드 상태·기록으로
+ * 정하는 복습 방식(policy.ts)이 어긋나 타이핑 감사를 건너뛸 수 있다.
  */
 export class StaleCardError extends Error {
   constructor(readonly key: string) {

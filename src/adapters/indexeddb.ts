@@ -194,6 +194,11 @@ class IdbReviews implements ReviewLog {
     return d.getAllFromIndex('reviews', 'ts', IDBKeyRange.lowerBound(sinceIso))
   }
 
+  /** cardKey 인덱스 조회 — 그 카드의 기록만 읽는다 */
+  async ofCard(cardKey: string): Promise<ReviewEntry[]> {
+    return (await openTmsDb()).getAllFromIndex('reviews', 'cardKey', cardKey)
+  }
+
   async count(): Promise<number> {
     return (await openTmsDb()).count('reviews')
   }

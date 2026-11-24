@@ -116,10 +116,13 @@ test.describe('다른 탭이 먼저 채점한 카드', () => {
 
     await rate(page, 3)
     await expect(page.getByText('갱신된 상태로 다시 출제합니다')).toBeVisible()
-    await expect(page.getByRole('button', { name: '정답 보기' })).toBeVisible()
+    // 다른 탭의 '다시'로 재학습 단계가 됐다 — 방식도 새 상태로 다시 정해, 낭송이 아니라
+    // 분 단위 재도전인 첫글자 힌트로 낸다
+    await expect(page.locator('.mode-tag')).toHaveText('첫글자 힌트')
     expect(await stored(page)).toEqual({ reps: 6, reviews: 6 })
 
-    await rate(page, 3)
+    await page.getByRole('button', { name: '낭송 완료, 정답 확인' }).click()
+    await page.locator('button.rate-3').click()
     await expect(page.getByRole('heading', { name: '복습 완료!' })).toBeVisible()
     expect(await stored(page)).toEqual({ reps: 7, reviews: 7 })
   })

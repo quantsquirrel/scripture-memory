@@ -1,5 +1,6 @@
-import type { Direction, ReviewMode, StoredCard } from './card'
+import type { Direction, ReviewEntry, ReviewMode, SerializedCard, StoredCard } from './card'
 import { required } from './invariant'
+import { State } from './scheduler'
 
 /**
  * learn-ahead 창: 몇 분 안에 due가 오는 학습·재학습 단계 카드를 당겨
@@ -8,22 +9,52 @@ import { required } from './invariant'
 export const LEARN_AHEAD_MS = 20 * 60_000
 
 /**
- * 복습 모드 선택 정책.
+ * 복습 방식 선택 정책. 난이도는 첫글자 힌트 < 낭송(자가 채점) < 타이핑 감사다.
  * - 말씀→장절 방향은 항상 장절 입력(객관 채점).
- * - 어린 카드(reps<3)는 첫글자 훈련으로 축자 회상을 강제.
- * - 이후 5회마다 한 번 타이핑 감사(word-perfect audit).
+ * - 분 단위 단계(새 카드·학습·재학습)는 첫글자 훈련으로 축자 회상을 강제한다.
+ *   간격을 두고 돌아온 복습(Review 상태)에는 첫글자 힌트를 쓰지 않는다.
+ * - Review 상태는 5회마다 한 번 타이핑 감사(word-perfect audit), 그리고 감사 빚이
+ *   있으면 갚을 때까지 매번 타이핑 감사.
  * - 그 외에는 소리 내어 낭송 후 자가 채점.
+ *
+ * history는 이 카드의 복습 기록이다. 기록은 낭송 차례를 타이핑 감사로 바꿀 수만
+ * 있으므로, 빈 기록으로 낭송이 아니면 기록을 읽을 필요가 없다.
  */
-export function reviewMode(direction: Direction, reps: number): ReviewMode {
+export function reviewMode(
+  direction: Direction,
+  card: Pick<SerializedCard, 'state' | 'reps'>,
+  history: readonly ReviewEntry[],
+): ReviewMode {
   if (direction === 'text') return 'refInput'
+  if (card.state !== State.Review) return 'firstLetter'
   // reps는 카드에 영속되는 값이고 백업 가져오기·Gist 병합으로 외부에서 들어올 수
   // 있다. 소수(예: 5.5)가 섞이면 `(reps + 1) % 5 === 0`이 영원히 거짓이 되어
   // 타이핑 감사가 한 번도 끼지 않는다 — 자가 채점이 무한정 이어지는 구멍이었다.
   // 정수로 내림해 주기를 계산하므로 어떤 실수 값에서도 5회 창이 성립한다.
-  const count = Number.isFinite(reps) ? Math.floor(reps) : 0
-  if (count < 3) return 'firstLetter'
-  if ((count + 1) % 5 === 0) return 'typing'
+  // NaN·Infinity는 주기를 셀 수 없으니 객관 채점 쪽(감사)으로 닫는다.
+  if (!Number.isFinite(card.reps)) return 'typing'
+  const count = Math.floor(card.reps)
+  if ((count + 1) % 5 === 0 || hasAuditDebt(history)) return 'typing'
   return 'recite'
+}
+
+/**
+ * 감사 빚: 마지막으로 통과한 타이핑 감사(typing·'다시' 아님) 뒤에 간격 복습
+ * 방식(recite·typing)으로 '다시'를 받은 기록이 있다. 빚이 있는 카드는 타이핑
+ * 감사를 통과할 때까지 간격 복습마다 타이핑 감사로 나온다.
+ *
+ * 분 단위 재도전(firstLetter)은 감사를 대신하지 않고, 거기서 받은 '다시'도 빚을
+ * 만들지 않는다. 저장하지 않고 기록에서 파생하므로 저장·export 형식이 그대로다.
+ * 순서는 ts로 본다 — 병합·가져오기를 거친 기록은 저장 순서가 시간 순이라는 보장이 없다.
+ */
+export function hasAuditDebt(history: readonly ReviewEntry[]): boolean {
+  let lastPass = ''
+  for (const e of history) {
+    if (e.mode === 'typing' && e.rating !== 1 && e.ts > lastPass) lastPass = e.ts
+  }
+  return history.some(
+    (e) => (e.mode === 'recite' || e.mode === 'typing') && e.rating === 1 && e.ts > lastPass,
+  )
 }
 
 /**
