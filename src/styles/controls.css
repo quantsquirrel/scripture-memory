@@ -153,6 +153,7 @@
   padding: var(--space-4) var(--space-6) var(--space-4) var(--space-8);
   background: transparent;
   border: none;
+  /* 바깥 1px 테두리 안쪽 곡선에 맞춘다(base.css .stage-foot과 같은 계산) */
   border-radius: calc(var(--radius-lg) - 1px) 0 0 calc(var(--radius-lg) - 1px);
   color: var(--color-text);
   font-size: var(--text-sm);
@@ -213,17 +214,17 @@
   margin-top: 0;
 }
 
-/* 암송 목표 요약 — 상자 없이 카드 위 굵은 한 줄로 세워, 바로 아래 저장 알림 우물과
-   상자가 포개지지 않게 한다 */
+/* 암송 목표 요약 — 지표는 물러서므로 보통 굵기로 카드 위에 세운다.
+   상자 없이 두어 바로 아래 저장 알림과 겹치지 않게 한다 */
 .goal-summary {
   margin: var(--space-8) 0 0;
   color: var(--color-text);
   font-size: var(--text-base);
-  font-weight: 600;
   line-height: var(--leading-normal);
 }
 
-/* 늘 떠 있는 제약 안내(예: 연동 서버 미설정) — 낭송 규칙(.callout)과 같은 조용한 우물 */
+/* 늘 떠 있는 제약 안내(예: 연동 서버 미설정) — 읽는 우물(panel-alt + md 반경, 테두리 없음)에
+   muted 작은 글자로 내려앉혀 조작부보다 물러선다 */
 .setting-notice {
   margin: 0 0 var(--space-8);
   padding: var(--space-4) var(--space-6);
@@ -234,8 +235,8 @@
   line-height: var(--leading-normal);
 }
 
-/* 설정의 완료·진행 알림 — 상자 없이 조작 바로 아래 서는 조용한 한 줄. 요약 줄이나 오류와
-   무게를 다투지 않는다 */
+/* 설정의 완료·진행·만료 알림 — 상자 없이 조작 바로 아래 서는 조용한 한 줄.
+   요약 줄이나 실패 오류와 무게를 다투지 않는다 */
 .status-msg {
   margin: var(--space-4) 0 0;
   color: var(--color-text);
@@ -248,7 +249,7 @@
   margin-top: var(--space-2);
 }
 
-/* 꼭 봐야 하는 실패·만료 오류 — 설정 안에서 유일하게 굵은 본문색 우물로 세우고,
+/* 꼭 봐야 하는 실패 오류 — 설정 안에서 유일하게 굵은 본문색 우물로 세우고,
    채점 결과(diff.css의 .diff-score::before)와 같은 '!' 표지를 앞에 둔다 */
 .status-msg.is-error {
   display: flex;
@@ -265,20 +266,16 @@
   margin: var(--space-4) 0 0;
 }
 
-/* 백업 두 버튼 — 360px 폰에서는 한 쌍으로 나란히, 그보다 더 좁은 화면에서만 세로로.
-   미디어 쿼리에는 토큰(var)을 쓸 수 없어 숫자로 적는다(inputs.css의 .field-row와 같은 경계) */
+/* 백업 두 버튼 — 공간이 허락하면 한 쌍으로 나란히, 좁은 화면이나 큰 글자(150%+)에서는
+   내용 폭(9rem)에 맞춰 스스로 세로 한 열로 내린다 */
 .backup-row {
+  flex-wrap: wrap;
   margin-top: var(--space-4);
 }
 
 .backup-row .btn {
+  flex: 1 1 9rem;
   margin-top: 0;
-}
-
-@media (max-width: 340px) {
-  .backup-row {
-    flex-direction: column;
-  }
 }
 
 /* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게. 점선 테두리는 "아직 쓰이지

@@ -92,6 +92,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const doCreatePairing = async () => {
     setPairBusy('create')
     setPairCreateMsg(null)
+    setPairMsg(null)
     try {
       setPairing(await generatePairingCode())
     } catch (e) {
@@ -103,6 +104,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
 
   const doCopyPairing = async () => {
     if (!pairing) return
+    setPairMsg(null)
     try {
       await navigator.clipboard.writeText(formatCode(pairing.code))
       setPairCreateMsg({ text: '코드를 복사했습니다.' })
@@ -116,6 +118,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
 
   const doApplyPairing = async () => {
     setPairBusy('apply')
+    setPairCreateMsg(null)
     setPairMsg({ text: '다른 기기의 기록을 가져오는 중…' })
     try {
       const r = await applyPairingCode(pairInput)
@@ -138,10 +141,12 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
     a.download = `tms-backup-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
     URL.revokeObjectURL(a.href)
+    setResetMsg(null)
     setMsg({ text: '백업 파일을 내려받았습니다.' })
   }
 
   const doImport = async (file: File) => {
+    setResetMsg(null)
     try {
       await importAll(JSON.parse(await file.text()) as unknown)
       setMsg({ text: '가져오기 완료.' })
@@ -153,6 +158,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const doReset = async () => {
     if (!window.confirm('모든 학습/복습 기록을 삭제합니다. 계속할까요?')) return
     await resetAll()
+    setMsg(null)
     setResetMsg({ text: '초기화했습니다.' })
   }
 

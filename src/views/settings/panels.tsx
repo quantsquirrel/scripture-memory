@@ -228,7 +228,7 @@ export function PairingPanel({
         </div>
       )}
       {pairing && left === 0 && (
-        <p className="status-msg is-error" role="status">
+        <p className="status-msg" role="status">
           코드가 만료되었습니다. 새로 만들어 주세요.
         </p>
       )}

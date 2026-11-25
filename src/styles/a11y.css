@@ -93,7 +93,6 @@
   .btn:active,
   .rate:active,
   .fl-word:active,
-  .col-tab:active,
   .seg:active {
     transform: none;
   }
@@ -116,6 +115,8 @@
 
 /* ── 고대비 모드 ─────────────────────────────────────────────
  * 사용자가 OS에서 고대비를 켜면 경계를 더 분명하게.
+ * 꺼진 컨트롤은 평상시 line 괘선으로 물러나지만, 고대비에서 장식 헤어라인보다
+ * 약해지면 자리를 놓치므로 경계를 올린다(켜짐과의 구분은 글자색·커서·disabled 속성).
  */
 @media (prefers-contrast: more) {
   .panel,
@@ -127,11 +128,15 @@
   .about-list,
   .about-list > div,
   .stage-foot,
-  .home-action {
+  .home-action,
+  .btn:disabled,
+  .typing-input:disabled,
+  .ref-input:disabled {
     border-color: var(--color-border);
   }
 
-  .muted {
+  .muted,
+  .setting-notice {
     color: var(--color-text);
   }
 }

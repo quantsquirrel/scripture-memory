@@ -35,7 +35,8 @@
 }
 
 .col-tab:focus-visible {
-  outline-offset: calc(-1 * var(--space-1));
+  /* 안쪽으로 4px 당겨 활성 탭 밑줄(--space-1, bottom -1px)과 링 아래 변이 겹치지 않게 한다 */
+  outline-offset: calc(-1 * var(--space-2));
 }
 
 .col-tab-name {
@@ -57,14 +58,14 @@
   font-weight: 700;
 }
 
+/* 배경 대신 border-bottom으로 그려 강제 색 모드(forced-colors)에서도 활성 밑줄이 남게 한다 */
 .col-tab.active::after {
   content: '';
   position: absolute;
   left: var(--space-2);
   right: var(--space-2);
   bottom: -1px;
-  height: var(--space-1);
-  background: var(--color-text);
+  border-bottom: var(--space-1) solid var(--color-text);
 }
 
 /* 섹션 — 제목과 부제는 바닥에, 내용은 카드에. 왼쪽 끝은 헤더·카드와 한 세로선에 선다 */

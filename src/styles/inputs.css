@@ -105,17 +105,26 @@
   pointer-events: none;
 }
 
-/* 짧은 관련 입력 둘(목표일 · 정착 기간)을 한 줄에 나란히 세운다.
+/* 짧은 관련 입력 둘(목표일 · 정착 기간)을 공간이 허락하면 한 줄에 나란히 세우고,
+   좁은 화면이나 큰 글자(150%+)에서는 내용 폭에 맞춰 스스로 한 열로 내린다.
+   최소 기준 폭(10rem · 8rem)은 rem 단위라 글자 배율을 따라가고, 360px 100%에서도
+   '복습 정착 기간 (일)' 이름표가 한 줄에 들어 두 칸의 윗변이 나란히 맞는다.
    date 입력의 달력 아이콘 높이 차이를 흡수하도록 두 칸 높이를 --touch-primary(48px)로 맞춘다 */
 .field-row {
-  display: grid;
-  grid-template-columns: minmax(10.5rem, 1.35fr) minmax(6.5rem, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-6);
   margin-top: var(--space-8);
 }
 
 .field-row > .field {
+  flex: 1 1 8rem;
   min-width: 0;
+  max-width: 100%;
+}
+
+.field-row > .field:first-child {
+  flex: 1 1 10rem;
 }
 
 .field-row label.small {
@@ -125,16 +134,9 @@
 .field-row .ref-input {
   width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: var(--touch-primary);
   padding: var(--space-4) var(--space-6);
-}
-
-/* 360px 폰에서는 두 칸을 나란히 유지하고 그보다 더 좁은 화면에서만 세로로 내린다.
-   미디어 쿼리에는 토큰(var)을 쓸 수 없어 숫자로 적는다(controls.css의 .backup-row와 같은 경계) */
-@media (max-width: 340px) {
-  .field-row {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (hover: hover) {

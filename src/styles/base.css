@@ -226,7 +226,8 @@ h3 {
   margin-top: 0;
 }
 
-/* 설치 안내(main 밖의 우물) 아래에 바닥 묶음이 곧바로 설 때도 24px 틈을 지킨다 */
+/* 설치 안내(main 밖의 우물, margin-bottom 12px) 아래에 바닥 묶음이 곧바로 설 때도 24px 틈을 지킨다.
+   main이 세로 flex라 두 여백이 겹치지 않고 12+12=24px로 더해진다 */
 .install-banner ~ main .ground:first-child {
   margin-top: var(--space-6);
 }
@@ -540,9 +541,11 @@ h3 {
  * 탭을 한 줄로 두고, 스크롤해도 탭에 닿도록 위에 붙인다.
  */
 @media (min-width: 769px) {
-  /* 키보드로 위로 올라갈 때 포커스된 요소가 sticky 헤더 뒤에 숨지 않게 한다 */
+  /* 키보드로 위로 올라갈 때 포커스된 요소가 sticky 헤더(상단 safe-area 포함) 뒤에 숨지 않게 한다 */
   html {
-    scroll-padding-top: calc(var(--touch-min) + var(--space-16));
+    scroll-padding-top: calc(
+      env(safe-area-inset-top, 0px) + var(--touch-min) + var(--space-16)
+    );
   }
 
   .app {
@@ -555,7 +558,7 @@ h3 {
     top: 0;
     z-index: 100;
     gap: var(--space-4);
-    padding: var(--space-6) 0;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--space-6)) 0 var(--space-6);
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-line);
     margin-bottom: var(--space-8);
