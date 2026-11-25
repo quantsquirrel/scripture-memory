@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 import { store } from '../app'
 import {
@@ -151,7 +151,10 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
     [session, verseId, kindState],
   )
 
-  useEffect(() => {
+  // 화면이 바뀌는 그 커밋에서 키 처리기도 함께 바꾼다(useLayoutEffect). useEffect는
+  // 그린 뒤에 돌아서, 다음 구절이 보인 직후의 키를 이전 구절 상태(본문 펼침)의
+  // 처리기가 받아 Space를 버렸다.
+  useLayoutEffect(() => {
     if (verseId === undefined) return
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat || e.altKey || e.ctrlKey || e.metaKey || isTyping(e.target)) return
