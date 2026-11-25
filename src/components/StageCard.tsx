@@ -16,7 +16,8 @@ const KEYS = new Set(['ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End
  * 1. 같은 카드 안에서 내용이 갈리면(정답 공개, 채점, 본문 다시 보기 ↔ 보드) 새 내용이 처음부터
  *    보이게 맨 위로 되돌린다. 채점 결과가 그 자리에서 쟁반 아래로 내려가 있으면 결과와 정답이
  *    쟁반 위에 서도록 필요한 만큼만 내린다. 카드의 직계 자식이 갈릴 때만 반응한다 — 보드의
- *    엿보기, 쟁반 안의 실패 안내, 입력 중인 글자는 직계 자식을 바꾸지 않는다.
+ *    엿보기, 쟁반 안의 실패 안내, 입력 중인 글자는 직계 자식을 바꾸지 않는다. 카드의 크기가
+ *    바뀌면(폰을 돌린다, 창을 줄인다) 채점 결과가 떠 있을 때만 결과가 다시 보이게 맞춘다.
  * 2. 포커스가 카드 밖(body, 윗줄, 독)에 있어도 방향키·PageUp·PageDown·Home·End로 카드 안을
  *    오르내린다. 문서가 흐르던 때에는 브라우저가 해 주던 일이다. 포커스가 카드 안에 있으면
  *    브라우저가 카드를 밀고, 입력란 안의 방향키는 글자 사이를 옮기므로 끼어들지 않는다.
@@ -39,9 +40,8 @@ export function StageCard({ children }: { children: ReactNode }) {
     const topOf = (el: HTMLElement) =>
       el.offsetParent === card ? el.offsetTop : el.offsetTop - card.offsetTop
 
-    const settle = () => {
-      if (!scrolls()) return
-      card.scrollTop = 0
+    /** 채점 결과가 쟁반 위에 다 보이게 필요한 만큼만 옮긴다. 이미 다 보이면 그대로 둔다 */
+    const showResult = () => {
       const result = card.querySelector<HTMLElement>(
         ':scope > .diff-score, :scope > .diff-view',
       )
@@ -51,12 +51,27 @@ export function StageCard({ children }: { children: ReactNode }) {
       // 장절 입력의 결과 배지는 뒤따르는 정답까지(카드의 끝까지) 보여야 하고,
       // 타이핑 결과는 점수 한 줄이 보이면 그 아래는 읽으며 내린다
       const score = result.querySelector<HTMLElement>('.diff-score') ?? result
-      const down =
+      const top = topOf(result) - pad
+      const bottom =
         score === result
-          ? card.scrollHeight - card.clientHeight
-          : topOf(score) + score.offsetHeight + pad - seen
+          ? card.scrollHeight - footHeight()
+          : topOf(score) + score.offsetHeight + pad
+      // 소수점 스크롤 값에 흔들리지 않게 1px의 여유를 둔다
+      if (card.scrollTop <= top + 1 && bottom <= card.scrollTop + seen + 1) return
       // 결과가 카드 윗단 위로 올라가도록 내리지는 않는다
-      card.scrollTop = Math.max(0, Math.min(down, topOf(result) - pad))
+      card.scrollTop = Math.max(0, Math.min(bottom - seen, top))
+    }
+
+    const settle = () => {
+      if (!scrolls()) return
+      card.scrollTop = 0
+      showResult()
+    }
+
+    // 화면 크기가 바뀌면(폰을 돌린다, 창을 줄인다, 520px 경계를 넘는다) 글줄이 다시 짜여
+    // 떠 있던 결과가 쟁반 뒤로 밀릴 수 있다 — 결과가 있을 때만 다시 맞추고 그 밖에는 읽던 자리를 둔다
+    const refit = () => {
+      if (scrolls()) showResult()
     }
 
     const onKey = (e: KeyboardEvent) => {
@@ -85,9 +100,12 @@ export function StageCard({ children }: { children: ReactNode }) {
 
     const observer = new MutationObserver(settle)
     observer.observe(card, { childList: true })
+    const resized = new ResizeObserver(refit)
+    resized.observe(card)
     document.addEventListener('keydown', onKey)
     return () => {
       observer.disconnect()
+      resized.disconnect()
       document.removeEventListener('keydown', onKey)
     }
   }, [])
