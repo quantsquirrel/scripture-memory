@@ -314,7 +314,6 @@ export function SyncPanel({
         id="sync-token"
         className="ref-input"
         type="password"
-        placeholder="GitHub 토큰 (gist 권한만)"
         value={token}
         onChange={(e) => {
           onToken(e.target.value)
@@ -328,7 +327,6 @@ export function SyncPanel({
       <input
         id="sync-gist"
         className="ref-input"
-        placeholder="Gist ID"
         value={gistId}
         onChange={(e) => {
           onGistId(e.target.value)
