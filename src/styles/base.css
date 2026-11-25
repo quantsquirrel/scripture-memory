@@ -445,13 +445,25 @@ h3 {
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
-    /* 쟁반이 가리는 높이 — 버튼 한 줄 쟁반 */
+    /* 쟁반이 가리는 높이(+ 숨 한 칸) — 버튼 한 줄 쟁반: 버튼 + 위아래 여백 */
     --foot-clear: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
   }
 
-  /* 버튼이 두 줄이고 실패 안내까지 서는 쟁반(학습의 첫글자 보드) — 안내 두 줄을 버튼 한 줄로 친다 */
+  /* 버튼 두 줄 쟁반(학습의 첫글자 보드) — 버튼 둘과 그 사이 여백(.btn의 margin-top) */
   .stage-card:has(> .stage-foot > .btn-row + .btn) {
-    --foot-clear: calc(3 * var(--touch-primary) + 4 * var(--stage-pad));
+    --foot-clear: calc(
+      2 * var(--touch-primary) + var(--space-6) + 2 * var(--stage-pad) + var(--space-4)
+    );
+  }
+
+  /* 실패 안내가 뜬 쟁반 — 안내(.diff-score: 글줄 + 위아래 여백)와 그 아래 여백을 더한다.
+     안내는 360폭에서 두 줄이다. 더 좁은 폭에서 한 줄 늘어도 남도록 세 줄로 친다.
+     선택자는 위의 두 줄 쟁반 규칙과 명시도가 같아 뒤에 온 이 규칙이 이긴다 */
+  .stage-card:has(> .stage-foot > [role='status'] > .diff-score) {
+    --foot-clear: calc(
+      2 * var(--touch-primary) + 2 * var(--space-6) + 2 * var(--stage-pad) + var(--space-4) +
+        3 * var(--text-base) * var(--leading-normal) + 2 * var(--space-4)
+    );
   }
 
   /*
