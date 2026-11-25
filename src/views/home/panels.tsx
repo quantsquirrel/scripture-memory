@@ -289,6 +289,8 @@ export function ProgressPanel({
   onOpen: () => void
 }) {
   const note = paceNote(goal, learnEndLabel)
+  // 새 구절 마감이 지난 정착 기간에는 '하루 필요'가 뜻을 잃는다(남은 구절 ÷ 하루) — 화면에서만 감춘다
+  const settling = goal.bufferDays > 0 && goal.daysLeft <= goal.bufferDays
   return (
     <section className="ground">
       <div className="ground-head">
@@ -310,10 +312,12 @@ export function ProgressPanel({
               <dt>남은</dt>
               <dd>{goal.remaining}구절</dd>
             </div>
-            <div>
-              <dt>하루 필요</dt>
-              <dd>{goal.requiredPace.toFixed(1)}구절</dd>
-            </div>
+            {!settling && (
+              <div>
+                <dt>하루 필요</dt>
+                <dd>{goal.requiredPace.toFixed(1)}구절</dd>
+              </div>
+            )}
             {goal.todayNew > 0 && (
               <div>
                 <dt>오늘</dt>

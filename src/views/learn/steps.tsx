@@ -225,7 +225,6 @@ export function TypingStep({
                 e.preventDefault()
                 if (attempt.trim() !== '') onGrade()
               }}
-              placeholder="기억만으로 말씀 전체를 입력하세요"
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}

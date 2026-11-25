@@ -435,10 +435,25 @@ h3 {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    /* 키보드로 옮겨 간 요소가 붙어 있는 쟁반 뒤에 숨지 않게 — 한 줄 쟁반의 높이만큼 비운다 */
-    scroll-padding-bottom: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
+    /* 쟁반이 가리는 높이 — 버튼 한 줄 쟁반 */
+    --foot-clear: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
+  }
+
+  /* 버튼이 두 줄이고 실패 안내까지 서는 쟁반(학습의 첫글자 보드) — 안내 두 줄을 버튼 한 줄로 친다 */
+  .stage-card:has(> .stage-foot > .btn-row + .btn) {
+    --foot-clear: calc(3 * var(--touch-primary) + 4 * var(--stage-pad));
+  }
+
+  /*
+   * 키보드로 옮겨 간 요소가 붙어 있는 쟁반 뒤에 숨지 않게 — 쟁반 밖의 누를 것이 쟁반
+   * 높이만큼 위에서 멈춘다. 카드의 scroll-padding으로 비우면 쟁반 안 버튼(붙어 있어 늘
+   * 그 여백 안에 선다)으로 포커스가 올 때 카드가 끝까지 밀렸다 — '본문 다시 보기'를
+   * 누르면 본문이 중간부터 열렸다.
+   */
+  .stage-card :is(a, button, input, textarea, [tabindex]):not(.stage-foot *) {
+    scroll-margin-bottom: var(--foot-clear);
   }
 }
 
