@@ -360,14 +360,16 @@ export function SyncPanel({
 
 export function DataPanel({
   fileRef,
-  status,
+  backupStatus,
+  resetStatus,
   onExport,
   onImport,
   onReset,
   onRecalibrate,
 }: {
   fileRef: RefObject<HTMLInputElement | null>
-  status: StatusNote | null
+  backupStatus: StatusNote | null
+  resetStatus: StatusNote | null
   onExport: () => void
   onImport: (file: File) => void
   onReset: () => void
@@ -401,6 +403,7 @@ export function DataPanel({
             가져오기
           </button>
         </div>
+        <StatusMessage status={backupStatus} />
       </div>
       {/* 되돌릴 수 없는 행동은 구분선 아래로 떼어 경고 문장 뒤에 절제된 폭으로 둔다 */}
       <div className="danger-zone">
@@ -408,6 +411,7 @@ export function DataPanel({
         <button type="button" className="btn btn-danger" onClick={onReset}>
           초기화
         </button>
+        <StatusMessage status={resetStatus} />
       </div>
       <input
         ref={fileRef}
@@ -421,7 +425,6 @@ export function DataPanel({
           e.target.value = ''
         }}
       />
-      <StatusMessage status={status} />
     </section>
   )
 }

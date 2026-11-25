@@ -13,7 +13,9 @@ export function InstallBanner() {
           <Chevron dir="right" />
         </button>
       ) : (
-        <p className="install-text small">사파리 하단 [공유] → [홈 화면에 추가]로 설치하세요</p>
+        <p className="install-text small">
+          사파리 하단 [공유] → <span className="nowrap">[홈 화면에 추가]로</span> 설치하세요
+        </p>
       )}
       <button
         type="button"

@@ -1,6 +1,6 @@
-/* 접이식 상세 섹션 — 닫혀 있을 때는 한 줄, 펼치면 설정 묶음(.panel)과 같은 카드 */
+/* 접이식 상세 섹션 — 닫혀 있을 때는 바닥 위 조용한 한 줄, 펼치면 설정 묶음(.panel)과 같은 카드 */
 .tech-details {
-  background: var(--color-panel);
+  background: transparent;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: 0 var(--panel-pad);
@@ -8,6 +8,7 @@
 }
 
 .tech-details[open] {
+  background: var(--color-panel);
   padding-bottom: var(--panel-pad);
 }
 
@@ -23,7 +24,7 @@
   cursor: pointer;
   list-style: none;
   font-weight: 600;
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   padding: var(--space-6) 0;
   color: var(--color-muted);
   transition: color var(--dur-micro) var(--ease-out);

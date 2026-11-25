@@ -36,6 +36,7 @@ const message = (e: unknown): string => (e instanceof Error ? e.message : String
 export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const data = useSettingsData()
   const [msg, setMsg] = useState<StatusNote | null>(null)
+  const [resetMsg, setResetMsg] = useState<StatusNote | null>(null)
   const [goalMsg, setGoalMsg] = useState<StatusNote | null>(null)
   const [syncMsg, setSyncMsg] = useState<StatusNote | null>(null)
   const [syncing, setSyncing] = useState(false)
@@ -152,7 +153,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
   const doReset = async () => {
     if (!window.confirm('모든 학습/복습 기록을 삭제합니다. 계속할까요?')) return
     await resetAll()
-    setMsg({ text: '초기화했습니다.' })
+    setResetMsg({ text: '초기화했습니다.' })
   }
 
   return (
@@ -224,7 +225,8 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
 
       <DataPanel
         fileRef={fileRef}
-        status={msg}
+        backupStatus={msg}
+        resetStatus={resetMsg}
         onExport={() => void doExport()}
         onImport={(f) => void doImport(f)}
         onReset={() => void doReset()}
