@@ -413,9 +413,10 @@
 }
 
 /* 본문 끝의 컨텍스트 제약 안내 — 설정의 .setting-notice와 같은 조용한 읽는 우물.
-   바로 위 .answer의 아래 여백과 겹치지 않도록 위 여백은 0으로 둔다 */
+   바로 위 .answer의 아래 여백과 겹치지 않도록 위 여백은 0으로 두고, 390×844에서
+   안내 우물과 쟁반 헤어라인 사이에 여유가 남도록 .answer 세로 여백을 한 단 줄인다 */
 .answer:has(+ .recal-hint) {
-  padding-block: var(--space-6);
+  padding-block: var(--space-4);
 }
 
 .recal-hint {
@@ -439,14 +440,18 @@
 }
 
 /* 판정 셋 — 복습의 .rating-bar와 같은 가로 한 줄 3열. 글자 크기(1rem)를 줄이지 않고
-   내용 폭(5.5rem) 기준으로 360px 이상에서는 한 줄 3열, 320px·큰 글자(150%+)에서는 스스로 줄바꿈한다 */
+   flex-wrap + 5.5rem 기준으로 360px 이상에서는 균등 3열, 320px·큰 글자(150%+)에서는
+   2+1(아랫줄 전폭) 또는 1열로 스스로 줄바꿈해 반칸 외톨이 버튼 없이 높이를 맞춘다 */
 .recal-verdicts {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.5rem), 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-4);
 }
 
 .recal-verdicts .btn {
+  flex: 1 1 5.5rem;
+  width: auto;
+  min-width: 0;
   display: flex;
   flex-direction: column-reverse;
   align-items: center;
@@ -460,12 +465,13 @@
 
 /* 감사 차례는 두 행동의 무게가 다르다(주 진행 + 파괴적 강등) — 전폭 2줄로 가른다 */
 .recal-verdicts.is-audit {
-  display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  flex-wrap: nowrap;
 }
 
 .recal-verdicts.is-audit .btn {
+  flex: none;
+  width: 100%;
   flex-direction: row;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-8);
