@@ -73,8 +73,8 @@
 .btn:not(.btn-primary, .btn-danger, :disabled),
 .btn-primary:disabled,
 .rate:not(.suggested),
-.typing-input:not(:disabled),
-.ref-input:not(:disabled),
+.typing-input,
+.ref-input,
 .fl-word:not(.fl-revealed) {
   border-color: var(--color-border);
 }

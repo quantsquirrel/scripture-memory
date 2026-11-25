@@ -70,11 +70,11 @@
   min-width: 7rem;
 }
 
-/* 쓸 수 없는 칸 — 가라앉힌 투명 면과 괘선, 금지 커서, 그리고 disabled 속성 */
+/* 쓸 수 없는 칸 — 채움을 비워 활성 칸(panel-alt)과 가르고, 3:1 컨트롤 경계는 유지한다 */
 .typing-input:disabled,
 .ref-input:disabled {
   background: transparent;
-  border-color: var(--color-line);
+  border-color: var(--color-border);
   color: var(--color-muted);
   opacity: 1;
   cursor: not-allowed;
@@ -135,8 +135,8 @@
 }
 
 @media (hover: hover) {
-  .typing-input:hover:not(:focus-visible),
-  .ref-input:hover:not(:focus-visible) {
+  .typing-input:hover:not(:focus-visible, :disabled),
+  .ref-input:hover:not(:focus-visible, :disabled) {
     background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 4%);
   }
 }

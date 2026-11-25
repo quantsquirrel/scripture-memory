@@ -64,7 +64,6 @@
   right: var(--space-2);
   bottom: -1px;
   height: 2px;
-  border-radius: var(--radius-pill);
   background: var(--color-text);
 }
 

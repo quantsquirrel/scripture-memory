@@ -239,6 +239,11 @@ h3 {
 /* 화면 제목과 같은 카드 제목 — 모바일은 헤더의 화면 이름이 이미 말하므로 눈에서만
    감추고(낭독기에는 남는다), 화면 이름이 사라지는 PC에서 보인다 */
 @media (max-width: 768px) {
+  /* 키보드로 내려갈 때 포커스된 요소가 하단 플로팅 독 뒤에 숨지 않게 한다 */
+  html {
+    scroll-padding-bottom: calc(var(--dock-clearance) + env(safe-area-inset-bottom, 0px));
+  }
+
   .screen-dup {
     position: absolute;
     width: 1px;
@@ -513,6 +518,11 @@ h3 {
  * 탭을 한 줄로 두고, 스크롤해도 탭에 닿도록 위에 붙인다.
  */
 @media (min-width: 769px) {
+  /* 키보드로 위로 올라갈 때 포커스된 요소가 sticky 헤더 뒤에 숨지 않게 한다 */
+  html {
+    scroll-padding-top: calc(var(--touch-min) + var(--space-16));
+  }
+
   .app {
     padding-top: 0;
     padding-bottom: var(--space-12);
