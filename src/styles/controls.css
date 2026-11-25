@@ -165,7 +165,7 @@
 
 .install-action:focus-visible,
 .install-dismiss:focus-visible {
-  outline-offset: -2px;
+  outline-offset: calc(-1 * var(--space-1));
 }
 
 .install-action .chevron {
@@ -223,47 +223,50 @@
   line-height: var(--leading-normal);
 }
 
-/* 설정의 실행 결과·오류·잠김 안내 — 테두리 없는 옅은 우물로, 입력란·버튼과 모양을 가른다 */
-.status-msg {
-  margin: var(--space-6) 0 0;
+/* 늘 떠 있는 제약 안내(예: 연동 서버 미설정) — 낭송 규칙(.callout)과 같은 조용한 우물 */
+.setting-notice {
+  margin: 0 0 var(--space-8);
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius);
   background: var(--color-panel-alt);
-  color: var(--color-text);
+  color: var(--color-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
   line-height: var(--leading-normal);
 }
 
-/* 실패·만료 안내 — diff 채점 결과(.diff-score)와 같은 '!' 표지(낭독기 대체 빈 글자)로
-   가리켜, 테두리 상자(입력란)처럼 보이지 않게 하면서 일반 완료 알림과 단번에 가른다 */
-.status-msg.is-error {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-4);
+/* 설정의 완료·진행 알림 — 상자 없이 조작 바로 아래 서는 조용한 한 줄. 요약 줄이나 오류와
+   무게를 다투지 않는다 */
+.status-msg {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  font-weight: 400;
+  line-height: var(--leading-normal);
 }
 
-.status-msg.is-error::before {
-  content: '!' / '';
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35em;
-  height: 1.35em;
-  margin-top: 0.2em;
-  border-radius: 50%;
-  border: 1.5px solid currentColor;
-  font-size: var(--text-xs);
-  font-weight: 700;
-  line-height: 1;
+.goal-summary + .status-msg {
+  margin-top: var(--space-2);
+}
+
+/* 꼭 봐야 하는 실패·만료 오류 — 설정 안에서 유일하게 굵은 본문색 우물로 세우고,
+   채점 결과(diff.css의 .diff-score::before)와 같은 '!' 표지를 앞에 둔다 */
+.status-msg.is-error {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius);
+  background: var(--color-panel-alt);
+  font-weight: 600;
 }
 
 .sync-meta {
   margin: var(--space-4) 0 0;
 }
 
-/* 백업 두 버튼 — 340px 이상에서는 한 쌍으로 나란히, 아주 좁은 화면에서는 세로로 */
+/* 백업 두 버튼 — 360px 폰에서는 한 쌍으로 나란히, 그보다 더 좁은 화면에서만 세로로.
+   미디어 쿼리에는 토큰(var)을 쓸 수 없어 숫자로 적는다(inputs.css의 .field-row와 같은 경계) */
 .backup-row {
   margin-top: var(--space-4);
 }
@@ -357,7 +360,7 @@
   border-top: 1px solid var(--color-line);
 }
 
-.danger-zone > p {
+.danger-zone > p:first-child {
   margin: 0;
 }
 

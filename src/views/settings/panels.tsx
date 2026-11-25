@@ -207,7 +207,9 @@ export function PairingPanel({
         계정 없이 코드 하나로 다른 기기(맥·윈도우·아이폰·갤럭시)의 암송 기록을 가져옵니다.
       </p>
       {!enabled && (
-        <p className="status-msg">이 빌드에는 연동 서버 주소가 설정되지 않아 쓸 수 없습니다.</p>
+        <p className="setting-notice">
+          이 빌드에는 연동 서버 주소가 설정되지 않아 쓸 수 없습니다.
+        </p>
       )}
 
       <h3>내 기기 코드 만들기</h3>

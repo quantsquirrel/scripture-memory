@@ -31,10 +31,10 @@
   transform: translateY(1px);
 }
 
-/* 누를 수 없음은 세 갈래로 알린다: 가라앉은 면과 muted 글자, 금지 커서, 그리고 disabled 속성.
-   opacity로 테두리와 글자를 함께 흐리면 빈 상자처럼 보이므로 명도비(4.5:1+)를 지키는 면으로 가른다 */
+/* 누를 수 없음은 세 갈래로 알린다: 빈 면은 그대로 두고 괘선(line)과 muted 글자, 금지 커서,
+   disabled 속성으로 물러선다. 채움을 더하면 켜진 보조 버튼보다 무거워지므로 면을 뒤집지 않는다 */
 .btn:disabled {
-  background: var(--color-panel-alt);
+  background: transparent;
   border-color: var(--color-line);
   color: var(--color-muted);
   opacity: 1;

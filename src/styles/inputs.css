@@ -70,11 +70,12 @@
   min-width: 7rem;
 }
 
-/* 쓸 수 없는 칸 — 채움을 비워 활성 칸(panel-alt)과 가르고, 3:1 컨트롤 경계는 유지한다 */
+/* 쓸 수 없는 칸 — 입력란의 채운 면(panel-alt)은 유지하고, 괘선(line)·muted 글자·금지 커서로
+   물러선다. 채움을 걷으면 켜진 보조 버튼과 모양이 뒤바뀌므로 면을 뒤집지 않는다 */
 .typing-input:disabled,
 .ref-input:disabled {
-  background: transparent;
-  border-color: var(--color-border);
+  background: var(--color-panel-alt);
+  border-color: var(--color-line);
   color: var(--color-muted);
   opacity: 1;
   cursor: not-allowed;
@@ -128,6 +129,8 @@
   padding: var(--space-4) var(--space-6);
 }
 
+/* 360px 폰에서는 두 칸을 나란히 유지하고 그보다 더 좁은 화면에서만 세로로 내린다.
+   미디어 쿼리에는 토큰(var)을 쓸 수 없어 숫자로 적는다(controls.css의 .backup-row와 같은 경계) */
 @media (max-width: 340px) {
   .field-row {
     grid-template-columns: 1fr;
