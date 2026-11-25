@@ -157,9 +157,9 @@ export const SETTINGS: StateDef[] = [
   {
     id: 'settings-goal-saved',
     screen: 'settings',
-    title: '목표 범위를 바꾼 뒤: 요약 갱신 + 저장 안내 문구(데이터 칸 아래)',
+    title: '목표 범위를 바꾼 뒤: 요약 갱신 + 저장 안내 문구(목표 카드 안)',
     how: '목표 범위를 60구절까지로 고른다',
-    view: DATA,
+    view: 'section.panel:has(#goal-scope)',
     run: async (s) => {
       await openSettings(s, FILLED)
       await s.page.locator('#goal-scope').selectOption('TMS60')
