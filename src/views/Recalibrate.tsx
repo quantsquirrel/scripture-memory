@@ -297,26 +297,16 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
         </span>
       </div>
       <StageCard key={verseId}>
-        {/* 카드 머리줄 — 감사 차례는 복습 무대와 같이 왼쪽에 모드 표지, 오른쪽에 단원·번호 */}
+        {/* 카드 머리줄 — 항상 왼쪽·오른쪽 두 칸 한 줄(감사 차례는 복습 무대와 같이 왼쪽에 모드 표지) */}
         <p className="card-head">
           {kind === 'auditOnly' ? (
-            <>
-              <span className="mode-tag recal-mode-tag">객관 채점 차례 · 자가 판정 유보</span>
-              <span className="recal-head-loc">
-                {unit.label}{' '}
-                <span className="card-code">
-                  {unit.key}-{idx + 1}
-                </span>
-              </span>
-            </>
+            <span className="mode-tag recal-mode-tag">객관 채점 차례 · 자가 판정 유보</span>
           ) : (
-            <>
-              <span>{unit.label}</span>
-              <span className="card-code">
-                {unit.key}-{idx + 1}
-              </span>
-            </>
+            <span>{unit.label}</span>
           )}
+          <span className="card-code">
+            {unit.key}-{idx + 1}
+          </span>
         </p>
         <div className="prompt">
           <h2 className="prompt-main">{topicOf(verse).title}</h2>
@@ -474,16 +464,7 @@ function UnitPicker({
           <Chevron dir="left" />홈
         </button>
       </div>
-      <section className="ground recal-intro">
-        <h2 className="screen-dup">말씀 상태 개정</h2>
-        <p className="muted small recal-lead">
-          밀린 카드를 한 장씩 넘기는 대신, 구절마다 본문을 한 번 떠올려 보고 셋 중 하나로
-          판정합니다. ‘온전히 기억남’은 기한이 지난 낭송 카드를 ‘좋음’, ‘가물가물함’은 낭송
-          ‘다시’로 기록하며, ‘다시 사다리 타기’는 카드를 지우고 첫글자 복원 단계부터 다시
-          오릅니다. 말씀→장절 카드와 타이핑·첫글자 감사 차례인 카드는 자가 판정으로 넘기지 않고
-          복습 큐에 남겨 둡니다.
-        </p>
-      </section>
+      <h2 className="screen-dup recal-picker-title">말씀 상태 개정</h2>
       {!hasAny && (
         <p className="callout small recal-empty">
           아직 졸업한 구절이 없습니다. 홈에서 새 구절을 학습해 졸업하면 파트별로 상태를 개정할
@@ -494,6 +475,13 @@ function UnitPicker({
         {hasAny && (
           <section className="panel recal-units-card">{active.map(renderUnit)}</section>
         )}
+        <p className="muted small recal-lead">
+          밀린 카드를 한 장씩 넘기는 대신, 구절마다 본문을 한 번 떠올려 보고 셋 중 하나로
+          판정합니다. ‘온전히 기억남’은 기한이 지난 낭송 카드를 ‘좋음’, ‘가물가물함’은 낭송
+          ‘다시’로 기록하며, ‘다시 사다리 타기’는 카드를 지우고 첫글자 복원 단계부터 다시
+          오릅니다. 말씀→장절 카드와 타이핑·첫글자 감사 차례인 카드는 자가 판정으로 넘기지 않고
+          복습 큐에 남겨 둡니다.
+        </p>
         {inactive.length > 0 && (
           <div className="recal-units-inactive">{inactive.map(renderUnit)}</div>
         )}

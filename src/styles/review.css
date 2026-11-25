@@ -303,20 +303,21 @@
 }
 
 /* ── 말씀 상태 개정 ─────────────────────────────────────────── */
-.recal-intro {
-  margin: 0 0 var(--space-8);
+.recal-picker-title {
+  margin: 0 0 var(--space-6);
 }
 
 .recal-lead {
-  margin: 0;
+  margin: var(--space-6) 0 0;
 }
 
 .recal-empty {
-  margin: 0 0 var(--space-8);
+  margin: 0 0 var(--space-6);
 }
 
 .recal-units-card {
   padding-block: var(--space-4);
+  margin-bottom: 0;
 }
 
 .recal-units-inactive {
@@ -403,13 +404,6 @@
   font-weight: 600;
 }
 
-/* 카드 머리줄 오른쪽의 단원·번호 묶음(감사 차례일 때 모드 표지와 한 줄로 선다) */
-.recal-head-loc {
-  display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-4);
-}
-
 .recal-prompt-ref {
   font-weight: 600;
 }
@@ -418,15 +412,24 @@
   margin: 0;
 }
 
-/* 본문 끝의 컨텍스트 제약 안내 — 설정의 .setting-notice와 같은 조용한 읽는 우물 */
+/* 본문 끝의 컨텍스트 제약 안내 — 설정의 .setting-notice와 같은 조용한 읽는 우물.
+   바로 위 .answer의 아래 여백과 겹치지 않도록 위 여백은 0으로 둔다 */
+.answer:has(+ .recal-hint) {
+  padding-block: var(--space-6);
+}
+
 .recal-hint {
-  margin: var(--space-4) 0 0;
+  margin: 0;
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius);
   background: var(--color-panel-alt);
   color: var(--color-muted);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+.stage-card > .recal-hint:has(+ .stage-foot) {
+  margin-bottom: var(--space-6);
 }
 
 /* 쟁반 안 알림 — controls.css의 .stage-foot > p 보다 명시도를 높여 버튼과의 틈을 지킨다 */
@@ -465,27 +468,35 @@
 .recal-verdicts.is-audit .btn {
   flex-direction: row;
   gap: var(--space-4);
-  padding: var(--space-6) var(--space-8);
+  padding: var(--space-4) var(--space-8);
 }
 
 @media (min-width: 769px) {
   .recal-verdicts .btn {
     padding: var(--space-6) var(--space-4);
   }
+
+  .recal-verdicts.is-audit .btn {
+    padding: var(--space-6) var(--space-8);
+  }
 }
 
-/* 두 줄 이상이 되는 개정 쟁반의 키보드 스크롤 여유(base.css --foot-clear와 같은 계산) */
+/* 개정 쟁반의 키보드 스크롤 여유(base.css --foot-clear와 같은 원리).
+   320px·큰 글자(150~200%)에서 판정 셋이 2~3줄로 꺾이거나 알림이 뜰 때도 실제 쟁반보다 작아지지 않게 rem 기준으로 잡는다 */
 @media (min-height: 520px) {
-  .stage-card:has(> .stage-foot > .recal-verdicts.is-audit) {
+  .stage-card:has(> .stage-foot > .recal-verdicts),
+  .stage-card:has(.recal-summary):has(> .stage-foot > .btn + .btn) {
     --foot-clear: calc(
-      2 * var(--touch-primary) + var(--space-4) + 2 * var(--stage-pad) + var(--space-4)
+      3 * (2 * var(--text-base) * var(--leading-tight) + 2 * var(--space-4)) + 2 *
+        var(--space-4) + 2 * var(--stage-pad) + var(--space-4)
     );
   }
 
   .stage-card:has(> .stage-foot > .recal-notice) {
     --foot-clear: calc(
-      2 * var(--touch-primary) + var(--space-6) + 2 * var(--stage-pad) + var(--space-4) + 3 *
-        var(--text-sm) * var(--leading-normal) + 2 * var(--space-4)
+      3 * (2 * var(--text-base) * var(--leading-tight) + 2 * var(--space-4)) + 2 *
+        var(--space-4) + 2 * var(--stage-pad) + var(--space-4) + 3 * var(--text-sm) *
+        var(--leading-normal) + 2 * var(--space-6)
     );
   }
 }
@@ -544,7 +555,7 @@
 .recal-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
+  gap: var(--space-6);
   margin: var(--space-10) 0 0;
   text-align: left;
 }
@@ -552,7 +563,7 @@
 .recal-summary > div {
   display: flex;
   flex-direction: column;
-  padding: var(--space-4) var(--space-4) 0;
+  padding: var(--space-4) 0 0;
   border-top: var(--space-1) solid var(--tally-color, var(--color-line));
 }
 
@@ -591,11 +602,7 @@
 
 @media (max-width: 380px) {
   .recal-summary {
-    gap: var(--space-2);
-  }
-
-  .recal-summary > div {
-    padding-inline: var(--space-2);
+    gap: var(--space-4);
   }
 }
 
