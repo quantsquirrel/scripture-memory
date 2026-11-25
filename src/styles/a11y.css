@@ -125,7 +125,9 @@
   .verse-item,
   .col-row,
   .about-list,
-  .about-list > div {
+  .about-list > div,
+  .stage-foot,
+  .home-action {
     border-color: var(--color-border);
   }
 

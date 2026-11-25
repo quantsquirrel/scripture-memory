@@ -228,7 +228,7 @@ export function TypingStep({
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              rows={6}
+              rows={5}
             />
             {/*
               음성 전사 앱(Monologue)이 페이지 맥락으로 읽어가는 정답 사본.
