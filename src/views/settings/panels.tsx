@@ -2,9 +2,25 @@ import { type RefObject, useEffect, useState } from 'react'
 
 import type { Theme } from '../../adapters/theme'
 import type { Pairing } from '../../app/pairing'
+import { Chevron } from '../../components/Chevron'
 import { COLLECTIONS } from '../../data/verses'
 import { type GoalInfo, goalVerseIds } from '../../domain/goal'
 import { CODE_TTL_MS, formatCode, normalizeCode } from '../../domain/pairingCode'
+
+/** 설정 조작의 결과 안내. error는 실패·만료처럼 주의가 필요한 상태다 */
+export interface StatusNote {
+  text: string
+  error?: boolean
+}
+
+function StatusMessage({ status }: { status: StatusNote | null }) {
+  if (!status) return null
+  return (
+    <p className={`status-msg${status.error ? ' is-error' : ''}`} role="status">
+      {status.text}
+    </p>
+  )
+}
 
 const THEME_OPTIONS: readonly [Theme, string][] = [
   ['auto', '자동'],
@@ -60,11 +76,13 @@ function goalSummary(goal: GoalInfo): string {
 
 export function GoalPanel({
   goal,
+  status,
   onScope,
   onGoalDate,
   onBufferDays,
 }: {
   goal: GoalInfo
+  status: StatusNote | null
   onScope: (scope: string) => void
   onGoalDate: (d: string) => void
   onBufferDays: (n: number) => void
@@ -76,48 +94,58 @@ export function GoalPanel({
       <label className="muted small" htmlFor="goal-scope">
         목표 범위
       </label>
-      <select
-        id="goal-scope"
-        className="ref-input"
-        value={goal.scope}
-        onChange={(e) => {
-          onScope(e.target.value)
-        }}
-      >
-        {GOAL_SCOPE_OPTIONS.map((o) => (
-          <option key={o.key} value={o.key}>
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <label className="muted small" htmlFor="goal-date">
-        목표일
-      </label>
-      <input
-        id="goal-date"
-        className="ref-input"
-        type="date"
-        value={goalDate}
-        onChange={(e) => {
-          onGoalDate(e.target.value)
-        }}
-      />
-      <label className="muted small" htmlFor="buffer-days">
-        복습 정착 기간 (일)
-      </label>
-      <input
-        id="buffer-days"
-        className="ref-input"
-        type="number"
-        min={0}
-        max={30}
-        value={bufferDays}
-        onChange={(e) => {
-          onBufferDays(Number(e.target.value))
-        }}
-      />
-      <p>{goalSummary(goal)}</p>
-      <p className="muted small">
+      <div className="select-wrap">
+        <select
+          id="goal-scope"
+          className="ref-input"
+          value={goal.scope}
+          onChange={(e) => {
+            onScope(e.target.value)
+          }}
+        >
+          {GOAL_SCOPE_OPTIONS.map((o) => (
+            <option key={o.key} value={o.key}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <Chevron dir="right" />
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label className="muted small" htmlFor="goal-date">
+            목표일
+          </label>
+          <input
+            id="goal-date"
+            className="ref-input"
+            type="date"
+            value={goalDate}
+            onChange={(e) => {
+              onGoalDate(e.target.value)
+            }}
+          />
+        </div>
+        <div className="field">
+          <label className="muted small" htmlFor="buffer-days">
+            복습 정착 기간 (일)
+          </label>
+          <input
+            id="buffer-days"
+            className="ref-input"
+            type="number"
+            min={0}
+            max={30}
+            value={bufferDays}
+            onChange={(e) => {
+              onBufferDays(Number(e.target.value))
+            }}
+          />
+        </div>
+      </div>
+      <p className="goal-summary">{goalSummary(goal)}</p>
+      <StatusMessage status={status} />
+      <p className="muted small setting-note">
         목표 범위는 학습 순서대로 앞 과정을 모두 포함합니다. 목표일은 기한을 정해 진도를 맞출 때
         쓰는 선택 도구입니다. 기본(정착 기간 0일)은 목표일까지 남은 날 수로 하루 필요 구절을
         고르게 나누고, 복습 간격은 FSRS에 맡깁니다. 시험·대회를 앞두고 마지막 며칠을 복습으로
@@ -153,7 +181,8 @@ export function PairingPanel({
   pairing,
   busy,
   input,
-  message,
+  createStatus,
+  applyStatus,
   onCreate,
   onCopy,
   onInput,
@@ -163,7 +192,8 @@ export function PairingPanel({
   pairing: Pairing | null
   busy: 'create' | 'apply' | null
   input: string
-  message: string
+  createStatus: StatusNote | null
+  applyStatus: StatusNote | null
   onCreate: () => void
   onCopy: () => void
   onInput: (v: string) => void
@@ -173,13 +203,11 @@ export function PairingPanel({
   return (
     <section className="panel">
       <h2>간편 기기 연동 (6자리 코드)</h2>
-      <p className="muted small">
+      <p className="muted small setting-lead">
         계정 없이 코드 하나로 다른 기기(맥·윈도우·아이폰·갤럭시)의 암송 기록을 가져옵니다.
       </p>
       {!enabled && (
-        <p className="muted small">
-          이 빌드에는 연동 서버 주소가 설정되지 않아 쓸 수 없습니다.
-        </p>
+        <p className="status-msg">이 빌드에는 연동 서버 주소가 설정되지 않아 쓸 수 없습니다.</p>
       )}
 
       <h3>내 기기 코드 만들기</h3>
@@ -192,16 +220,19 @@ export function PairingPanel({
             {formatCode(pairing.code)}
           </output>
           <p className="muted small">{mmss(left)} 뒤 만료, 한 번만 쓸 수 있습니다</p>
-          <button className="btn" onClick={onCopy}>
+          <button type="button" className="btn" onClick={onCopy}>
             코드 복사
           </button>
         </div>
       )}
       {pairing && left === 0 && (
-        <p className="muted small">코드가 만료되었습니다. 새로 만들어 주세요.</p>
+        <p className="status-msg is-error" role="status">
+          코드가 만료되었습니다. 새로 만들어 주세요.
+        </p>
       )}
       {/* 설정 화면에는 오늘의 주 행동이 없다 — 금색 버튼(등불)을 켜지 않는다 */}
       <button
+        type="button"
         className="btn"
         disabled={!enabled || busy !== null}
         aria-busy={busy === 'create'}
@@ -209,40 +240,41 @@ export function PairingPanel({
       >
         {busy === 'create' ? '코드 만드는 중…' : pairing ? '새 코드 만들기' : '코드 만들기'}
       </button>
+      <StatusMessage status={createStatus} />
 
-      <h3>다른 기기 코드 입력</h3>
-      <label className="muted small" htmlFor="pair-input">
-        다른 기기에 표시된 코드
-      </label>
-      <input
-        id="pair-input"
-        className="ref-input pair-input"
-        disabled={!enabled}
-        placeholder="ABC-DEF"
-        maxLength={7}
-        value={input}
-        onChange={(e) => {
-          onInput(e.target.value.toUpperCase())
-        }}
-        autoCapitalize="characters"
-        autoComplete="off"
-        autoCorrect="off"
-        spellCheck={false}
-      />
-      <button
-        className="btn"
-        disabled={!enabled || busy !== null || normalizeCode(input) === null}
-        aria-busy={busy === 'apply'}
-        onClick={onApply}
-      >
-        {busy === 'apply' ? '연동 중…' : '연동하기'}
-      </button>
-      {message && (
-        <p className="muted small" role="status">
-          {message}
-        </p>
-      )}
-      <p className="muted small">
+      <div className="setting-sub">
+        <h3>다른 기기 코드 입력</h3>
+        <label className="muted small" htmlFor="pair-input">
+          다른 기기에 표시된 코드
+        </label>
+        <input
+          id="pair-input"
+          className="ref-input pair-input"
+          disabled={!enabled}
+          placeholder="ABC-DEF"
+          maxLength={7}
+          value={input}
+          onChange={(e) => {
+            onInput(e.target.value.toUpperCase())
+          }}
+          autoCapitalize="characters"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+        <button
+          type="button"
+          className="btn"
+          disabled={!enabled || busy !== null || normalizeCode(input) === null}
+          aria-busy={busy === 'apply'}
+          onClick={onApply}
+        >
+          {busy === 'apply' ? '연동 중…' : '연동하기'}
+        </button>
+        <StatusMessage status={applyStatus} />
+      </div>
+
+      <p className="muted small setting-note">
         코드를 입력한 기기에만 합쳐집니다. 복습 기록은 합집합, 카드·학습 상태는 나중에 바뀐
         쪽으로, 암송 목표는 나중에 바꾼 쪽으로. 양쪽을 똑같이 맞추려면 반대 방향으로도 한 번 더
         하세요. 코드를 만든 뒤에 한 복습은 그 코드에 들어가지 않습니다.
@@ -255,7 +287,8 @@ export function SyncPanel({
   token,
   gistId,
   syncing,
-  message,
+  status,
+  lastSyncLabel,
   onToken,
   onGistId,
   onSync,
@@ -263,7 +296,8 @@ export function SyncPanel({
   token: string
   gistId: string
   syncing: boolean
-  message: string
+  status: StatusNote | null
+  lastSyncLabel: string
   onToken: (v: string) => void
   onGistId: (v: string) => void
   onSync: () => void
@@ -302,14 +336,20 @@ export function SyncPanel({
         spellCheck={false}
       />
       <button
+        type="button"
         className="btn"
         disabled={syncing || !token.trim() || !gistId.trim()}
+        aria-busy={syncing}
         onClick={onSync}
       >
         {syncing ? '동기화 중…' : '지금 동기화'}
       </button>
-      {message && <p className="muted small">{message}</p>}
-      <p className="muted small">
+      {status ? (
+        <StatusMessage status={status} />
+      ) : (
+        lastSyncLabel && <p className="muted small sync-meta">{lastSyncLabel}</p>
+      )}
+      <p className="muted small setting-note">
         복습 기록은 합집합으로, 카드·학습 상태는 나중에 바뀐 쪽으로, 암송 목표는 나중에 바꾼
         쪽으로 병합됩니다. 토큰은 이 기기(IndexedDB)에만 저장됩니다. 공부 시작 전과 후에 한 번씩
         눌러 주세요.
@@ -320,14 +360,14 @@ export function SyncPanel({
 
 export function DataPanel({
   fileRef,
-  message,
+  status,
   onExport,
   onImport,
   onReset,
   onRecalibrate,
 }: {
   fileRef: RefObject<HTMLInputElement | null>
-  message: string
+  status: StatusNote | null
   onExport: () => void
   onImport: (file: File) => void
   onReset: () => void
@@ -336,31 +376,38 @@ export function DataPanel({
   return (
     <section className="panel">
       <h2>데이터 및 학습</h2>
-      <button className="btn" onClick={onRecalibrate}>
-        말씀 상태 개정 <span className="btn-note">(Recalibrate)</span>
+      <button type="button" className="btn btn-nav" onClick={onRecalibrate}>
+        <span>
+          말씀 상태 개정 <span className="btn-note">(Recalibrate)</span>
+        </span>
+        <Chevron dir="right" />
       </button>
       <p className="muted small">
         오래 쉬어 카드가 밀렸을 때, 구절마다 본문을 한 번 떠올려 보고 상태를 다시 정리합니다.
       </p>
-      {/* 백업 두 버튼은 전폭으로 세운다 — 반쪽 폭에서는 320px 화면에서 "내보내기 (JSON)"이 꺾였다 */}
-      <h3>백업</h3>
-      <button className="btn" onClick={onExport}>
-        내보내기 <span className="btn-note">(JSON)</span>
-      </button>
-      <button
-        className="btn"
-        onClick={() => {
-          fileRef.current?.click()
-        }}
-      >
-        가져오기
-      </button>
-      {/* 되돌릴 수 없는 행동은 구분선 아래로 떼어 둔다 — 백업 버튼 옆에서 잘못 누르지 않게 */}
+      <div className="setting-sub">
+        <h3>백업</h3>
+        <div className="btn-row backup-row">
+          <button type="button" className="btn" onClick={onExport}>
+            내보내기 <span className="btn-note">(JSON)</span>
+          </button>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              fileRef.current?.click()
+            }}
+          >
+            가져오기
+          </button>
+        </div>
+      </div>
+      {/* 되돌릴 수 없는 행동은 구분선 아래로 떼어 경고 문장 뒤에 절제된 폭으로 둔다 */}
       <div className="danger-zone">
-        <button className="btn btn-danger" onClick={onReset}>
+        <p className="muted small">모든 학습·복습 기록을 이 기기에서 지웁니다.</p>
+        <button type="button" className="btn btn-danger" onClick={onReset}>
           초기화
         </button>
-        <p className="muted small">모든 학습·복습 기록을 이 기기에서 지웁니다.</p>
       </div>
       <input
         ref={fileRef}
@@ -374,7 +421,7 @@ export function DataPanel({
           e.target.value = ''
         }}
       />
-      {message && <p className="muted small">{message}</p>}
+      <StatusMessage status={status} />
     </section>
   )
 }

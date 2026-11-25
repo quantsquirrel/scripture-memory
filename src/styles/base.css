@@ -98,7 +98,7 @@ main {
 .app-header {
   display: flex;
   align-items: center;
-  padding: var(--space-2) var(--space-1) var(--space-8);
+  padding: var(--space-2) 0 var(--space-8);
 }
 
 /* 워드마크는 눈에서만 감춘다 — 앱 이름 h1은 스크린리더에 남아 모든 화면의 첫 제목이 된다
@@ -224,6 +224,11 @@ h3 {
 
 .ground:first-child {
   margin-top: 0;
+}
+
+/* 설치 안내(main 밖의 우물) 아래에 바닥 묶음이 곧바로 설 때도 24px 틈을 지킨다 */
+.install-banner ~ main .ground:first-child {
+  margin-top: var(--space-6);
 }
 
 /* 비어 있음 — 무엇이 비었는지, 왜인지, 다음 걸음 하나. 내용 높이의 작은 카드 */
@@ -489,7 +494,7 @@ h3 {
 /* 데이터를 읽는 동안의 한 줄 — 순식간에 끝나는 읽기에서는 깜빡이지 않도록
    잠깐 기다렸다가 나타난다(처음부터 그려져 있고 투명도만 늦게 오른다) */
 .loading {
-  margin: var(--space-8) var(--space-1);
+  margin: var(--space-8) 0;
   animation: loading-in var(--dur-short) var(--ease-out) 200ms both;
 }
 
@@ -509,6 +514,7 @@ h3 {
  */
 @media (min-width: 769px) {
   .app {
+    padding-top: 0;
     padding-bottom: var(--space-12);
   }
 
@@ -517,7 +523,7 @@ h3 {
     top: 0;
     z-index: 100;
     gap: var(--space-4);
-    padding: var(--space-4) 0;
+    padding: var(--space-6) 0;
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-line);
     margin-bottom: var(--space-8);

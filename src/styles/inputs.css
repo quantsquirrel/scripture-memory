@@ -70,12 +70,64 @@
   min-width: 7rem;
 }
 
-/* 쓸 수 없는 칸 — 옅게, 금지 커서, 그리고 disabled 속성. 테두리 두께는 그대로 */
+/* 쓸 수 없는 칸 — 가라앉힌 투명 면과 괘선, 금지 커서, 그리고 disabled 속성 */
 .typing-input:disabled,
 .ref-input:disabled {
+  background: transparent;
+  border-color: var(--color-line);
   color: var(--color-muted);
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
+}
+
+/* 셀렉트 화살표 — 브라우저 기본 삼각형 대신 앱의 1.75px 선 꺾쇠와 맞춘다 */
+.select-wrap {
+  position: relative;
+  margin-top: var(--space-2);
+}
+
+.select-wrap > select.ref-input {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 0;
+  padding-right: var(--space-20);
+  cursor: pointer;
+}
+
+.select-wrap > .chevron {
+  position: absolute;
+  right: var(--space-6);
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+/* 짧은 관련 입력 둘(목표일 · 정착 기간)을 한 줄에 나란히 세운다 */
+.field-row {
+  display: grid;
+  grid-template-columns: minmax(10.5rem, 1.35fr) minmax(6.5rem, 1fr);
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+.field-row > .field {
+  min-width: 0;
+}
+
+.field-row label.small {
+  margin-top: 0;
+}
+
+.field-row .ref-input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 340px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (hover: hover) {
@@ -120,8 +172,8 @@ label.small {
   z-index: -1;
   color: transparent;
   pointer-events: none;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
   margin: 0;
   line-height: var(--leading-normal);
 }

@@ -31,11 +31,19 @@
   transform: translateY(1px);
 }
 
-/* 누를 수 없음은 세 갈래로 알린다: 옅어진 글자, 금지 커서, 그리고 disabled 속성 */
+/* 누를 수 없음은 세 갈래로 알린다: 가라앉은 면과 muted 글자, 금지 커서, 그리고 disabled 속성.
+   opacity로 테두리와 글자를 함께 흐리면 빈 상자처럼 보이므로 명도비(4.5:1+)를 지키는 면으로 가른다 */
 .btn:disabled {
+  background: var(--color-panel-alt);
+  border-color: var(--color-line);
   color: var(--color-muted);
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
+}
+
+/* 진행 중인 버튼(연동 중·동기화 중)은 글자색을 살려 "일하는 중"임을 알린다 */
+.btn[aria-busy='true']:disabled {
+  color: var(--color-text);
 }
 
 .btn-primary {
@@ -99,6 +107,21 @@
 .btn-row .btn {
   flex: 1;
   min-width: 0;
+}
+
+/* 다른 화면으로 들어가는 이동 버튼(설정 > 말씀 상태 개정) — 왼쪽 정렬 + 오른쪽 꺾쇠 */
+.btn-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  text-align: left;
+  padding-inline: var(--space-8) var(--space-6);
+}
+
+.btn-nav .chevron {
+  flex-shrink: 0;
+  color: var(--color-muted);
 }
 
 /* 마우스·트랙패드에서만 — 터치 기기에서는 누른 뒤 hover가 남아 눌린 것처럼 보인다.
