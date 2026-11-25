@@ -151,7 +151,6 @@ export function TypingMode({
               e.preventDefault()
               if (attempt.trim() !== '') setGrade(gradeTyping(verse.text, attempt))
             }}
-            placeholder="말씀을 입력하세요 (구두점 무시)"
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}

@@ -3,6 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { getAllLearning, runLadder } from '../app'
 import { Chevron } from '../components/Chevron'
 import { Crumb } from '../components/Crumb'
+import { StageCard } from '../components/StageCard'
 import {
   crumbOf,
   DUPLICATES,
@@ -114,7 +115,7 @@ export function Learn({
       </div>
 
       {/* 단계가 바뀌면 카드를 새로 놓는다 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */}
-      <div key={step} className="panel stage-card">
+      <StageCard key={step}>
         {/* 카드 머리줄 — 이 구절이 놓인 자리(과정 › 단원 › 주제) */}
         <p className="card-head">
           <Crumb parts={[...crumbOf(verse), topicOf(verse).title]} />
@@ -179,7 +180,7 @@ export function Learn({
             onLearn={onLearn}
           />
         )}
-      </div>
+      </StageCard>
     </div>
   )
 }

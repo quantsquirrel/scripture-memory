@@ -1,4 +1,5 @@
 import { Crumb } from '../../components/Crumb'
+import { StageCard } from '../../components/StageCard'
 import { crumbOf, type VerseEntry } from '../../data/verses'
 import type { ReviewMode, StoredCard } from '../../domain/card'
 import { Prompt } from './Answer'
@@ -30,7 +31,7 @@ export function CardFace({
   onRate: RateFn
 }) {
   return (
-    <div className="panel stage-card">
+    <StageCard>
       <p className="card-head">
         <span className="mode-tag">{MODE_LABEL[mode]}</span>
         {sc.direction === 'topic' && <Crumb parts={crumbOf(verse)} />}
@@ -40,6 +41,6 @@ export function CardFace({
       {mode === 'firstLetter' && <FirstLetterMode sc={sc} verse={verse} onRate={onRate} />}
       {mode === 'typing' && <TypingMode sc={sc} verse={verse} onRate={onRate} />}
       {mode === 'refInput' && <RefInputMode sc={sc} verse={verse} onRate={onRate} />}
-    </div>
+    </StageCard>
   )
 }

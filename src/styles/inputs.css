@@ -33,6 +33,16 @@
   resize: vertical;
 }
 
+/* 적은 만큼 자란다 — 긴 구절을 적다가 첫 줄이 칸 위로 잘려 올라가지 않게. 빈 칸은
+   다섯 줄 높이로 서서 "여러 줄을 적는 자리"임을 알린다(끝의 2px은 위아래 테두리 1px씩).
+   모르는 브라우저는 rows가 정한 높이에서 안쪽으로 흐른다 */
+@supports (field-sizing: content) {
+  .typing-input {
+    field-sizing: content;
+    min-height: calc(5lh + 2 * var(--space-6) + 2px);
+  }
+}
+
 .typing-input::placeholder,
 .ref-input::placeholder {
   font-family: var(--font-sans);

@@ -117,7 +117,9 @@
   .panel,
   .tech-details,
   .verse-row,
-  .col-row {
+  .col-row,
+  .stage-foot,
+  .home-action {
     border-color: var(--color-border);
   }
 

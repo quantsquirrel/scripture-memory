@@ -1,7 +1,8 @@
 /** 새 구절 학습 (src/views/Learn.tsx, src/views/learn/*) */
 import { peek, type StateDef, vary } from './define'
-import { ALL_IDS, graduate, oneOff, partial, progress, seed, verse } from './seed'
+import { ALL_IDS, graduate, LONG, oneOff, partial, progress, seed, verse } from './seed'
 import type { Session } from './session'
+import { scrollCard } from './states-review'
 
 const stage = { screen: 'learn', stage: true } as const
 
@@ -68,15 +69,28 @@ export const LEARN: StateDef[] = [
   ),
   {
     ...stage,
+    id: 'learn-intro-long-end',
+    view: 'keep',
+    title: '1단계: 가장 긴 구절을 카드 안에서 끝까지 내린 모습(닫는 장절과 낭송 규칙)',
+    how: '#/learn/<가장 긴 구절>을 열고 카드를 맨 아래로 스크롤',
+    run: async (s) => {
+      await s.open(`#/learn/${LONG}`)
+      await s.button('낭송했어요, 다음으로').waitFor()
+      await scrollCard(s)
+    },
+  },
+  {
+    ...stage,
     id: 'learn-intro-duplicate',
-    view: '.callout:has(button)',
+    view: 'keep',
     title:
       '1단계 + 다른 과정에서 이미 암송한 구절 안내(타이핑 검증으로 건너뛰기) — 가장 긴 구절',
-    how: 'D4-28a를 졸업시킨 뒤 같은 장절인 T1-17a를 연다',
+    how: 'D4-28a를 졸업시킨 뒤 같은 장절인 T1-17a를 열고, 카드 안에서 안내까지 내린다',
     run: async (s) => {
       await s.seed(graduate(['D4-28a']))
       await s.open('#/learn/T1-17a')
       await s.button('타이핑 검증으로 건너뛰기').waitFor()
+      await scrollCard(s, '.callout:has(button)')
     },
   },
   ...vary(
