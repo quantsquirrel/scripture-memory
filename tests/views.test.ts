@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { bumpRevision, getRevision, notifying, subscribeRevision } from '../src/app/revision'
 import { computeGoal } from '../src/domain/goal'
 import { advance } from '../src/domain/ladder'
+import { resumeLabel } from '../src/views/Home'
 import { paceNote } from '../src/views/home/panels'
 import {
   type AttemptEvent,
@@ -125,6 +126,16 @@ describe('홈 화면 설치 안내', () => {
   it('이미 설치했거나 닫았으면 보이지 않는다', () => {
     expect(installHint({ ...base, canPrompt: true, standalone: true })).toBeNull()
     expect(installHint({ ...base, ios: true, dismissed: true })).toBeNull()
+  })
+})
+
+describe('홈 이어서 문구 (resumeLabel)', () => {
+  it('진행 중 구절이 하나면 그 구절과 단계만', () => {
+    expect(resumeLabel('롬3:23', 'firstLetter', 0)).toBe('롬3:23 (단계 2/4)')
+  })
+
+  it('다른 진행 중 구절이 남았으면 남은 수를 붙인다', () => {
+    expect(resumeLabel('롬3:23', 'firstLetter', 4)).toBe('롬3:23 (단계 2/4) · 외 4구절')
   })
 })
 
