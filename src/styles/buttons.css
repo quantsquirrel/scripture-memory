@@ -77,12 +77,19 @@
   gap: var(--space-2);
   background: none;
   border: none;
+  /* 면이 없어 반경은 포커스 링에만 드러난다 — 다른 버튼의 링처럼 둥글게 */
+  border-radius: var(--radius);
   color: var(--color-muted);
   font-size: var(--text-base);
   font-weight: 600;
   padding: var(--space-2) var(--space-2) var(--space-2) 0;
   cursor: pointer;
   transition: color var(--dur-micro) var(--ease-out);
+}
+
+/* 눌린 동안 글자가 본문색으로(마우스를 올렸을 때와 같다) — 터치에는 호버가 없다 */
+.btn-ghost:active {
+  color: var(--color-text);
 }
 
 /* 버튼 이름 뒤에 붙는 보조 표기 — "내보내기 (JSON)"의 "(JSON)"처럼 */
@@ -124,6 +131,40 @@
   color: var(--color-muted);
 }
 
+/*
+ * 카드 안의 누르는 줄 — 목록의 구절 줄(.verse-row)과 말씀 상태 개정의 단원 줄(.recal-unit).
+ * 두 줄이 함께 쓰는 모양은 여기 한 곳에서 정한다: 음수 좌우 여백과 같은 패딩으로 글자 왼쪽
+ * 끝은 카드 여백에 맞추고, 눌림·hover·포커스 상자는 둥글고 여유 있게 선다(링은 안쪽으로).
+ * 줄마다 다른 것(칸 사이, 굵기, 정렬, 꺼진 모습)은 list.css와 review.css의 제 규칙에 둔다.
+ */
+.verse-row,
+.recal-unit {
+  display: flex;
+  align-items: center;
+  width: calc(100% + 2 * var(--space-4));
+  margin-inline: calc(-1 * var(--space-4));
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out);
+}
+
+.verse-row:focus-visible,
+.recal-unit:focus-visible {
+  outline-offset: calc(-1 * var(--space-1));
+}
+
+/* 눌린 동안 한 단 밝아진다(마우스를 올렸을 때와 같은 면) — 터치에는 호버가 없다 */
+.verse-row:active,
+.recal-unit:not(:disabled):active {
+  background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
+}
+
 /* 마우스·트랙패드에서만 — 터치 기기에서는 누른 뒤 hover가 남아 눌린 것처럼 보인다.
    신호는 하나: 면이 한 단 밝아진다(주 버튼은 금빛이 한 단 짙어진다) */
 @media (hover: hover) {
@@ -141,5 +182,10 @@
 
   .btn-ghost:hover {
     color: var(--color-text);
+  }
+
+  .verse-row:hover,
+  .recal-unit:not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
   }
 }

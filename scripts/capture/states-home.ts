@@ -181,6 +181,26 @@ export const HOME: StateDef[] = [
     },
   },
   {
+    id: 'home-resume-many',
+    screen: 'home',
+    title: "이어 하는 구절이 여럿: 이어서 버튼 글 끝에 ' · 외 N구절'",
+    how: '7구절 카드를 사흘 뒤 due로, LV3a~LV6a 넷이 첫글자·타이핑 단계 진행 중',
+    run: async (s) => {
+      await s.seed(
+        seed(graduate([...idsOfCollection('AS'), 'LV1a', 'LV2a'], { due: 3 * DAY }), {
+          learning: [
+            progress('LV3a', 'firstLetter'),
+            progress('LV4a', 'typing'),
+            progress('LV5a', 'firstLetter'),
+            progress('LV6a', 'typing'),
+          ],
+        }),
+      )
+      await s.open('#/')
+      await s.page.locator('.btn-primary', { hasText: '외 3구절' }).waitFor()
+    },
+  },
+  {
     id: 'home-rest',
     screen: 'home',
     title: '대기 0·오늘 복습 없음: 다음 복습만, 다음 구절에 등불, 과정별 줄 완료 표시',

@@ -1,7 +1,8 @@
-/* 채점 결과 — 상태색 18% 바탕 위에 같은 색 글자 */
+/* 채점 결과 — 상태색 18% 바탕 위에 같은 색 글자. 앞의 표지는 글의 첫 줄에 선다(글이 두 줄로
+   꺾여도 목록의 머리 기호처럼 — 설정·개정의 오류 안내와 같은 자리) */
 .diff-score {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-4);
   border-radius: var(--radius);
   padding: var(--space-4) var(--space-6);

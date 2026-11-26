@@ -77,7 +77,17 @@ export function Learn({
     })
   }, [step, verseId])
 
-  if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
+  // 없는 구절 id(오래된 링크) — 복습의 빈 화면과 같은 작은 카드로 비어 있음과 돌아갈 길을 알린다
+  if (!verse) {
+    return (
+      <section className="panel empty-state">
+        <h2>구절을 찾을 수 없습니다</h2>
+        <button className="btn btn-primary" onClick={onExit}>
+          홈으로
+        </button>
+      </section>
+    )
+  }
   if (step === null) return <p className="muted loading">불러오는 중…</p>
 
   /**

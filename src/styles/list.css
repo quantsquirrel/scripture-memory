@@ -6,12 +6,25 @@
  */
 
 /* 과정 선택 — 1차 화면 탭(헤더·독)과 무게가 부딪히지 않도록 바닥 위 밑줄 색인 탭으로
-   내려앉힌다. 활성 칸은 금색 대신 본문색과 2px 밑줄로 가리켜 화면당 등불 하나를 지킨다 */
+   내려앉힌다. 활성 칸은 금색 대신 본문색과 2px 밑줄로 가리켜 화면당 등불 하나를 지킨다.
+   칸은 남는 폭을 똑같이 나누되 제 이름보다 좁아지지는 않는다 — 글자를 키워 다섯 칸이 한 줄에
+   들지 않으면 탭 줄이 가로로 밀린다(똑같이 나누기만 하던 때에는 이름이 "5…"로 잘렸다).
+   밑의 괘선은 칸마다 제 아래 변으로 그린다 — 줄 전체의 테두리로 그리면, 가로로 밀리는 줄이
+   활성 칸의 밑줄(칸 아래로 1px 내려 괘선을 덮는다)을 잘라 낸다 */
 .col-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(max-content, 1fr);
   margin: 0 0 var(--space-4);
-  border-bottom: 1px solid var(--color-line);
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line) transparent;
+}
+
+/* 설치 안내(main 밖의 안내 줄) 바로 아래에 설 때 — 탭 글자가 다른 화면의 첫 글자와 같은
+   높이(안내 아래 26px 안팎)에 서도록 한 칸 내린다 */
+.install-banner ~ main .col-tabs {
+  margin-top: var(--space-2);
 }
 
 .col-tab {
@@ -24,6 +37,7 @@
   min-width: 0;
   padding: var(--space-4) var(--space-1);
   border: none;
+  border-bottom: 1px solid var(--color-line);
   border-radius: var(--radius) var(--radius) 0 0;
   background: transparent;
   color: var(--color-muted);
@@ -40,9 +54,6 @@
 }
 
 .col-tab-name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -126,29 +137,11 @@
 }
 
 /* 구절 한 줄: 장절 + 본문 첫머리(세리프) + 상태. 장절만 늘어놓으면 표가 되고,
-   말씀이 한 줄씩 비치면 목록이 곧 암송 노트가 된다.
-   음수 좌우 여백과 같은 패딩으로 글자 왼쪽 끝은 카드 여백에 맞추고,
-   hover·포커스 상자는 둥글고 여유 있게 서도록 한다 */
+   말씀이 한 줄씩 비치면 목록이 곧 암송 노트가 된다. 줄의 모양(음수 좌우 여백, 둥근 눌림·
+   hover 상자, 안쪽 포커스 링)은 개정의 단원 줄과 함께 buttons.css의 .verse-row·.recal-unit이 정한다 */
 .verse-row {
-  display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: var(--space-6);
-  width: calc(100% + 2 * var(--space-4));
-  margin-inline: calc(-1 * var(--space-4));
-  background: none;
-  border: none;
-  border-radius: var(--radius);
-  color: var(--color-text);
-  font: inherit;
-  text-align: left;
-  padding: var(--space-4);
-  cursor: pointer;
-  transition: background-color var(--dur-micro) var(--ease-out);
-}
-
-.verse-row:focus-visible {
-  outline-offset: calc(-1 * var(--space-1));
 }
 
 .verse-row-main {
@@ -236,12 +229,13 @@
   margin-top: 0;
 }
 
+/* 눌린 동안 글자가 본문색으로 — 과정 탭에는 눌린 표시가 없었다 */
+.col-tab:not(.active):active {
+  color: var(--color-text);
+}
+
 @media (hover: hover) {
   .col-tab:not(.active):hover {
     color: var(--color-text);
-  }
-
-  .verse-row:hover {
-    background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
   }
 }

@@ -2,7 +2,7 @@
 
 이 worktree를 빌드해 전 화면·전 상태를 다크·라이트 × 폰 390×844 · PC 1280×800(무대 화면은 360×640도)으로 찍는다.
 
-저장소 루트에서 돌린다. 먼저 `npm ci`, Playwright chromium이 없으면 `npx playwright install chromium`. 209개 상태, 그림 약 1,600장, 6병렬(`--jobs 6`)로 2분 남짓.
+저장소 루트에서 돌린다. 먼저 `npm ci`, Playwright chromium이 없으면 `npx playwright install chromium`. 213개 상태, 그림 약 1,360장, 6병렬(`--jobs 6`)로 2분 남짓.
 
 ## 옵션
 
