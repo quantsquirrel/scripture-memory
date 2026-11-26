@@ -19,6 +19,8 @@
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-line) transparent;
+  /* 탭 줄의 폭을 잴 수 있게 한다(아래의 이름 사이 틈) */
+  container: col-tabs / inline-size;
 }
 
 /* 설치 안내(main 밖의 안내 줄) 바로 아래에 설 때 — 탭 글자가 다른 화면의 첫 글자와 같은
@@ -46,6 +48,18 @@
   line-height: var(--leading-tight);
   cursor: pointer;
   transition: color var(--dur-micro) var(--ease-out);
+}
+
+/* 글자를 키워 칸이 제 이름만큼으로 줄어들면 이름 사이의 틈이 칸의 안쪽 여백(좌우 2px씩)뿐이라
+   "60구절DEP242180구절"처럼 한 낱말로 붙어 읽혔다(390폭 글자 150%에서 이름 사이 4px). 그때는 칸의
+   좌우 여백을 넓혀 이름 사이에 한 글자쯤의 틈을 둔다 — 탭 줄은 그만큼 더 밀린다.
+   경계 17.5rem은 칸 하나가 3.5rem인 폭이다: 가장 긴 두 이름(DEP242, 180구절)이 나란히 서고도 반
+   글자쯤의 틈이 남는 가장 좁은 폭. 글자 100%에서는 320px 화면(18.5rem)도 이 경계 위라 그대로다.
+   위의 .col-tab과 명시도가 같아 그 뒤에 둔다 */
+@container col-tabs (width < 17.5rem) {
+  .col-tab {
+    padding-inline: var(--space-6);
+  }
 }
 
 .col-tab:focus-visible {
