@@ -1,6 +1,6 @@
 import { PROGRESS_ROWS } from '../app/queries'
 import { collectionOf, VERSE_BY_ID, VERSES } from '../data/verses'
-import { stepOrdinal } from '../domain/ladder'
+import { type LadderStep, stepOrdinal } from '../domain/ladder'
 import {
   type LearnTarget,
   NewVersePanel,
@@ -10,6 +10,20 @@ import {
   TodayReviewPanel,
 } from './home/panels'
 import { useHomeData } from './hooks'
+
+/**
+ * '이어서' 버튼 문구. 진행 중인 구절(강등 구절 포함)은 전부 '이어서'가 맡는다 —
+ * 학습 순서상 첫 구절을 보이고, 나머지가 있으면 그 수를 붙인다.
+ */
+export function resumeLabel(
+  refAbbr: string,
+  step: LadderStep,
+  othersInProgress: number,
+): string {
+  const { nth, total } = stepOrdinal(step)
+  const others = othersInProgress > 0 ? ` · 외 ${othersInProgress}구절` : ''
+  return `${refAbbr} (단계 ${nth}/${total})${others}`
+}
 
 /** 컨테이너: 데이터를 훅에서 받아 프레젠테이션 컴포넌트가 쓸 모양으로만 다듬는다 */
 export function Home({
@@ -32,7 +46,11 @@ export function Home({
     inProgress && inProgressVerse
       ? {
           id: inProgressVerse.id,
-          label: `${inProgressVerse.refAbbr} (단계 ${stepOrdinal(inProgress.step).nth}/${stepOrdinal(inProgress.step).total})`,
+          label: resumeLabel(
+            inProgressVerse.refAbbr,
+            inProgress.step,
+            data.inProgressCount - 1,
+          ),
         }
       : null
 
