@@ -5,6 +5,7 @@ import {
   computeGoal,
   DEFAULT_GOAL_SCOPE,
   DEFAULT_REVIEW_BUFFER_DAYS,
+  firstGraduatedAt,
   GOAL_VERSE_COUNT,
   goalVerseIds,
   isGoalScope,
@@ -19,6 +20,7 @@ const lp = (verseId: string, step: LadderStep, updatedAt: string): LearnProgress
   updatedAt,
 })
 
+const DAY_MS = 86400_000
 const DEP_ORDER = required(COLLECTIONS.find((c) => c.key === 'DEP')).order
 const GOAL_IDS = VERSES.filter((v) => collectionOf(v).order <= DEP_ORDER).map((v) => v.id)
 
@@ -69,6 +71,40 @@ describe('computeGoal', () => {
     expect(g.todayNew).toBe(1)
     expect(g.remainingAtDayStart).toBe(GOAL_VERSE_COUNT - 1)
     expect(g.requiredPace).toBeCloseTo((GOAL_VERSE_COUNT - 1) / g.learnDaysLeft)
+  })
+
+  it('다시 졸업한 구절: 오늘 새 구절·최근 페이스에서 빼고, 남은 수와 오늘 아침 남은 수는 졸업으로 센다', () => {
+    const learning = [
+      lp('AS1a', 'graduated', '2026-07-17T10:00:00+09:00'), // 오늘 처음 졸업
+      lp('AS2a', 'graduated', '2026-07-17T11:00:00+09:00'), // 오늘 다시 졸업 (강등 전 복습 기록 있음)
+      lp('AS3a', 'graduated', '2026-07-15T11:00:00+09:00'), // 그저께 다시 졸업
+    ]
+    const earliest = new Map([
+      ['AS2a', Date.parse('2026-05-01T09:00:00+09:00')],
+      ['AS3a', Date.parse('2026-05-02T09:00:00+09:00')],
+      // 이번 졸업 뒤의 복습만 있으면 첫 졸업 시각은 그대로다
+      ['AS1a', Date.parse('2026-07-17T10:05:00+09:00')],
+    ])
+    const g = computeGoal(
+      '2026-08-20',
+      learning,
+      now,
+      DEFAULT_REVIEW_BUFFER_DAYS,
+      'DEP',
+      earliest,
+    )
+    expect(g.todayNew).toBe(1)
+    expect(g.recentPace).toBeCloseTo(1 / PACE_WINDOW_DAYS)
+    expect(g.remaining).toBe(GOAL_VERSE_COUNT - 3)
+    expect(g.remainingAtDayStart).toBe(GOAL_VERSE_COUNT - 1)
+  })
+
+  it('첫 졸업 시각 = 이번 졸업과 가장 이른 복습 중 이른 쪽', () => {
+    const l = lp('AS1a', 'graduated', '2026-07-17T10:00:00.000Z')
+    const at = Date.parse(l.updatedAt)
+    expect(firstGraduatedAt(l, undefined)).toBe(at)
+    expect(firstGraduatedAt(l, at - DAY_MS)).toBe(at - DAY_MS)
+    expect(firstGraduatedAt(l, at + DAY_MS)).toBe(at)
   })
 
   it('최근 페이스: 지난 7일 창 안의 졸업만 센다', () => {

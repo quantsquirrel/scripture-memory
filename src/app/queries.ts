@@ -1,15 +1,22 @@
 import { collectionOf, sectionOf, sectionsOf, VERSES } from '../data/verses'
-import type { ReviewMode, StoredCard } from '../domain/card'
+import { cardKey, DIRECTIONS, type ReviewMode, type StoredCard } from '../domain/card'
 import {
   computeGoal,
   DEFAULT_GOAL_DATE,
   DEFAULT_GOAL_SCOPE,
   DEFAULT_REVIEW_BUFFER_DAYS,
+  firstGraduatedAt,
   type GoalInfo,
   isGoalScope,
+  PACE_WINDOW_DAYS,
 } from '../domain/goal'
-import { isGraduated, isInProgress, type LearnProgress } from '../domain/ladder'
-import { latestGraduatedId, pickNextVerse } from '../domain/nextVerse'
+import { isGraduated, type LearnProgress } from '../domain/ladder'
+import {
+  inProgressInOrder,
+  latestGraduatedId,
+  onLadderIds,
+  pickNextVerse,
+} from '../domain/nextVerse'
 import { LEARN_AHEAD_MS, orderQueue, reviewMode } from '../domain/policy'
 import type { Store } from '../ports/repositories'
 
@@ -39,8 +46,46 @@ async function readGoalSettings(store: Store): Promise<GoalSettings> {
   }
 }
 
-const goalOf = (s: GoalSettings, learning: LearnProgress[], now: Date): GoalInfo =>
-  computeGoal(s.goalDate, learning, now, s.bufferDays, s.scope)
+/** 홈 '이번 주 새 구절'의 창 (일) */
+const WEEK_DAYS = 7
+
+/** 새 구절 집계(이번 주·오늘·최근 페이스)가 보는 가장 긴 창의 시작 */
+const newVerseWindowStart = (now: Date): number =>
+  now.getTime() - Math.max(WEEK_DAYS, PACE_WINDOW_DAYS) * 86400_000
+
+/**
+ * 창 안에 졸업 상태가 된 구절마다 그 구절 카드들의 가장 이른 복습 시각(ms) — 다시 졸업한
+ * 구절을 새 구절 집계에서 빼는 근거(domain/goal.ts의 firstGraduatedAt). 창 전에 졸업한
+ * 구절은 어느 집계에도 들지 않으므로 읽지 않고, 기록은 cardKey 인덱스로 좁혀 읽는다 —
+ * 수년치 기록 전체를 훑지 않는다. 읽을 수 없는 시각은 가장 오래된 것으로 친다(policy.ts와 같은 관례).
+ */
+async function earliestReviewsOf(
+  store: Store,
+  learning: readonly LearnProgress[],
+  sinceMs: number,
+): Promise<Map<string, number>> {
+  const recent = learning.filter((l) => isGraduated(l) && Date.parse(l.updatedAt) >= sinceMs)
+  const pairs = await Promise.all(
+    recent.map(async (l) => {
+      const logs = await Promise.all(
+        DIRECTIONS.map((d) => store.reviews.ofCard(cardKey(l.verseId, d))),
+      )
+      const at = logs.flat().reduce((min, r) => {
+        const t = Date.parse(r.ts)
+        return Math.min(min, Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t)
+      }, Number.POSITIVE_INFINITY)
+      return [l.verseId, at] as const
+    }),
+  )
+  return new Map(pairs.filter(([, at]) => at !== Number.POSITIVE_INFINITY))
+}
+
+const goalOf = (
+  s: GoalSettings,
+  learning: LearnProgress[],
+  now: Date,
+  earliestReviewAt: ReadonlyMap<string, number>,
+): GoalInfo => computeGoal(s.goalDate, learning, now, s.bufferDays, s.scope, earliestReviewAt)
 
 /** 홈 진행률 묶음: 기초 3과정 · DEP 섹션별 · 180구절 */
 export interface ProgressRow {
@@ -79,9 +124,16 @@ export interface HomeData {
   todayReviews: number
   nextDue: string | null
   graduatedIds: ReadonlySet<string>
+  /** 이어 할 구절 — 진행 중인 구절(강등 구절 포함) 중 학습 순서상 첫 구절 */
   inProgress: LearnProgress | undefined
-  /** 다음 새 구절 — 가장 최근에 졸업한 구절 뒤에서부터 (진행 중인 구절은 이어 하기가 맡는다) */
+  /** 진행 중인 구절 수 (inProgress 포함) */
+  inProgressCount: number
+  /**
+   * 다음 새 구절 — 가장 최근에 졸업한 구절 뒤에서부터, 사다리에 오른 적 없는 구절만
+   * (진행 중인 구절은 전부 이어 하기가 맡는다)
+   */
   nextNewId: string | null
+  /** 최근 7일 처음 졸업한 새 구절 수 (강등했다가 다시 졸업한 구절은 세지 않는다) */
   newThisWeek: number
   goal: GoalInfo
 }
@@ -96,12 +148,11 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     store.cards.nextDueAt(),
     readGoalSettings(store),
   ])
-  const weekAgo = new Date(now.getTime() - 7 * 86400_000).toISOString()
+  const weekAgo = now.getTime() - WEEK_DAYS * 86400_000
+  const earliest = await earliestReviewsOf(store, learning, newVerseWindowStart(now))
   const graduatedIds = new Set(learning.filter(isGraduated).map((l) => l.verseId))
-  const inProgress = learning.find(isInProgress)
   const order = VERSES.map((v) => v.id)
-  const skip = new Set(graduatedIds)
-  if (inProgress) skip.add(inProgress.verseId)
+  const active = inProgressInOrder(order, learning)
   return {
     now: now.getTime(),
     due: due.length,
@@ -111,10 +162,13 @@ export async function loadHome(store: Store, now: Date = new Date()): Promise<Ho
     todayReviews: today.length,
     nextDue,
     graduatedIds,
-    inProgress,
-    nextNewId: pickNextVerse(order, skip, latestGraduatedId(order, learning)),
-    newThisWeek: learning.filter((l) => isGraduated(l) && l.updatedAt >= weekAgo).length,
-    goal: goalOf(settings, learning, now),
+    inProgress: active[0],
+    inProgressCount: active.length,
+    nextNewId: pickNextVerse(order, onLadderIds(learning), latestGraduatedId(order, learning)),
+    newThisWeek: learning.filter(
+      (l) => isGraduated(l) && firstGraduatedAt(l, earliest.get(l.verseId)) >= weekAgo,
+    ).length,
+    goal: goalOf(settings, learning, now, earliest),
   }
 }
 
@@ -215,10 +269,11 @@ export async function loadSettings(
     store.settings.syncGistId(),
     store.settings.lastSyncAt(),
   ])
+  const earliest = await earliestReviewsOf(store, learning, newVerseWindowStart(now))
   return {
     reviews,
     graduated: learning.filter(isGraduated).length,
-    goal: goalOf(goal, learning, now),
+    goal: goalOf(goal, learning, now, earliest),
     syncToken: token ?? '',
     syncGistId: gistId ?? '',
     lastSyncAt,

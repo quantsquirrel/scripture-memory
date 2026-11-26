@@ -15,7 +15,7 @@ import {
 } from '../data/verses'
 import { gradeTyping, type TypingGrade } from '../domain/grading'
 import { isGraduated, type LadderCommand, STEP_TITLE, stepOrdinal } from '../domain/ladder'
-import { pickNextVerse } from '../domain/nextVerse'
+import { nextAfterGraduation } from '../domain/nextVerse'
 import { useLearnProgress } from './hooks'
 import { nextAttempt, RESUMED_ATTEMPT } from './learn/attempt'
 import { FirstLetterStep, GraduatedStep, IntroStep, TypingStep } from './learn/steps'
@@ -37,7 +37,11 @@ export function Learn({
   const [attempt, setAttempt] = useState('')
   const [grade, setGrade] = useState<TypingGrade | null>(null)
   const [dup, setDup] = useState<{ verseId: string; verse: VerseEntry | null } | null>(null)
-  const [nextVerse, setNextVerse] = useState<VerseEntry | null>(null)
+  // 졸업 뒤 다음 걸음. 어느 구절의 졸업에서 고른 것인지 함께 담아, 이어서 고른 구절을
+  // 졸업한 직후 이전 결과(그 구절 자신)가 잠깐 보이지 않게 한다.
+  const [next, setNext] = useState<{ from: string; verse: VerseEntry; resume: boolean } | null>(
+    null,
+  )
 
   // 같은 장절을 다른 컬렉션에서 이미 암송했는지 (첫글자 단계 건너뛰기 안내).
   // 결과에 구절 id를 함께 담아, 구절이 바뀌는 순간 이전 결과가 보이지 않게 한다.
@@ -61,14 +65,15 @@ export function Learn({
   useEffect(() => {
     if (step !== 'graduated') return
     void getAllLearning().then((ls) => {
-      const grad = new Set(ls.filter(isGraduated).map((l) => l.verseId))
-      // 방금 졸업한 구절 바로 뒤에서부터 — 목록에서 골라 시작한 과정을 그대로 이어 간다
-      const next = pickNextVerse(
+      // 방금 졸업한 구절 바로 뒤에서부터 — 목록에서 골라 시작한 과정을 그대로 이어 간다.
+      // 진행 중인(강등한) 구절이 남았으면 그것을 이어 하고, 없을 때만 새 구절로.
+      const after = nextAfterGraduation(
         VERSES.map((v) => v.id),
-        grad,
+        ls,
         verseId,
       )
-      setNextVerse(next ? (VERSE_BY_ID[next] ?? null) : null)
+      const verse = after ? VERSE_BY_ID[after.verseId] : undefined
+      setNext(after && verse ? { from: verseId, verse, resume: after.kind === 'resume' } : null)
     })
   }, [step, verseId])
 
@@ -174,7 +179,8 @@ export function Learn({
         {step === 'graduated' && (
           <GraduatedStep
             verse={verse}
-            nextVerse={nextVerse}
+            nextVerse={next?.from === verseId ? next.verse : null}
+            resume={next?.resume ?? false}
             onExit={onExit}
             onReview={onReview}
             onLearn={onLearn}

@@ -254,12 +254,15 @@ export function TypingStep({
 export function GraduatedStep({
   verse,
   nextVerse,
+  resume,
   onExit,
   onReview,
   onLearn,
 }: {
   verse: VerseEntry
   nextVerse: VerseEntry | null
+  /** nextVerse가 진행 중인(강등한) 구절이면 '이어서', 새 구절이면 '다음 구절' */
+  resume: boolean
   onExit: () => void
   onReview: () => void
   onLearn: (verseId: string) => void
@@ -282,7 +285,7 @@ export function GraduatedStep({
               onLearn(nextVerse.id)
             }}
           >
-            다음 구절: {nextVerse.refAbbr}
+            {resume ? '이어서' : '다음 구절'}: {nextVerse.refAbbr}
           </button>
         )}
         <div className="btn-row">
