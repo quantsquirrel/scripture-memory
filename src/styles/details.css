@@ -27,7 +27,10 @@
   list-style: none;
   font-weight: 600;
   font-size: var(--text-sm);
-  padding: var(--space-6) 0;
+  /* 음수 좌우 여백과 같은 패딩 — 글자의 왼쪽 끝은 카드 여백 그대로 두고 포커스 링만 글자에서
+     한 칸 떨어지게 한다(목록의 구절 줄과 같은 방식) */
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-6) var(--space-4);
   /* 면이 없어 반경은 포커스 링에만 드러난다. 링은 안쪽으로 당긴다 — 머리가 카드 윗변에
      닿아 있어 바깥 링은 카드 밖으로 나갔다 */
   border-radius: var(--radius);
@@ -48,21 +51,22 @@
   display: none;
 }
 
-/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠(탭 아이콘과 같은 1.75px 선) */
+/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠. 선의 굵기 1.75px은 탭 아이콘·Chevron의
+   획 굵기(strokeWidth)와 같은 값이라 토큰이 아닌 수로 적는다 */
 .tech-details summary::after {
   content: '';
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+  width: var(--space-4);
+  height: var(--space-4);
   margin-right: var(--space-2);
   border-right: 1.75px solid currentColor;
   border-bottom: 1.75px solid currentColor;
-  transform: rotate(45deg) translateY(-2px);
+  transform: rotate(45deg) translateY(calc(-1 * var(--space-1)));
   transition: transform var(--dur-short) var(--ease-out);
 }
 
 .tech-details[open] summary {
-  padding: var(--panel-pad) 0 var(--space-6);
+  padding: var(--panel-pad) var(--space-4) var(--space-6);
   font-size: var(--text-md);
   font-weight: 700;
   line-height: var(--leading-tight);
@@ -76,7 +80,7 @@
 }
 
 .tech-details[open] summary::after {
-  transform: rotate(-135deg) translateY(-2px);
+  transform: rotate(-135deg) translateY(calc(-1 * var(--space-1)));
 }
 
 .tech-details h3 {
