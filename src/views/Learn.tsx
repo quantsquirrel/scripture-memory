@@ -81,7 +81,7 @@ export function Learn({
   if (!verse) {
     return (
       <section className="panel empty-state">
-        <h2>구절을 찾을 수 없습니다</h2>
+        <h2>구절을 찾을 수 없습니다.</h2>
         <button className="btn btn-primary" onClick={onExit}>
           홈으로
         </button>

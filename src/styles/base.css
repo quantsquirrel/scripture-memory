@@ -176,9 +176,17 @@ h3 {
   min-width: 0;
 }
 
-h2 {
+/* 카드 제목의 글자. 설정의 펼친 접이식 머리(.tech-details[open] summary)도 카드 제목이라 같은
+   규칙에서 받는다 — 값을 두 곳에 적었을 때 줄 높이와 자간이 따로 놀았다 */
+h2,
+.tech-details[open] summary {
   font-size: var(--text-md);
+  font-weight: 700;
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
+}
+
+h2 {
   margin: 0 0 var(--space-6);
 }
 
@@ -473,9 +481,6 @@ p:where(.small) {
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
-    /* 카드의 높이를 쟁반이 잴 수 있게 한다(아래의 100cqh). 가둔 카드의 높이는 내용이 아니라
-       화면이 정하므로 크기를 내용과 떼어도 달라지지 않는다 */
-    container: stage / size;
     /* 쟁반이 가리는 높이(+ 숨 한 칸) — 버튼 한 줄 쟁반: 버튼 + 위아래 여백 */
     --foot-clear: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
   }
@@ -486,12 +491,13 @@ p:where(.small) {
    * 200%에서 쟁반 496px, 카드 465px) — 붙어 있는 쟁반의 아랫줄 버튼이 카드 밖으로 잘려 닿지
    * 않았다. 넘칠 때는 쟁반 안에서 흐른다: 안내는 누른 자리에서 그대로 보이고 아랫줄은 쟁반을
    * 내려 닿는다. 글자 100%에서는 어느 폭에서도 쟁반이 카드의 절반을 조금 넘는 데 그친다.
+   * 100%는 카드의 안쪽 높이다 — 가둔 카드의 높이는 화면이 정하므로 잴 수 있다.
    */
   .stage-foot {
     /* 흐르는 상자는 flex 안에서 내용보다 작게 줄어들 수 있다 — 줄어들지 않게 못 박는다
        (없으면 긴 말씀 아래에서 쟁반이 여백만 남기고 접힌다) */
     flex-shrink: 0;
-    max-height: 100cqh;
+    max-height: 100%;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--color-line) transparent;
@@ -625,7 +631,8 @@ p:where(.small) {
   }
 
   /* 글자를 150% 넘게 키우면 워드마크·보조 문구·탭 넷이 한 줄에 들지 않는다 — 보조 문구가
-     두 줄로 꺾여 머리가 높아지고 탭이 열 밖으로 밀렸다. 탭에 자리를 내주고 물러난다 */
+     두 줄로 꺾여 머리가 높아지고 탭이 열 밖으로 밀렸다. 탭에 자리를 내주고 물러난다.
+     경계 22rem은 열의 폭(--layout-max 560px에서 좌우 여백을 뺀 528px)이 글자 150%에서 되는 값이다 */
   @container header (width < 22rem) {
     .brand-sub {
       display: none;

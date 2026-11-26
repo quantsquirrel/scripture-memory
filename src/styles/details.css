@@ -65,12 +65,10 @@
   transition: transform var(--dur-short) var(--ease-out);
 }
 
+/* 펼친 머리는 카드 제목이다 — 글자는 base.css의 카드 제목 규칙에서 받고, 여기서는 자리(카드
+   윗변에서 제목까지, 제목에서 첫 내용까지가 다른 카드와 같게)와 색만 정한다 */
 .tech-details[open] summary {
   padding: var(--panel-pad) var(--space-4) var(--space-6);
-  font-size: var(--text-md);
-  font-weight: 700;
-  line-height: var(--leading-tight);
-  letter-spacing: -0.01em;
   color: var(--color-text);
 }
 
