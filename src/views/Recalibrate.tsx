@@ -300,7 +300,7 @@ export function Recalibrate({ onExit }: { onExit: () => void }) {
         {/* 카드 머리줄 — 항상 왼쪽·오른쪽 두 칸 한 줄(감사 차례는 복습 무대와 같이 왼쪽에 모드 표지) */}
         <p className="card-head">
           {kind === 'auditOnly' ? (
-            <span className="mode-tag recal-mode-tag">객관 채점 차례 · 자가 판정 유보</span>
+            <span className="mode-tag recal-mode-tag">객관 채점 차례</span>
           ) : (
             <span>{unit.label}</span>
           )}

@@ -108,7 +108,7 @@ export const RECAL: StateDef[] = [
   {
     ...stage,
     id: 'recal-audit',
-    title: "무대: '객관 채점 차례 · 자가 판정 유보' 표지가 붙은 카드(가린 상태)",
+    title: "무대: '객관 채점 차례' 표지가 붙은 카드(가린 상태)",
     how: '주제·장절 카드가 타이핑 감사 차례인 구절',
     run: async (s) => {
       await startUnit(s, verseOf('AS1a', 'audit'), AS)
