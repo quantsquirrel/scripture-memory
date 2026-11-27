@@ -13,10 +13,10 @@ import type { Rating, ReviewEntry, ReviewEvidence, SerializedCard, StoredCard } 
 /** 장기 유지용 기본 목표 기억률 */
 export const DEFAULT_RETENTION = 0.9
 
-const makeScheduler = (retention: number) =>
-  fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true }))
+const makeScheduler = (retention: number, enableFuzz: boolean) =>
+  fsrs(generatorParameters({ request_retention: retention, enable_fuzz: enableFuzz }))
 
-const scheduler = makeScheduler(DEFAULT_RETENTION)
+const scheduler = makeScheduler(DEFAULT_RETENTION, true)
 
 export function serializeCard(c: Card): SerializedCard {
   const base: SerializedCard = {
@@ -188,15 +188,104 @@ export function intervalPreview(
   s: SerializedCard,
   now: Date = new Date(),
 ): Record<Rating, string> {
-  const revived = reviveCard(s)
+  return previewWith(scheduler, reviveCard(s), now)
+}
+
+function previewWith(
+  f: ReturnType<typeof makeScheduler>,
+  card: Card,
+  now: Date,
+): Record<Rating, string> {
   const preview = (r: Rating): string =>
-    formatInterval(scheduler.next(revived, now, GRADE[r]).card.due.getTime() - now.getTime())
+    formatInterval(f.next(card, now, GRADE[r]).card.due.getTime() - now.getTime())
   return { 1: preview(1), 2: preview(2), 3: preview(3), 4: preview(4) }
 }
 
 /** when 시점까지 추가 복습이 없다고 가정한 예측 기억률 (0~1) */
 export function retrievabilityAt(s: SerializedCard, when: Date): number {
   return scheduler.get_retrievability(reviveCard(s), when, false)
+}
+
+/**
+ * 마지막 복습 뒤 days일이 지난 기억의 기억률 (0~1) — 앱 스케줄러의 망각 곡선. 안정도는 기억률이
+ * 목표 기억률로 내려오기까지의 날수다. 숫자만 받고 숫자만 돌려준다(카드를 만들지 않는다).
+ */
+export function recallAfter(days: number, stability: number): number {
+  return scheduler.forgetting_curve(days, stability)
+}
+
+/** 예상치에서 복습 한 번 — 날수는 모두 첫 복습한 날(0)부터 센다 */
+export interface ForecastReview {
+  /** 복습한 날 */
+  readonly day: number
+  readonly rating: Rating
+  /** 복습 뒤의 안정도(일) */
+  readonly stability: number
+  /** 다음 복습 기한 */
+  readonly due: number
+  /** 다음 복습까지의 간격 — 등급 칸과 같은 표기(formatInterval) */
+  readonly interval: string
+}
+
+export interface ReviewForecast {
+  /** 첫 복습 직전 등급 칸의 간격 */
+  readonly preview: Readonly<Record<Rating, string>>
+  /** ratings를 차례로, 매번 기한에 맞춰 복습했을 때 */
+  readonly reviews: readonly ForecastReview[]
+  /** 첫 복습 뒤로 다시 보지 않으면 마지막 기한에 남는 기억률 (0~1) */
+  readonly unreviewedRecall: number
+}
+
+const DAY_MS = 86_400_000
+
+/** 예상치의 출발 시각. 흔들림이 없으면 결과는 출발 시각과 무관하다 — 계산을 순수하게 두려고 고정한다 */
+const FORECAST_START = new Date(Date.UTC(2026, 0, 1))
+
+/** 흔들림만 끈 스케줄러 — 소개 장면을 열 때 처음 만든다(첫 화면에서 만들지 않는다) */
+let forecaster: ReturnType<typeof makeScheduler> | undefined
+
+/**
+ * 소개 장면의 예상치: 학습을 갓 마친 카드 한 장(새 카드에 '좋음' 두 번 — 학습 단계를 지나
+ * 간격 복습에 들어선 상태)을 ratings대로 매번 기한에 복습하면 간격이 어떻게 자라는가.
+ *
+ * 앱 스케줄러와 같은 설정(목표 기억률 DEFAULT_RETENTION, 기본 가중치)에서 흔들림(fuzz)만 끈
+ * 순수 계산이다 — 흔들림은 같은 날 기한이 몰리지 않게 날짜를 조금 흩는 장치라, 켜 두면 화면의
+ * 숫자가 열 때마다 달라진다. 하드 경계 1: 카드는 이 함수 안에서만 살고 밖으로는 글자·숫자뿐인
+ * 얼린 값만 나간다. 저장할 수 있는 카드(SerializedCard·StoredCard·Card)나 RatedCard를 돌려주지
+ * 않으므로 이 경로로는 어떤 카드의 상태도 바뀌지 않는다.
+ */
+export function forecastReviews(ratings: readonly Rating[]): ReviewForecast {
+  const f = (forecaster ??= makeScheduler(DEFAULT_RETENTION, false))
+  let card = createEmptyCard(FORECAST_START)
+  for (let i = 0; i < 2; i++) card = f.next(card, card.due, GRADE[3]).card
+  const today = card.due.getTime()
+  const day = (d: Date) => Math.round((d.getTime() - today) / DAY_MS)
+  const preview = Object.freeze(previewWith(f, card, card.due))
+
+  const reviews: ForecastReview[] = []
+  let afterFirst: Card | undefined
+  for (const rating of ratings) {
+    const at = card.due
+    card = f.next(card, at, GRADE[rating]).card
+    afterFirst ??= card
+    reviews.push(
+      Object.freeze({
+        day: day(at),
+        rating,
+        stability: card.stability,
+        due: day(card.due),
+        interval: formatInterval(card.due.getTime() - at.getTime()),
+      }),
+    )
+  }
+  const end = reviews.at(-1)?.due ?? 0
+  return Object.freeze({
+    preview,
+    reviews: Object.freeze(reviews),
+    unreviewedRecall: afterFirst
+      ? f.get_retrievability(afterFirst, new Date(today + end * DAY_MS), false)
+      : 1,
+  })
 }
 
 export function formatInterval(ms: number): string {

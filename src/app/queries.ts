@@ -279,3 +279,14 @@ export async function loadSettings(
     lastSyncAt,
   }
 }
+
+/**
+ * 이 기기에 아무 기록이 없는가 — 카드도, 복습 기록도, 학습 진행도 없다. 첫 실행의 소개 장면은
+ * 이때만 저절로 뜬다: 기존 사용자와 백업·연동·동기화로 기록을 가져온 기기는 보지 않는다.
+ * 카드는 기한 색인의 첫 항목 하나만 본다(전부 읽지 않는다).
+ */
+export async function isBlankDevice(store: Store): Promise<boolean> {
+  if ((await store.cards.nextDueAt()) !== null) return false
+  if ((await store.reviews.count()) > 0) return false
+  return (await store.learning.all()).length === 0
+}

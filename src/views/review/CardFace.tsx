@@ -5,7 +5,7 @@ import type { ReviewMode, StoredCard } from '../../domain/card'
 import { Prompt } from './Answer'
 import { FirstLetterMode, type RateFn, ReciteMode, RefInputMode, TypingMode } from './modes'
 
-const MODE_LABEL: Record<ReviewMode, string> = {
+export const MODE_LABEL: Record<ReviewMode, string> = {
   recite: '소리 내어 낭송',
   firstLetter: '첫글자 힌트',
   typing: '타이핑 감사',
@@ -36,7 +36,7 @@ export function CardFace({
         <span className="mode-tag">{MODE_LABEL[mode]}</span>
         {sc.direction === 'topic' && <Crumb parts={crumbOf(verse)} />}
       </p>
-      <Prompt sc={sc} verse={verse} />
+      <Prompt direction={sc.direction} verse={verse} />
       {mode === 'recite' && <ReciteMode sc={sc} verse={verse} onRate={onRate} />}
       {mode === 'firstLetter' && <FirstLetterMode sc={sc} verse={verse} onRate={onRate} />}
       {mode === 'typing' && <TypingMode sc={sc} verse={verse} onRate={onRate} />}

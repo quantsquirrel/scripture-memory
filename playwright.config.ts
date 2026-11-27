@@ -16,6 +16,14 @@ export default defineConfig({
     ...devices['Desktop Chrome'],
     // 서비스 워커를 쓰므로 컨텍스트를 격리해 캐시가 섞이지 않게 한다
     serviceWorkers: 'allow',
+    // 첫 실행 소개(src/views/intro)는 빈 기기의 첫 화면을 덮는다. 흐름 시험은 빈 기기에서 시작하므로
+    // 이 기기에서 이미 띄웠다는 표시(adapters/intro.ts)를 넣어 건너뛴다 — 소개 시험(intro.spec.ts)만 비운다
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: 'http://localhost:4173', localStorage: [{ name: 'intro-seen', value: '1' }] },
+      ],
+    },
   },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
