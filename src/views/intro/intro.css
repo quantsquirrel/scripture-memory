@@ -8,7 +8,8 @@
  * 곳의 장면 범위 덮어쓰기뿐이다 — 복습 화면의 같은 부품은 바뀌지 않는다.
  *
  * 움직임은 Intro.tsx가 시각 t마다 transform·opacity(와 다 사라진 것의 visibility)만 적는다.
- * 그래프는 SVG 경로를 갈아 그린다. CSS 애니메이션·전이는 쓰지 않는다.
+ * 그래프는 SVG 경로를 갈아 그린다. CSS 애니메이션·전이는 쓰지 않는다 — 앱 부품이 가져오는 것도
+ * 장면 안에서는 끈다(아래).
  */
 
 /* 장면 판의 크기 — 앱 화면에 없는 장면 고유의 치수라 토큰이 아니라 여기 한 곳에 이름을 붙인다 */
@@ -30,8 +31,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* 아래 안전 영역(홈 인디케이터) 위에서 끝난다 — 판의 높이는 이 안에서 잰다 */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background: var(--color-bg);
   color: var(--color-text);
+}
+
+/*
+ * 장면의 움직임은 재생기 하나가 시각 t로 적는다. 재사용하는 앱 부품의 CSS 애니메이션·전이(채점 점수
+ * 띠의 reveal, 버튼·등급 칸의 transform 전이 등)가 살아 있으면 둘이 겹친다: 애니메이션의 끝값이
+ * 인라인 opacity를 이겨 점수 띠가 페이드 없이 튀어나오고, 전이가 매 프레임의 transform을 120ms씩
+ * 늦게 따라온다. 부품 쪽 규칙과 명시도를 다투지 않도록 장면 안에서는 important로 끈다.
+ */
+.intro *,
+.intro *::before,
+.intro *::after {
+  animation: none !important;
+  transition: none !important;
 }
 
 /* 장면이 떠 있는 동안 뒤의 문서가 흐르지 않게 */
@@ -78,9 +94,14 @@ html:has(.intro) {
   transform-origin: top center;
 }
 
-/* 글꼴을 받고 자리를 재기 전에는 장면을 그리지 않는다(네 장면이 한꺼번에 비치지 않게) */
+/* 글꼴을 받고 자리를 재기 전에는 장면을 그리지 않는다(네 장면이 한꺼번에 비치지 않게). '시작하기'는
+   그동안 포커스·낭독·누름에도 잡히지 않는다 — 건너뛰기만 서 있다 */
 .intro:not([data-ready]) :is(.intro-frame, .intro-lamp) {
   opacity: 0;
+}
+
+.intro:not([data-ready]) .intro-cta {
+  visibility: hidden;
 }
 
 /* 자리를 잴 때만 움직임을 걷어 낸다 — 재는 값은 움직임과 무관한 판 위의 자리다 */

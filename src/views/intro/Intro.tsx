@@ -90,9 +90,11 @@ const SPARK = (() => {
       ivan += `${ivan ? 'L' : 'M'}${X(day).toFixed(2)} ${Y(recall(day - T.start, T.stability)).toFixed(2)}`
     }
   }
+  // 복습하지 않은 선은 3장 그래프와 같이 첫 복습 기한에서 갈라진다
+  const g0 = required(TEETH[0], '1회').due
   let ghost = ''
   for (let i = 0; i <= 40; i++) {
-    const day = 8 * Math.pow(maxD / 8, i / 40)
+    const day = g0 * Math.pow(maxD / g0, i / 40)
     ghost += `${ghost ? 'L' : 'M'}${X(day).toFixed(2)} ${Y(recall(day, GHOST_STABILITY)).toFixed(2)}`
   }
   return { W, H, hairY: Y(DEFAULT_RETENTION).toFixed(2), ivan, ghost }
@@ -177,7 +179,7 @@ export function Intro({ onClose }: IntroProps) {
               <Prompt direction="ref" verse={VERSE} />
               <div className="intro-work">
                 <div className="intro-typing" data-part="s2-typing" data-fx="">
-                  <p className="muted small intro-field-label">{TYPING_LABEL}</p>
+                  <p className="muted small">{TYPING_LABEL}</p>
                   <div className="typing-input" data-part="s2-input">
                     {CHARS.map((c, i) => (
                       <span key={i} className="intro-ch">
@@ -434,7 +436,7 @@ function play(root: HTMLElement, close: () => void): () => void {
   const all = (sel: string): HTMLElement[] => [...root.querySelectorAll<HTMLElement>(sel)]
 
   const frame = part('frame')
-  const topbar = required(root.querySelector<HTMLElement>('.intro-topbar'), '윗줄')
+  const viewport = required(root.querySelector<HTMLElement>('.intro-viewport'), '장면 칸')
   const skip = part('skip')
   const cta = part('cta')
   const lamp = part('lamp')
@@ -478,10 +480,14 @@ function play(root: HTMLElement, close: () => void): () => void {
     ghostLab: 0,
   }
 
+  /** 판의 화면 자리 — 재는 때(시작·화면 크기 바뀜)만 바뀌므로 매 프레임 다시 읽지 않는다 */
+  let frameAt = { left: 0, top: 0 }
+
   /* ── 배치 측정: 움직임을 걷어 낸 판 위의 자리로 재고, 화면 좌표는 판의 배율로 옮긴다 ── */
   function measure() {
-    // 화면이 판보다 높으면 판을 늘려(최대 BOARD_MAX) 가운데에 놓고, 낮으면 판을 통째로 줄인다
-    const avail = window.innerHeight - topbar.offsetHeight - 8
+    // 화면이 판보다 높으면 판을 늘려(최대 BOARD_MAX) 가운데에 놓고, 낮으면 판을 통째로 줄인다.
+    // 쓸 수 있는 높이는 윗줄과 아래 안전 영역을 뺀 장면 칸이다
+    const avail = viewport.clientHeight - 8
     const H = avail >= BOARD ? Math.min(avail, BOARD_MAX) : BOARD
     M.s = avail >= BOARD ? 1 : avail / BOARD
     frame.style.height = `${String(H)}px`
@@ -530,14 +536,16 @@ function play(root: HTMLElement, close: () => void): () => void {
     M.tickLab = tickLabs.map((t) => t.offsetWidth)
     M.ghostLab = ghostLab.offsetWidth
     root.classList.remove('is-measuring')
+    const at = frame.getBoundingClientRect()
+    frameAt = { left: at.left, top: at.top }
   }
 
   const CX = (day: number, W: number) => (day / W) * M.chart.pw
   const CY = (r: number) => CHART.top + ((1 - r) / (1 - R_MIN)) * M.chart.ph
-  const toScreen = (q: Point): Point => {
-    const r = frame.getBoundingClientRect()
-    return { x: r.left + q.x * M.s, y: r.top + q.y * M.s }
-  }
+  const toScreen = (q: Point): Point => ({
+    x: frameAt.left + q.x * M.s,
+    y: frameAt.top + q.y * M.s,
+  })
   const chartLamp = (st: S3State): Point => ({
     x: M.chart.x + CX(st.lampDay, st.W),
     y: M.chart.y + CY(st.lampR),
@@ -545,7 +553,9 @@ function play(root: HTMLElement, close: () => void): () => void {
 
   function fx(e: Styled, o: number, x = 0, y = 0) {
     e.style.opacity = o.toFixed(3)
-    e.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`
+    // 제자리면 인라인 transform을 비운다 — 끝 장면의 버튼이 앱의 누름(:active 1px)을 그대로 받게
+    const still = Math.abs(x) < 0.005 && Math.abs(y) < 0.005
+    e.style.transform = still ? '' : `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0)`
     e.style.visibility = o < 0.002 ? 'hidden' : 'visible'
   }
   // 놓이는 움직임: 6px 아래에서 떠오르며 나타나고, 나갈 때는 위로 6px 물러나며 사라진다
@@ -802,18 +812,36 @@ function play(root: HTMLElement, close: () => void): () => void {
   let last = 0
   let raf = 0
   let alive = true
+  /** 글꼴을 받고 자리를 쟀다(그리기 시작했다) */
+  let ready = false
+  /** 재생 중이다 — 끝 장면에 닿거나 건너뛰면 멈춘다 */
+  let running = false
 
   const paint = () => {
     render(now)
   }
-  const finish = () => {
+  const stopFrames = () => {
     cancelAnimationFrame(raf)
+    raf = 0
+  }
+  // 재생을 이어 간다. 탭이 숨어 있으면 보일 때까지 기다린다 — 숨은 동안의 시간을 장면에 더하지 않는다
+  const resume = () => {
+    if (!alive || !running || raf !== 0 || document.hidden) return
+    last = performance.now()
+    raf = requestAnimationFrame(tick)
+  }
+  const finish = () => {
+    running = false
+    stopFrames()
     now = TL.end
+    // 그리기 전(글꼴을 받는 중)에 건너뛰면 끝 장면은 준비되는 대로 선다(start)
+    if (!ready) return
     paint()
     cta.focus()
   }
-  const tick = (ts: number) => {
-    if (!alive) return
+  function tick(ts: number) {
+    raf = 0
+    if (!alive || !running) return
     now = Math.min(TL.end, now + Math.max(0, ts - last) / 1000)
     last = ts
     if (now >= TL.end) {
@@ -828,13 +856,14 @@ function play(root: HTMLElement, close: () => void): () => void {
     if (!alive) return
     measure()
     paint()
+    ready = true
     root.setAttribute('data-ready', '')
-    if (reduced) {
+    if (now >= TL.end) {
       cta.focus()
       return
     }
-    last = performance.now()
-    raf = requestAnimationFrame(tick)
+    running = true
+    resume()
   }
 
   const onSkip = () => {
@@ -844,23 +873,44 @@ function play(root: HTMLElement, close: () => void): () => void {
     close()
   }
   // 장면이 떠 있는 동안 키는 장면 것이다 — 뒤 화면(inert)의 키 처리기에 닿지 않게 창에서 먼저 받아
-  // 멈춘다(누름·Tab 같은 브라우저 기본 동작은 그대로). Esc는 재생 중에는 건너뛰기, 끝 장면에서는 '시작하기'
+  // 멈춘다(누름·Tab 같은 브라우저 기본 동작은 그대로). Esc는 재생 중에는 건너뛰기, 끝 장면에서는 '시작하기'.
+  // 길게 눌러 되풀이되는 Esc는 받지 않는다 — 끝 장면을 보지 못한 채 닫히지 않게
   const onKey = (e: KeyboardEvent) => {
     e.stopPropagation()
+    if (e.key === 'Tab') {
+      // 포커스는 대화 상자 안에서 돈다 — 뒤 화면은 inert라, 놓아두면 Tab이 문서 밖(body)으로 샌다
+      e.preventDefault()
+      const stops = [skip, cta].filter(
+        (b) => b.tabIndex >= 0 && getComputedStyle(b).visibility === 'visible',
+      )
+      const at = stops.findIndex((b) => b === document.activeElement)
+      const next = e.shiftKey
+        ? stops[at <= 0 ? stops.length - 1 : at - 1]
+        : stops[(at + 1) % stops.length]
+      next?.focus()
+      return
+    }
     if (e.key !== 'Escape' || e.isComposing) return
     e.preventDefault()
+    if (e.repeat) return
     if (now < TL.end) finish()
     else close()
   }
   const onResize = () => {
+    if (!ready) return
     measure()
     paint()
+  }
+  const onVisibility = () => {
+    if (document.hidden) stopFrames()
+    else resume()
   }
 
   skip.addEventListener('click', onSkip)
   cta.addEventListener('click', onStart)
   window.addEventListener('keydown', onKey, true)
   window.addEventListener('resize', onResize)
+  document.addEventListener('visibilitychange', onVisibility)
   root.focus()
   void document.fonts.ready.then(start)
 
@@ -871,5 +921,6 @@ function play(root: HTMLElement, close: () => void): () => void {
     cta.removeEventListener('click', onStart)
     window.removeEventListener('keydown', onKey, true)
     window.removeEventListener('resize', onResize)
+    document.removeEventListener('visibilitychange', onVisibility)
   }
 }

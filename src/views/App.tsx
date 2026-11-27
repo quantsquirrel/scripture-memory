@@ -1,4 +1,4 @@
-import { type ComponentType, useCallback, useEffect, useState } from 'react'
+import { type ComponentType, useCallback, useEffect, useRef, useState } from 'react'
 
 import { introSeen, markIntroSeen } from '../adapters/intro'
 import { store } from '../app'
@@ -69,13 +69,7 @@ export default function App() {
           입력 중인 텍스트가 유지된다.
         */}
         <main>
-          <ViewFor
-            route={route}
-            navigate={navigate}
-            onReplayIntro={() => {
-              intro.open(false)
-            }}
-          />
+          <ViewFor route={route} navigate={navigate} onReplayIntro={intro.open} />
         </main>
 
         {/* 같은 자리를 연달아 누른 둘째 누름이 방금 나타난 버튼에 떨어지지 않게 하는 가림막 */}
@@ -93,37 +87,57 @@ export default function App() {
   )
 }
 
+/** 장면 조각을 받는다 — 받지 못하면(조각이 캐시에도 네트워크에도 없으면) 소개 없이 둔다 */
+const loadIntro = (): Promise<ComponentType<IntroProps> | null> =>
+  import('./intro/Intro').then(
+    (m) => m.Intro,
+    () => null,
+  )
+
 /**
  * 소개 장면 — 처음 실행할 때 한 번 저절로 뜨고, 설정의 '소개 다시 보기'로 다시 연다.
  * 장면(컴포넌트·CSS·시각표)은 따로 떨어진 조각이라 열 때만 받는다 — 첫 화면에 남는 것은 이
  * 판정뿐이다. 저절로 뜨는 조건은 이 기기에서 띄운 적이 없고(adapters/intro.ts) 기록이 하나도
  * 없을 때(isBlankDevice)이며, 뜨는 순간 표시를 적는다 — 중간에 닫아도 다시 저절로 뜨지 않는다.
+ * 조각을 받는 사이에 기록이 생겼거나(백업 가져오기·연동) 다른 화면으로 갔으면 띄우지 않는다.
  * 장면이 떠 있는 동안 뒤의 앱은 inert라 포커스·낭독기가 닿지 않는다.
  */
 function useIntro() {
   const [Scene, setScene] = useState<ComponentType<IntroProps> | null>(null)
+  const mounted = useRef(false)
 
-  const open = useCallback((auto: boolean) => {
-    void import('./intro/Intro').then(
-      (m) => {
-        if (auto) markIntroSeen()
-        setScene(() => m.Intro)
-      },
-      // 조각을 받지 못하면 소개 없이 둔다 — 소개는 핵심 기능이 아니다(오프라인에서는 precache가 싣는다)
-      () => undefined,
-    )
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+
+  const open = useCallback(() => {
+    void loadIntro().then((Intro) => {
+      if (Intro && mounted.current) setScene(() => Intro)
+    })
   }, [])
 
   useEffect(() => {
     if (introSeen()) return
-    let alive = true
-    void isBlankDevice(store).then((blank) => {
-      if (alive && blank) open(true)
+    let live = true
+    const route = window.location.hash
+    const still = () => live && !introSeen() && window.location.hash === route
+    void (async () => {
+      if (!(await isBlankDevice(store)) || !still()) return
+      const Intro = await loadIntro()
+      // 조각을 받는 동안 바뀐 것이 없는지 한 번 더 본다
+      if (!Intro || !still() || !(await isBlankDevice(store)) || !still()) return
+      markIntroSeen()
+      setScene(() => Intro)
+    })().catch(() => {
+      // 기록을 읽지 못하면 소개 없이 둔다 — 소개는 핵심 기능이 아니다
     })
     return () => {
-      alive = false
+      live = false
     }
-  }, [open])
+  }, [])
 
   const close = useCallback(() => {
     setScene(null)

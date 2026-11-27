@@ -55,7 +55,7 @@ test.describe('첫 실행 소개', () => {
     await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
   })
 
-  test('재생 중에는 건너뛰기가 언제나 누를 수 있게 서 있고, 누르면 끝 장면으로 간다', async ({
+  test('재생 중에는 건너뛰기가 언제나 누를 수 있게 서 있다가 시작하기가 나타날 때 넘겨준다', async ({
     page,
   }) => {
     await pauseClock(page)
@@ -91,6 +91,11 @@ test.describe('첫 실행 소개', () => {
     await skipButton(page).click()
     await expect(startButton(page)).toBeVisible()
     await expect(startButton(page)).toBeFocused()
+    // 끝 장면에서 누를 것은 시작하기 하나 — Tab은 대화 상자 밖으로 새지 않는다
+    await page.keyboard.press('Tab')
+    await expect(startButton(page)).toBeFocused()
+    await page.keyboard.press('Shift+Tab')
+    await expect(startButton(page)).toBeFocused()
     await page.keyboard.press('Enter')
     await expect(dialog(page)).toHaveCount(0)
     await expect(page).toHaveURL(/#\/home$/)
@@ -123,9 +128,74 @@ test.describe('첫 실행 소개', () => {
     // 뒤의 앱도 inert — 탭·제목에 닿지 않는다
     await expect(page.getByRole('link', { name: '설정' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: '오늘의 복습' })).toHaveCount(0)
-    // 키보드로는 건너뛰기에만 닿는다
+    // 키보드로는 건너뛰기에만 닿고, 포커스는 대화 상자 밖으로 새지 않는다
     await page.keyboard.press('Tab')
     await expect(skipButton(page)).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(skipButton(page)).toBeFocused()
+  })
+
+  test('Esc를 길게 눌러 되풀이되어도 끝 장면에서 멈춘다', async ({ page }) => {
+    await page.goto(BASE)
+    await introReady(page)
+    await page.keyboard.down('Escape')
+    await page.evaluate(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', repeat: true }))
+    })
+    await page.keyboard.up('Escape')
+    await expect(dialog(page)).toBeVisible()
+    await expect(startButton(page)).toBeFocused()
+  })
+
+  test('탭이 숨어 있던 동안은 재생이 멈췄다가 돌아오면 이어 간다', async ({ page }) => {
+    await pauseClock(page)
+    await page.goto(BASE)
+    await introReady(page)
+    const setHidden = (hidden: boolean) =>
+      page.evaluate((h) => {
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => h })
+        Object.defineProperty(document, 'visibilityState', {
+          configurable: true,
+          get: () => (h ? 'hidden' : 'visible'),
+        })
+        document.dispatchEvent(new Event('visibilitychange'))
+      }, hidden)
+    await page.clock.runFor(1000)
+    await setHidden(true)
+    await page.clock.runFor(10_000)
+    await setHidden(false)
+    await page.clock.runFor(500)
+    // 숨은 10초를 장면에 더했다면 3장(8.3초~)에 가 있다 — 1.5초 언저리의 1장 그대로여야 한다
+    await expect(page.locator('[data-part="s1"]')).toBeVisible()
+    await expect(page.locator('[data-part="s3"]')).toBeHidden()
+    await expect(skipButton(page)).toBeVisible()
+  })
+
+  test.describe('글꼴을 받는 동안', () => {
+    test.use({ serviceWorkers: 'block' })
+
+    test('시작하기는 잡히지 않고, 그때 건너뛰면 준비되는 대로 끝 장면이 선다', async ({
+      page,
+    }) => {
+      let release: () => void = () => undefined
+      const gate = new Promise<void>((resolve) => {
+        release = resolve
+      })
+      await page.route('**/*.woff2', async (route) => {
+        await gate
+        await route.continue()
+      })
+      await page.goto(BASE)
+      await expect(dialog(page)).toBeVisible()
+      await expect(page.locator('.intro[data-ready]')).toHaveCount(0)
+      await expect(startButton(page)).toBeHidden()
+      await expect(skipButton(page)).toBeVisible()
+      await skipButton(page).click()
+      release()
+      await page.locator('.intro[data-ready]').waitFor()
+      await expect(startButton(page)).toBeVisible()
+      await expect(startButton(page)).toBeFocused()
+    })
   })
 
   test.describe('움직임 줄이기', () => {
@@ -175,20 +245,30 @@ test.describe('첫 실행 소개', () => {
     expect(await page.evaluate(() => localStorage.getItem('intro-seen'))).toBeNull()
   })
 
-  test('설정의 소개 다시 보기는 오프라인에서도 열린다', async ({ page, context }) => {
+  test('설정의 소개 다시 보기는 오프라인에서도 열린다(서비스 워커 precache만으로)', async ({
+    page,
+    context,
+  }) => {
+    // 소개를 한 번도 받지 않은 기존 사용자 — 장면 조각은 precache에만 있다
+    await page.addInitScript(() => {
+      localStorage.setItem('intro-seen', '1')
+    })
+    const fetched: string[] = []
+    page.on('request', (r) => {
+      if (r.url().includes('/assets/Intro-')) fetched.push(r.url())
+    })
     await page.goto(BASE)
-    await introReady(page)
-    await skipButton(page).click()
-    await startButton(page).click()
-    await expect(dialog(page)).toHaveCount(0)
-
+    await expect(page.getByRole('heading', { name: '오늘의 복습' })).toBeVisible()
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null, undefined, {
       timeout: 30_000,
     })
     // precache 완료를 기다린다
     await page.waitForTimeout(1500)
+    await expect(dialog(page)).toHaveCount(0)
+    // 화면은 장면 조각을 부르지 않았다 — 조각은 서비스 워커가 precache로만 받았다(page 요청에 없다)
+    expect(fetched).toEqual([])
+
     await context.setOffline(true)
-    // 새 문서로 다시 열어 장면 조각이 메모리가 아니라 서비스 워커 캐시에서 오게 한다
     await page.goto(`${BASE}#/settings`)
     await page.reload()
     await page.getByRole('button', { name: '소개 다시 보기' }).click()
