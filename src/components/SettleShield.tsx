@@ -36,6 +36,7 @@ function pressableAt(x: number, y: number): { el: Element; text: string } | null
  *
  * 막지 않는 것: 다른 자리의 누름, 누른 그 버튼이 그대로 남아 있을 때 다시 누르는 것(펼치고 접는 줄),
  * 누를 것이 없어진 자리(엿본 어절), 키보드와 낭독기의 누름, 누른 적 없이 바뀐 화면.
+ * 손가락으로 밀기 시작한 누름도 세지 않는다 — 밀려서 그 자리에 온 것은 새 버튼이 아니다.
  * 채점·판정·저장과 키 처리는 건드리지 않는다. 타이머만 쓰므로 움직임 줄이기와 무관하다.
  * 크기와 겹침 순서는 base.css에 있다.
  */
@@ -66,6 +67,7 @@ export function SettleShield() {
       arm()
     })
     const close = () => {
+      window.clearTimeout(timer)
       observer.disconnect()
       shield.hidden = true
     }
@@ -100,10 +102,14 @@ export function SettleShield() {
     }
     document.addEventListener('pointerdown', onDown, true)
     document.addEventListener('pointerup', onUp, true)
+    // 손가락으로 밀기 시작하면 브라우저가 그 누름을 거둔다(pointercancel). 누름이 아니라 스크롤이니
+    // 창을 닫는다 — 열어 두면, 밀려서 그 자리에 온 버튼을 화면의 다른 글이 바뀌는 순간(1초마다 줄어드는
+    // 연동 코드의 남은 시간) 새로 선 버튼으로 잘못 보고 가린다
+    document.addEventListener('pointercancel', close, true)
     return () => {
       document.removeEventListener('pointerdown', onDown, true)
       document.removeEventListener('pointerup', onUp, true)
-      window.clearTimeout(timer)
+      document.removeEventListener('pointercancel', close, true)
       close()
     }
   }, [])

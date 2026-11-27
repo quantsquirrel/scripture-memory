@@ -243,7 +243,7 @@ export function RefInputMode({
   }
   return (
     <>
-      <div className={`diff-score ${refOk ? 'good' : 'bad'}`}>
+      <div className={`diff-score ${refOk ? 'good' : 'bad'}`} role="status">
         {refOk ? '정답!' : `오답 (입력: ${attempt})`}
       </div>
       <Answer sc={sc} verse={verse} />
