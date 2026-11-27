@@ -151,7 +151,6 @@ export function TypingMode({
               e.preventDefault()
               if (attempt.trim() !== '') setGrade(gradeTyping(verse.text, attempt))
             }}
-            placeholder="말씀을 입력하세요 (구두점 무시)"
             autoCapitalize="off"
             autoCorrect="off"
             spellCheck={false}
@@ -244,7 +243,7 @@ export function RefInputMode({
   }
   return (
     <>
-      <div className={`diff-score ${refOk ? 'good' : 'bad'}`}>
+      <div className={`diff-score ${refOk ? 'good' : 'bad'}`} role="status">
         {refOk ? '정답!' : `오답 (입력: ${attempt})`}
       </div>
       <Answer sc={sc} verse={verse} />

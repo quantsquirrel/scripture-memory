@@ -1,6 +1,8 @@
-/* 접이식 상세 섹션 — 닫혀 있을 때는 한 줄, 펼치면 설정 묶음(.panel)과 같은 카드 */
+/* 접이식 상세 섹션 — 닫혀 있을 때는 채움 없는 투명 면에 괘선 테두리만 둘러 바닥 위로
+   물러서고, 펼치면 설정 묶음(.panel)과 같은 카드가 된다. 펼친 머리는 카드 제목(h2)과 글자도
+   자리도 같다: 크기·굵기·줄 높이·자간, 카드 윗변에서의 거리, 다음 내용까지의 틈 */
 .tech-details {
-  background: var(--color-panel);
+  background: transparent;
   border: 1px solid var(--color-line);
   border-radius: var(--radius-lg);
   padding: 0 var(--panel-pad);
@@ -8,6 +10,7 @@
 }
 
 .tech-details[open] {
+  background: var(--color-panel);
   padding-bottom: var(--panel-pad);
 }
 
@@ -23,35 +26,59 @@
   cursor: pointer;
   list-style: none;
   font-weight: 600;
-  font-size: var(--text-base);
-  padding: var(--space-6) 0;
+  font-size: var(--text-sm);
+  /* 음수 좌우 여백과 같은 패딩 — 글자의 왼쪽 끝은 카드 여백 그대로 두고 포커스 링만 글자에서
+     한 칸 떨어지게 한다(목록의 구절 줄과 같은 방식) */
+  margin-inline: calc(-1 * var(--space-4));
+  padding: var(--space-6) var(--space-4);
+  /* 면이 없어 반경은 포커스 링에만 드러난다. 링은 안쪽으로 당긴다 — 머리가 카드 윗변에
+     닿아 있어 바깥 링은 카드 밖으로 나갔다 */
+  border-radius: var(--radius);
   color: var(--color-muted);
   transition: color var(--dur-micro) var(--ease-out);
+}
+
+.tech-details summary:focus-visible {
+  outline-offset: calc(-1 * var(--space-1));
+}
+
+/* 눌린 동안 글자가 본문색으로(마우스를 올렸을 때와 같다) — 터치에는 호버가 없다 */
+.tech-details summary:active {
+  color: var(--color-text);
 }
 
 .tech-details summary::-webkit-details-marker {
   display: none;
 }
 
-/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠(탭 아이콘과 같은 1.75px 선) */
+/* 펼침 표지 — 기본 삼각형 대신 오른쪽 끝의 꺾쇠. 선의 굵기 1.75px은 탭 아이콘·Chevron의
+   획 굵기(strokeWidth)와 같은 값이라 토큰이 아닌 수로 적는다 */
 .tech-details summary::after {
   content: '';
   flex-shrink: 0;
-  width: 8px;
-  height: 8px;
+  width: var(--space-4);
+  height: var(--space-4);
   margin-right: var(--space-2);
   border-right: 1.75px solid currentColor;
   border-bottom: 1.75px solid currentColor;
-  transform: rotate(45deg) translateY(-2px);
+  transform: rotate(45deg) translateY(calc(-1 * var(--space-1)));
   transition: transform var(--dur-short) var(--ease-out);
 }
 
+/* 펼친 머리는 카드 제목이다 — 글자는 base.css의 카드 제목 규칙에서 받고, 여기서는 자리(카드
+   윗변에서 제목까지, 제목에서 첫 내용까지가 다른 카드와 같게)와 색만 정한다 */
 .tech-details[open] summary {
+  padding: var(--panel-pad) var(--space-4) var(--space-6);
   color: var(--color-text);
 }
 
+/* 머리 바로 아래의 이름표는 카드 제목 아래의 이름표와 같다(inputs.css의 :is(h2, h3) + label.small) */
+.tech-details summary + label.small {
+  margin-top: 0;
+}
+
 .tech-details[open] summary::after {
-  transform: rotate(-135deg) translateY(-2px);
+  transform: rotate(-135deg) translateY(calc(-1 * var(--space-1)));
 }
 
 .tech-details h3 {

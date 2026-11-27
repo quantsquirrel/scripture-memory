@@ -31,11 +31,19 @@
   transform: translateY(1px);
 }
 
-/* 누를 수 없음은 세 갈래로 알린다: 옅어진 글자, 금지 커서, 그리고 disabled 속성 */
+/* 누를 수 없음은 세 갈래로 알린다: 빈 면은 그대로 두고 괘선(line)과 muted 글자, 금지 커서,
+   disabled 속성으로 물러선다. 채움을 더하면 켜진 보조 버튼보다 무거워지므로 면을 뒤집지 않는다 */
 .btn:disabled {
+  background: transparent;
+  border-color: var(--color-line);
   color: var(--color-muted);
-  opacity: 0.55;
+  opacity: 1;
   cursor: not-allowed;
+}
+
+/* 진행 중인 버튼(연동 중·동기화 중)은 글자색을 살려 "일하는 중"임을 알린다 */
+.btn[aria-busy='true']:disabled {
+  color: var(--color-text);
 }
 
 .btn-primary {
@@ -69,12 +77,19 @@
   gap: var(--space-2);
   background: none;
   border: none;
+  /* 면이 없어 반경은 포커스 링에만 드러난다 — 다른 버튼의 링처럼 둥글게 */
+  border-radius: var(--radius);
   color: var(--color-muted);
   font-size: var(--text-base);
   font-weight: 600;
   padding: var(--space-2) var(--space-2) var(--space-2) 0;
   cursor: pointer;
   transition: color var(--dur-micro) var(--ease-out);
+}
+
+/* 눌린 동안 글자가 본문색으로(마우스를 올렸을 때와 같다) — 터치에는 호버가 없다 */
+.btn-ghost:active {
+  color: var(--color-text);
 }
 
 /* 버튼 이름 뒤에 붙는 보조 표기 — "내보내기 (JSON)"의 "(JSON)"처럼 */
@@ -101,6 +116,55 @@
   min-width: 0;
 }
 
+/* 다른 화면으로 들어가는 이동 버튼(설정 > 말씀 상태 개정) — 왼쪽 정렬 + 오른쪽 꺾쇠 */
+.btn-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  text-align: left;
+  padding-inline: var(--space-8) var(--space-6);
+}
+
+.btn-nav .chevron {
+  flex-shrink: 0;
+  color: var(--color-muted);
+}
+
+/*
+ * 카드 안의 누르는 줄 — 목록의 구절 줄(.verse-row)과 말씀 상태 개정의 단원 줄(.recal-unit).
+ * 두 줄이 함께 쓰는 모양은 여기 한 곳에서 정한다: 음수 좌우 여백과 같은 패딩으로 글자 왼쪽
+ * 끝은 카드 여백에 맞추고, 눌림·hover·포커스 상자는 둥글고 여유 있게 선다(링은 안쪽으로).
+ * 줄마다 다른 것(칸 사이, 굵기, 정렬, 꺼진 모습)은 list.css와 review.css의 제 규칙에 둔다.
+ */
+.verse-row,
+.recal-unit {
+  display: flex;
+  align-items: center;
+  width: calc(100% + 2 * var(--space-4));
+  margin-inline: calc(-1 * var(--space-4));
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  padding: var(--space-4);
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out);
+}
+
+.verse-row:focus-visible,
+.recal-unit:focus-visible {
+  outline-offset: calc(-1 * var(--space-1));
+}
+
+/* 눌린 동안 한 단 밝아진다(마우스를 올렸을 때와 같은 면) — 터치에는 호버가 없다 */
+.verse-row:active,
+.recal-unit:not(:disabled):active {
+  background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
+}
+
 /* 마우스·트랙패드에서만 — 터치 기기에서는 누른 뒤 hover가 남아 눌린 것처럼 보인다.
    신호는 하나: 면이 한 단 밝아진다(주 버튼은 금빛이 한 단 짙어진다) */
 @media (hover: hover) {
@@ -118,5 +182,10 @@
 
   .btn-ghost:hover {
     color: var(--color-text);
+  }
+
+  .verse-row:hover,
+  .recal-unit:not(:disabled):hover {
+    background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
   }
 }

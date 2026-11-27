@@ -26,6 +26,7 @@
 .verse-row,
 .recal-unit,
 .notice-row,
+.install-action,
 .tech-details summary,
 .btn,
 .ref-input {
@@ -63,14 +64,17 @@
  * 입력·버튼처럼 경계가 컨트롤을 식별하게 하는 곳은 3:1 이상인
  * --color-border를 쓴다 (--color-line은 장식용 헤어라인).
  *
- * 제 색 경계가 있는 것은 뺀다 — 주 버튼(금색 채움)·위험 버튼(bad 외곽선)·제안 등급,
- * 그리고 공개되어 본문 글자가 된 첫글자 어절.
+ * 꺼진 등불(.btn-primary:disabled)도 여기에 든다 — 아직 누를 수 없는 주 행동은 보조 버튼과 같은
+ * 외곽선으로 켜질 자리를 지킨다(DESIGN.md Overview).
+ *
+ * 빼는 것: 제 색 경계가 있는 것(금색으로 채운 주 버튼, bad 외곽선의 위험 버튼, 제안 등급),
+ * 꺼진 보조 버튼과 꺼진 입력란(line 괘선으로 물러선다), 공개되어 본문 글자가 된 첫글자 어절.
  */
-.btn:not(.btn-primary, .btn-danger),
+.btn:not(.btn-primary, .btn-danger, :disabled),
 .btn-primary:disabled,
 .rate:not(.suggested),
-.typing-input,
-.ref-input,
+.typing-input:not(:disabled),
+.ref-input:not(:disabled),
 .fl-word:not(.fl-revealed) {
   border-color: var(--color-border);
 }
@@ -89,7 +93,6 @@
   .btn:active,
   .rate:active,
   .fl-word:active,
-  .col-tab:active,
   .seg:active {
     transform: none;
   }
@@ -111,17 +114,23 @@
 }
 
 /* ── 고대비 모드 ─────────────────────────────────────────────
- * 사용자가 OS에서 고대비를 켜면 경계를 더 분명하게.
+ * 사용자가 OS에서 고대비를 켜면 경계를 더 분명하게: 장식 괘선(line)을 쓰는 모든 경계가
+ * 컨트롤 경계색(border, 3:1 이상)으로 선다. 요소마다 적어 넣던 때에는 빠지는 곳이 생겼다
+ * (카드의 테두리는 오르는데 그 안의 구분선은 그대로였다) — 그래서 괘선 토큰 자체를 바꿔
+ * 가리킨다. 선택자를 둘로 적은 것은 tokens.css의 테마 규칙(:root[data-theme='light'] 등)과
+ * 명시도를 맞추기 위해서다.
+ * 꺼진 컨트롤도 평상시의 line 괘선에서 함께 올라간다 — 고대비에서 장식 헤어라인보다
+ * 약해지면 자리를 놓친다(켜짐과의 구분은 글자색·커서·disabled 속성).
  */
 @media (prefers-contrast: more) {
-  .panel,
-  .tech-details,
-  .verse-row,
-  .col-row {
-    border-color: var(--color-border);
+  :root:not([data-theme]),
+  :root[data-theme] {
+    --color-line: var(--color-border);
   }
 
-  .muted {
+  .muted,
+  .setting-notice,
+  .recal-hint {
     color: var(--color-text);
   }
 }

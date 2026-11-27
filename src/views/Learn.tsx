@@ -3,6 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { getAllLearning, runLadder } from '../app'
 import { Chevron } from '../components/Chevron'
 import { Crumb } from '../components/Crumb'
+import { StageCard } from '../components/StageCard'
 import {
   crumbOf,
   DUPLICATES,
@@ -76,7 +77,17 @@ export function Learn({
     })
   }, [step, verseId])
 
-  if (!verse) return <p className="muted">구절을 찾을 수 없습니다.</p>
+  // 없는 구절 id(오래된 링크) — 복습의 빈 화면과 같은 작은 카드로 비어 있음과 돌아갈 길을 알린다
+  if (!verse) {
+    return (
+      <section className="panel empty-state">
+        <h2>구절을 찾을 수 없습니다</h2>
+        <button className="btn btn-primary" onClick={onExit}>
+          홈으로
+        </button>
+      </section>
+    )
+  }
   if (step === null) return <p className="muted loading">불러오는 중…</p>
 
   /**
@@ -119,7 +130,7 @@ export function Learn({
       </div>
 
       {/* 단계가 바뀌면 카드를 새로 놓는다 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */}
-      <div key={step} className="panel stage-card">
+      <StageCard key={step}>
         {/* 카드 머리줄 — 이 구절이 놓인 자리(과정 › 단원 › 주제) */}
         <p className="card-head">
           <Crumb parts={[...crumbOf(verse), topicOf(verse).title]} />
@@ -185,7 +196,7 @@ export function Learn({
             onLearn={onLearn}
           />
         )}
-      </div>
+      </StageCard>
     </div>
   )
 }

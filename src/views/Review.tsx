@@ -5,6 +5,7 @@ import type { QueuedCard } from '../app/queries'
 import { Chevron } from '../components/Chevron'
 import { fillStyle } from '../components/fill'
 import { LampMark } from '../components/LampMark'
+import { StageCard } from '../components/StageCard'
 import { VERSE_BY_ID } from '../data/verses'
 import type { Rating, ReviewMode } from '../domain/card'
 import { required } from '../domain/invariant'
@@ -88,7 +89,7 @@ export function Review({ onExit }: { onExit: () => void }) {
     }
     return (
       <div className="stage">
-        <div className="panel stage-card">
+        <StageCard>
           <div className="finale">
             <LampMark />
             <h2>복습 완료!</h2>
@@ -105,7 +106,7 @@ export function Review({ onExit }: { onExit: () => void }) {
               홈으로
             </button>
           </div>
-        </div>
+        </StageCard>
       </div>
     )
   }
@@ -134,8 +135,9 @@ export function Review({ onExit }: { onExit: () => void }) {
         </span>
         <span className="review-count">남은 카드 {remaining}</span>
       </div>
+      {/* 알림의 글자는 설정·개정의 조용한 알림과 같다(.status-msg) */}
       {notice !== null && (
-        <p className="muted small" role="status">
+        <p className="status-msg" role="status">
           {notice}
         </p>
       )}

@@ -1,3 +1,4 @@
+import { SettleShield } from '../components/SettleShield'
 import { Browse } from './Browse'
 import { Home } from './Home'
 import { InstallBanner } from './InstallBanner'
@@ -73,6 +74,9 @@ export default function App() {
       <main>
         <ViewFor route={route} navigate={navigate} />
       </main>
+
+      {/* 같은 자리를 연달아 누른 둘째 누름이 방금 나타난 버튼에 떨어지지 않게 하는 가림막 */}
+      <SettleShield />
     </div>
   )
 }

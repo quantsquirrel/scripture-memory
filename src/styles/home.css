@@ -1,9 +1,11 @@
 /*
  * 홈 — 오늘의 몫이 앞장서고, 새 구절이 그 뒤를, 진행률 기록이 맨 아래를 맡는다.
  *
- * 오늘의 복습과 새 구절 학습은 손으로 다루는 대상이라 카드에 담고, 진행률은
- * 읽는 기록이라 카드 밖 바닥에 헤어라인 표로 둔다. 큰 숫자는 본문색으로 크기만
- * 키운다(금색 숫자 금지).
+ * 손으로 다루는 것만 카드다: 오늘의 복습(복습할 카드가 있을 때)과 새 구절(들어갈
+ * 구절이 있을 때). 누를 것이 없으면 같은 제목이 바닥의 두 줄로 내려앉는다. 읽는
+ * 기록(목표 페이싱·전체 막대·과정별 표)은 모두 맨 아래 진행률 묶음에 모인다.
+ * 말씀은 새 구절 카드에서 선다 — 다음에 새길 구절의 첫머리가 세리프로 비친다.
+ * 큰 숫자는 본문색으로 크기만 키운다(금색 숫자 금지).
  */
 /* 오래 쉬었을 때 홈 맨 위에 서는 안내 한 줄 — 옅은 우물 + 끝의 꺾쇠(누르면 들어간다) */
 .notice-row {
@@ -34,14 +36,15 @@
   color: var(--color-muted);
 }
 
+/* 눌린 동안에도 같은 면 — 터치에는 호버가 없어 눌린 표시가 하나도 없었다 */
+.notice-row:active {
+  background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
+}
+
 @media (hover: hover) {
   .notice-row:hover {
     background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
   }
-}
-
-.today {
-  padding: var(--stage-pad);
 }
 
 /* 제목과 날짜가 한 줄 — 날짜는 제목을 예고하는 머리글이 아니라 이 카드의 날인(日印)이다 */
@@ -50,7 +53,7 @@
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-8);
-  margin-bottom: var(--space-12);
+  margin-bottom: var(--space-8);
 }
 
 .today-head h2 {
@@ -61,7 +64,6 @@
   flex-shrink: 0;
   font-size: var(--text-sm);
   color: var(--color-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .today-figure {
@@ -97,21 +99,157 @@
   border-left: 1px solid var(--color-line);
 }
 
-.today-rest {
+.today .btn-primary {
+  margin-top: var(--space-8);
+}
+
+/*
+ * 폰: 오늘의 주 행동은 독 바로 위 쟁반에 선다 — 무대의 주 행동과 같은 엄지 자리.
+ * 홈에서 '복습 시작'을 누른 엄지가 무대의 '정답 보기'까지 거의 움직이지 않는다.
+ * 쟁반은 떠 있는 면이 아니라 바닥의 아래 끝이다: 바닥과 같은 면 + 헤어라인 하나,
+ * 밑으로 지나가는 글은 비치지 않는다(반투명·블러는 독 하나뿐).
+ * 화면이 낮으면(가로로 눕힌 폰) 쟁반이 화면을 다 먹으므로 카드 안 제자리로 돌아간다.
+ * 높이 경계 520px은 무대 카드를 가두는 경계(base.css)와 같은 값이다 — 미디어 쿼리에는
+ * 토큰(var)을 쓸 수 없어 숫자로 적는다. 한쪽을 바꾸면 다른 쪽도 함께 바꾼다.
+ */
+@media (max-width: 768px) and (min-height: 520px) {
+  .home-action {
+    position: fixed;
+    inset: auto 0 0;
+    /* 독(nav.css, z-index 100) 바로 아래 층 — 겹치는 자리에서는 독이 위에 선다 */
+    z-index: 90;
+    /* 좌우는 독과 같은 폭(독의 좌우 여백 space-6) — 버튼과 독이 한 묶음으로 선다 */
+    padding: var(--space-6) var(--space-6)
+      calc(var(--dock-gap) + var(--dock-height) + var(--space-6));
+    background: var(--color-bg);
+    border-top: 1px solid var(--color-line);
+  }
+
+  /* 카드 안에서 받던 위 여백(.today .btn-primary 등)을 쟁반에서는 지운다 — 규칙의 순서에
+     기대지 않도록 명시도를 한 단 올린다 */
+  .home .home-action .btn {
+    max-width: calc(var(--layout-max) - var(--space-8));
+    margin: 0 auto;
+  }
+
+  /* 버튼이 쟁반으로 내려가면 오늘의 복습에는 누를 것이 남지 않는다 — 카드가 아니라
+     바닥의 머리글로 선다(쉬는 날의 .today-rest와 같은 자리, 같은 모습).
+     홈의 카드는 손에 쥘 구절 하나(새 구절)만 남는다 */
+  .panel.today {
+    margin-bottom: var(--space-12);
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .panel.today .today-head {
+    margin-bottom: var(--space-4);
+  }
+
+  /* 복귀 안내(우물) 바로 아래에 설 때 — 카드끼리의 틈이 아니라 바닥 묶음의 틈으로 */
+  .notice-row + .panel.today {
+    margin-top: var(--space-12);
+  }
+
+  /* 설치 안내(main 밖의 카드) 아래도 같은 틈 — 안내의 아래 여백(space-6)에 더한다 */
+  .install-banner ~ main .panel.today:first-child {
+    margin-top: var(--space-6);
+  }
+
+  /* 쟁반 높이만큼 바닥을 비운다 — 맨 아래 줄이 쟁반 밑에 깔리지 않게.
+     쟁반과의 틈은 진행률 묶음(.ground)의 아래 여백이 맡는다.
+     버튼은 글이 길면 줄이 는다('이어서: … · 외 N구절'은 360폭에서 두 줄, 글자를 200%로 키우면
+     세 줄). 그래서 버튼의 자리를 글자 크기를 따르는 세 줄로 셈한다(--home-tray-btn: 글줄 셋 +
+     위아래 여백 + 테두리) — 한 줄로 셈했을 때는 글자를 키우면 표의 마지막 줄이 쟁반에 가려
+     내려도 닿지 않았다. 버튼이 한 줄인 날에는 맨 아래에 그만큼 빈 자리가 남는다 */
+  html:has(.home-action) {
+    --home-tray-btn: max(
+      var(--touch-primary),
+      calc(3 * var(--text-base) * var(--leading-tight) + 2 * var(--space-6) + 2px)
+    );
+    /* 키보드로 옮겨 간 포커스가 쟁반 뒤에 숨지 않게 */
+    scroll-padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--home-tray-btn) + 2 * var(--space-6) +
+        var(--space-8)
+    );
+  }
+
+  .app:has(.home-action) {
+    padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--home-tray-btn) + 2 * var(--space-6)
+    );
+  }
+}
+
+/* 할 일이 없는 날 — 카드 없이 바닥에 두 줄. 화면의 카드는 새 구절 하나만 남는다 */
+.today-rest p {
   margin: 0;
 }
 
-.today-rest + .today-rest {
-  margin-top: var(--space-2);
+.today-rest p + p {
+  margin-top: var(--space-1);
 }
 
-.today .btn-primary {
-  margin-top: var(--space-12);
+/*
+ * 새 구절 카드의 한 구절 — 학습 1단계 카드를 줄인 모습(경로 → 장절 → 말씀 → 버튼).
+ * 이어 하던 구절은 말씀 대신 사다리 네 칸이 선다. 둘이 함께면 헤어라인 하나로 가른다.
+ */
+.learn-item + .learn-item {
+  margin-top: var(--space-8);
+  padding-top: var(--space-8);
+  border-top: 1px solid var(--color-line);
 }
 
-/* 새 구절 — 목표일 페이싱은 D-day 한 줄과 작은 숫자 묶음으로 물러서 있다 */
+.learn-item-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-8);
+  flex-wrap: wrap;
+}
+
+.learn-ref {
+  margin: 0;
+}
+
+.learn-crumb,
+.learn-step {
+  margin: 0;
+  font-size: var(--text-sm);
+  line-height: var(--leading-tight);
+  color: var(--color-muted);
+}
+
+/* 경로는 장절 위에 선다 — 무대 카드의 머리줄 자리. 긴 경로(DEP의 네 마디)도 꺾여서 제자리에 선다 */
+.learn-crumb {
+  margin-bottom: var(--space-2);
+}
+
+.learn-step {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.learn-item .ladder {
+  margin-top: var(--space-4);
+}
+
+/* 말씀 첫머리 — 목록에서 펼친 본문과 같은 크기(차례 속의 인용). 세 줄에서 말줄임 */
+.learn-preview {
+  display: -webkit-box;
+  margin: var(--space-2) 0 0;
+  overflow: hidden;
+  font-size: var(--text-md);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+/* 목표일 페이싱 — D-day 한 줄과 작은 숫자 묶음. 진행률 묶음 맨 위에 물러서 있다 */
 .goal {
-  margin: 0 0 var(--space-8);
+  margin: var(--space-4) 0 var(--space-6);
 }
 
 .goal-line {
@@ -127,11 +265,14 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
 }
 
-.panel-note {
-  margin: var(--space-8) 0 0;
+.goal-done {
+  margin: var(--space-4) 0 var(--space-6);
+}
+
+.pace-note {
+  margin: 0 0 var(--space-8);
 }
 
 /* 진행률 기록 — 바닥의 표. 과정별 한 줄을 헤어라인으로 가른다 */
@@ -140,16 +281,19 @@
 }
 
 /* 표 전체가 한 격자다 — 이름 열은 가장 긴 이름("5확신, 8동행, 60구절")에 맞춰 서고,
-   각 줄은 subgrid로 그 열을 나눠 쓴다(줄마다 따로 재면 열이 어긋나거나 이름이 잘렸다) */
+   각 줄은 subgrid로 그 열을 나눠 쓴다(줄마다 따로 재면 열이 어긋나거나 이름이 잘렸다).
+   자리가 모자라면(좁은 화면에서 글자를 키웠을 때) 이름 열이 줄어들고 이름이 줄을 바꾼다 —
+   줄어들지 못하던 때에는 표가 화면 밖으로 나가 오른쪽 수가 잘렸다 */
 .col-list {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
   column-gap: var(--space-6);
   list-style: none;
   margin: var(--space-8) 0 0;
   padding: 0;
 }
 
+/* 누르는 줄이 아니라 읽는 줄이다 — 터치 높이(44px)를 쓰지 않고 장부처럼 촘촘히 선다 */
 .col-row {
   display: grid;
   grid-column: 1 / -1;
@@ -157,8 +301,14 @@
   grid-template-columns: 9.5rem minmax(0, 1fr) 3.5rem;
   grid-template-columns: subgrid;
   align-items: center;
-  min-height: var(--touch-min);
+  padding-block: var(--space-2);
   border-top: 1px solid var(--color-line);
+}
+
+/* 과정별 막대는 트랙을 그리지 않는다 — 채운 몫만 선다. 아직 시작하지 않은 과정
+   아홉 줄에 빈 트랙이 줄지어 서면 꺼진 슬라이더처럼 보였다 */
+.col-row .progress {
+  background: transparent;
 }
 
 .col-row:last-child {
@@ -166,11 +316,9 @@
 }
 
 .col-label {
+  min-width: 0;
   font-size: var(--text-sm);
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .col-count {

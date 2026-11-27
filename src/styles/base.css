@@ -10,9 +10,12 @@ body {
   overflow-x: clip;
 }
 
-/* 스크롤바·선택 영역·입력 커서처럼 직접 그리지 않은 면도 팔레트에서 고른다 */
+/* 스크롤바·선택 영역·입력 커서처럼 직접 그리지 않은 면도 팔레트에서 고른다.
+   터치로 누를 때 브라우저가 덮는 하늘색 사각형(탭 하이라이트)은 끈다 — 눌린 표시는
+   누르는 것마다 제 :active가 맡는다(버튼은 1px 내려앉고, 줄은 한 단 밝아진다) */
 html {
   scrollbar-color: var(--color-line) var(--color-bg);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -98,7 +101,7 @@ main {
 .app-header {
   display: flex;
   align-items: center;
-  padding: var(--space-2) var(--space-1) var(--space-8);
+  padding: var(--space-2) 0 var(--space-8);
 }
 
 /* 워드마크는 눈에서만 감춘다 — 앱 이름 h1은 스크린리더에 남아 모든 화면의 첫 제목이 된다
@@ -173,9 +176,17 @@ h3 {
   min-width: 0;
 }
 
-h2 {
+/* 카드 제목의 글자. 설정의 펼친 접이식 머리(.tech-details[open] summary)도 카드 제목이라 같은
+   규칙에서 받는다 — 값을 두 곳에 적었을 때 줄 높이와 자간이 따로 놀았다 */
+h2,
+.tech-details[open] summary {
   font-size: var(--text-md);
+  font-weight: 700;
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
+}
+
+h2 {
   margin: 0 0 var(--space-6);
 }
 
@@ -192,6 +203,17 @@ h3 {
 .small {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+/* 작은 글자 문단의 위아래 여백 — 정하지 않으면 브라우저 기본값(1em)이 14px 글자에서
+   격자 밖 14px이 된다. :where라 명시도가 낮아 자리마다 정한 여백이 그대로 이긴다 */
+p:where(.small) {
+  margin-block: var(--space-6);
+}
+
+/* 괄호 묶음·날짜처럼 갈라지면 뜻이 흐려지는 짧은 덩어리 */
+.nowrap {
+  white-space: nowrap;
 }
 
 /*
@@ -221,21 +243,38 @@ h3 {
   margin-top: 0;
 }
 
+/* 설치 안내(main 밖의 우물, margin-bottom 12px) 아래에 바닥 묶음이 곧바로 설 때도 24px 틈을 지킨다.
+   main이 세로 flex라 두 여백이 겹치지 않고 12+12=24px로 더해진다 */
+.install-banner ~ main .ground:first-child {
+  margin-top: var(--space-6);
+}
+
 /* 비어 있음 — 무엇이 비었는지, 왜인지, 다음 걸음 하나. 내용 높이의 작은 카드 */
 .empty-state p {
   margin: 0 0 var(--space-2);
 }
 
-/* 화면 제목과 같은 카드 제목 — 모바일은 헤더의 화면 이름이 이미 말하므로 눈에서만
-   감추고(낭독기에는 남는다), 화면 이름이 사라지는 PC에서 보인다 */
+/* 모바일에서 눈에서만 감추는 제목 둘(낭독기에는 남는다) — 선언은 .sr-only(a11y.css)와 같다.
+   · 화면 제목과 같은 카드 제목: 헤더의 화면 이름이 이미 말한다. 화면 이름이 사라지는 PC에서 보인다
+   · 윗줄(나가기·진행·남은 수)이 있는 무대의 화면 이름: 윗줄이 머리를 맡는다. 윗줄 없이 서는
+     마침 장면(복습 완료)은 화면 이름을 그대로 둔다 */
 @media (max-width: 768px) {
-  .screen-dup {
+  /* 키보드로 내려갈 때 포커스된 요소가 하단 플로팅 독 뒤에 숨지 않게 한다 */
+  html {
+    scroll-padding-bottom: calc(var(--dock-clearance) + env(safe-area-inset-bottom, 0px));
+  }
+
+  .screen-dup,
+  .app:has(.stage > .review-top) .screen-title {
     position: absolute;
     width: 1px;
     height: 1px;
+    padding: 0;
+    margin: -1px;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+    border: 0;
   }
 
   .screen-dup + * {
@@ -255,14 +294,22 @@ h3 {
   margin: 0;
 }
 
+/* 제목 줄 바로 아래의 글은 제목 줄의 아래 여백만큼만 떨어진다(문단의 기본 위 여백을 더하지
+   않는다). :where라 명시도가 낮아 제 여백을 정한 문단은 그대로다 */
+.ground-head + :where(p) {
+  margin-top: 0;
+}
+
 /* 머리줄 오른쪽 끝의 이동 버튼 — 글자 끝이 내용의 오른쪽 가장자리와 맞도록 */
 .ground-head .btn-ghost {
   padding: var(--space-2) 0 var(--space-2) var(--space-2);
 }
 
-/* 경로 표기 — 과정 › 단원 › 묶음. 구분 기호는 화면 낭독기가 읽지 않는다 */
+/* 경로 표기 — 과정 › 단원 › 묶음. 구분 기호는 화면 낭독기가 읽지 않는다.
+   줄 높이는 어느 자리에서나 같다(머리줄, 홈, 정답의 주제 줄) — 긴 경로가 꺾여도 줄 사이가 같게 */
 .crumb {
   min-width: 0;
+  line-height: var(--leading-tight);
 }
 
 .crumb-sep {
@@ -342,19 +389,24 @@ h3 {
 .figures dd {
   margin: 0;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 /*
  * 무대(stage): 복습 카드·학습 사다리처럼 말씀 한 구절을 마주하는 화면.
- * 모바일에서는 카드가 남은 높이를 채우고 주 행동(.stage-foot)이 카드 맨 아래,
- * 엄지가 닿는 자리로 내려간다. 입력란이 있는 단계는 화면 키보드가 버튼을
- * 덮지 않도록 .stage-foot을 쓰지 않고 입력란 바로 아래에 버튼을 둔다.
+ *
+ * 카드 한 장이 화면 안에 머문다 — 앱 셸이 화면 높이에 맞춰 서고(.app:has(.stage)),
+ * 카드가 남은 높이를 채우며, 말씀이 길면 카드 안에서 흐른다. 카드가 화면을 넘쳐
+ * 페이지째 흐르던 때에는 붙어 있는 주 행동 묶음 아래로 본문이 새어 독 뒤까지 비쳤다.
+ * 윗줄(나가기·진행·남은 수)이 있는 무대에서는 모바일 헤더의 화면 이름을 눈에서만
+ * 감춘다 — 윗줄이 머리를 맡아 그 한 줄만큼 말씀이 더 선다.
+ * 입력란이 있는 단계는 화면 키보드가 버튼을 덮지 않도록 .stage-foot을 쓰지 않고
+ * 입력란 바로 아래에 버튼을 둔다.
  */
 .stage {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .stage-card {
@@ -367,23 +419,145 @@ h3 {
 }
 
 /*
- * 주 행동 묶음은 카드 아래쪽 엄지 자리에 붙어 있다. 말씀이 길어 카드가 화면을
- * 넘쳐도(긴 DEP 구절, 타이핑 감사의 diff와 정답) 독 바로 위에 남아 스크롤 없이
- * 채점할 수 있다. 밑으로 지나가는 본문은 카드와 같은 면이 덮는다 — 그래서 묶음을
- * 카드 안쪽 여백까지 펴서 칠하고, 카드 아래 모서리와 같은 곡선으로 끝낸다.
- * 내용이 짧으면 sticky가 움직일 일이 없어 전과 똑같이 카드 맨 아래에 선다.
+ * 주 행동 쟁반 — 카드 아랫단, 엄지 자리. 위의 헤어라인이 "여기부터 행동"을 가르고,
+ * 말씀이 길어 카드 안에서 흐를 때는 본문이 그 선 아래로 들어간다. 쟁반을 카드 안쪽
+ * 여백까지 펴서 카드와 같은 면으로 칠하고, 카드 아래 모서리와 같은 곡선으로 끝낸다.
  */
 .stage-foot {
   position: sticky;
-  bottom: calc(var(--dock-gap) + var(--dock-height));
+  bottom: 0;
   margin: auto calc(-1 * var(--stage-pad)) calc(-1 * var(--stage-pad));
-  padding: var(--space-8) var(--stage-pad) var(--stage-pad);
+  padding: var(--stage-pad);
   background: var(--color-panel);
+  border-top: 1px solid var(--color-line);
   border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+}
+
+/* 같은 자리를 연달아 누른 둘째 누름을 받아서 버리는 가림막(components/SettleShield.tsx가 방금 누른
+   자리에 세웠다 거둔다). 보이지 않는다. 크기는 누른 점에서 사방으로 터치 타깃 하나만큼 — 연달아 누른
+   두 누름은 그 안에 떨어진다. 독(100)과 설치한 앱의 안전 영역 덮개(200)보다 위에 선다 */
+.settle-shield {
+  position: fixed;
+  z-index: 300;
+  width: calc(2 * var(--touch-min));
+  height: calc(2 * var(--touch-min));
+  transform: translate(-50%, -50%);
 }
 
 .stage-foot > :first-child {
   margin-top: 0;
+}
+
+/* 버튼 줄이 쟁반의 첫 줄이면(앞의 알림 자리가 비었을 때도) 버튼의 위 여백을 뺀다 —
+   쟁반의 위아래 여백이 같아야 버튼이 쟁반 가운데에 선다 */
+.stage-foot > .btn-row:first-child > .btn,
+.stage-foot > [role='status']:empty + .btn-row > .btn {
+  margin-top: 0;
+}
+
+/* 쟁반이 있는 카드는 아래 여백을 쟁반이 맡는다 — 카드의 아래 여백과 쟁반의 음수 여백을
+   함께 두면, 카드 안에서 붙을 때 쟁반이 그 여백만큼 떠서 아래로 본문이 비쳤다 */
+.stage-card:has(> .stage-foot) {
+  padding-bottom: 0;
+}
+
+.stage-card:has(> .stage-foot) > .stage-foot {
+  margin-bottom: 0;
+}
+
+/* 쟁반 바로 앞의 내용은 선에서 한 칸 떨어진다(내용이 카드를 꼭 채울 때 선에 닿지 않게) */
+.stage-card > :has(+ .stage-foot) {
+  margin-bottom: var(--space-8);
+}
+
+/*
+ * 화면이 무대를 담을 만큼 높을 때만 카드를 화면 안에 가둔다. 가로로 눕힌 폰처럼
+ * 낮은 화면에서는 카드가 내용만큼 자라고 페이지가 흐른다(쟁반은 화면 아래에 붙는다).
+ * 높이 경계 520px은 홈의 주 행동 쟁반(home.css)과 같은 값이다 — 미디어 쿼리에는 토큰(var)을
+ * 쓸 수 없어 숫자로 적는다. 한쪽을 바꾸면 다른 쪽과 아래의 519.98px도 함께 바꾼다.
+ */
+@media (min-height: 520px) {
+  .app:has(.stage) {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  .app:has(.stage) main {
+    min-height: 0;
+  }
+
+  .stage-card {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+    /* 쟁반이 가리는 높이(+ 숨 한 칸) — 버튼 한 줄 쟁반: 버튼 + 위아래 여백 */
+    --foot-clear: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
+  }
+
+  /*
+   * 쟁반은 카드보다 높아지지 않는다. 알림이 뜬 쟁반(첫글자 실패 안내, 개정의 저장 실패)은 버튼
+   * 위에 글이 서너 줄 더 서서, 작은 화면에서 글자를 키우면 카드보다 높아졌다(360×640 글자
+   * 200%에서 쟁반 496px, 카드 465px) — 붙어 있는 쟁반의 아랫줄 버튼이 카드 밖으로 잘려 닿지
+   * 않았다. 넘칠 때는 쟁반 안에서 흐른다: 안내는 누른 자리에서 그대로 보이고 아랫줄은 쟁반을
+   * 내려 닿는다. 글자 100%에서는 어느 폭에서도 쟁반이 카드의 절반을 조금 넘는 데 그친다.
+   * 100%는 카드의 안쪽 높이다 — 가둔 카드의 높이는 화면이 정하므로 잴 수 있다.
+   */
+  .stage-foot {
+    /* 흐르는 상자는 flex 안에서 내용보다 작게 줄어들 수 있다 — 줄어들지 않게 못 박는다
+       (없으면 긴 말씀 아래에서 쟁반이 여백만 남기고 접힌다) */
+    flex-shrink: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
+  }
+
+  /* 버튼 두 줄 쟁반(학습의 첫글자 보드) — 버튼 둘과 그 사이 여백(.btn의 margin-top) */
+  .stage-card:has(> .stage-foot > .btn-row + .btn) {
+    --foot-clear: calc(
+      2 * var(--touch-primary) + var(--space-6) + 2 * var(--stage-pad) + var(--space-4)
+    );
+  }
+
+  /* 실패 안내가 뜬 쟁반 — 안내(.diff-score: 글줄 + 위아래 여백)와 그 아래 여백을 더한다.
+     안내는 360폭에서 두 줄이다. 더 좁은 폭에서 한 줄 늘어도 남도록 세 줄로 친다.
+     선택자는 위의 두 줄 쟁반 규칙과 명시도가 같아 뒤에 온 이 규칙이 이긴다 */
+  .stage-card:has(> .stage-foot > [role='status'] > .diff-score) {
+    --foot-clear: calc(
+      2 * var(--touch-primary) + 2 * var(--space-6) + 2 * var(--stage-pad) + var(--space-4) +
+        3 * var(--text-base) * var(--leading-normal) + 2 * var(--space-4)
+    );
+  }
+
+  /*
+   * 키보드로 옮겨 간 요소가 붙어 있는 쟁반 뒤에 숨지 않게 — 쟁반 밖의 누를 것이 쟁반
+   * 높이만큼 위에서 멈춘다. 카드의 scroll-padding으로 비우면 쟁반 안 버튼(붙어 있어 늘
+   * 그 여백 안에 선다)으로 포커스가 올 때 카드가 끝까지 밀렸다 — '본문 다시 보기'를
+   * 누르면 본문이 중간부터 열렸다.
+   */
+  .stage-card :is(a, button, input, textarea, [tabindex]):not(.stage-foot *) {
+    scroll-margin-bottom: var(--foot-clear);
+  }
+}
+
+/* 화면 이름을 눈에서 감춘 무대(위 .screen-dup 묶음)는 헤더의 자리도 비운다 */
+@media (max-width: 768px) {
+  .app:has(.stage > .review-top) .app-header {
+    padding: 0;
+  }
+}
+
+/*
+ * 낮은 모바일 화면(가로로 눕힌 작은 폰)은 카드를 가두지 않아 페이지가 흐르고, 쟁반은 화면
+ * 아래에 붙는다. 그 자리에는 독이 떠 있으므로 독 바로 위로 올린다(화면 아래에 두면 버튼이
+ * 독 뒤로 들어갔다). 높이 경계는 위의 가두기(min-height: 520px)의 바로 아래다.
+ */
+@media (max-width: 768px) and (max-height: 519.98px) {
+  .stage-foot {
+    bottom: calc(var(--dock-gap) + var(--dock-height));
+  }
 }
 
 /* 새 카드·새 단계가 놓였다는 신호 — 같은 자리에서 내용만 바뀌면 넘어간 줄 모른다 */
@@ -402,7 +576,7 @@ h3 {
 /* 데이터를 읽는 동안의 한 줄 — 순식간에 끝나는 읽기에서는 깜빡이지 않도록
    잠깐 기다렸다가 나타난다(처음부터 그려져 있고 투명도만 늦게 오른다) */
 .loading {
-  margin: var(--space-8) var(--space-1);
+  margin: var(--space-8) 0;
   animation: loading-in var(--dur-short) var(--ease-out) 200ms both;
 }
 
@@ -421,7 +595,15 @@ h3 {
  * 탭을 한 줄로 두고, 스크롤해도 탭에 닿도록 위에 붙인다.
  */
 @media (min-width: 769px) {
+  /* 키보드로 위로 올라갈 때 포커스된 요소가 sticky 헤더(상단 safe-area 포함) 뒤에 숨지 않게 한다 */
+  html {
+    scroll-padding-top: calc(
+      env(safe-area-inset-top, 0px) + var(--touch-min) + var(--space-16)
+    );
+  }
+
   .app {
+    padding-top: 0;
     padding-bottom: var(--space-12);
   }
 
@@ -430,7 +612,7 @@ h3 {
     top: 0;
     z-index: 100;
     gap: var(--space-4);
-    padding: var(--space-4) 0;
+    padding: calc(env(safe-area-inset-top, 0px) + var(--space-6)) 0 var(--space-6);
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-line);
     margin-bottom: var(--space-8);
@@ -442,6 +624,9 @@ h3 {
      * 한 줄짜리 글자는 첫·마지막 기준선이 같아서 워드마크·보조 문구는 그대로다.
      */
     align-items: last baseline;
+    /* 머리의 폭을 잴 수 있게 한다(아래의 보조 문구 규칙). PC에서만 — 모바일에서는 독이 이 안에서
+       화면에 붙어 있어(position: fixed) 가두면 독이 머리를 따라간다 */
+    container: header / inline-size;
   }
 
   .brand {
@@ -456,19 +641,23 @@ h3 {
     display: inline;
   }
 
+  /* 글자를 150% 넘게 키우면 워드마크·보조 문구·탭 넷이 한 줄에 들지 않는다 — 보조 문구가
+     두 줄로 꺾여 머리가 높아지고 탭이 열 밖으로 밀렸다. 탭에 자리를 내주고 물러난다.
+     경계 22rem은 열의 폭(--layout-max 560px에서 좌우 여백을 뺀 528px)이 글자 150%에서 되는 값이다 */
+  @container header (width < 22rem) {
+    .brand-sub {
+      display: none;
+    }
+  }
+
   .screen-title {
     display: none;
   }
 
-  /* 마우스는 엄지 영역이 없다 — 카드는 내용 높이만큼, 대신 너무 낮아 보이지 않게 */
+  /* PC도 카드가 남은 높이를 채운다 — 구절 길이에 따라 카드 높이가 달라지면 등급 버튼이
+     카드마다 자리를 옮겨 마우스가 따라가야 했다. 큰 모니터에서는 위를 막는다 */
   .stage-card {
-    flex: none;
-    min-height: 440px;
-  }
-
-  /* 독이 없으니 주 행동 묶음은 화면 아래 끝에 붙는다 */
-  .stage-foot {
-    bottom: 0;
+    max-height: var(--stage-max);
   }
 }
 

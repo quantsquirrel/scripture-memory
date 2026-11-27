@@ -23,8 +23,15 @@
   white-space: nowrap;
 }
 
-.review-count .step-of {
+.review-count .step-of,
+.learn-step .step-of {
   margin-left: var(--space-2);
+}
+
+/* 윗줄과 카드 사이에 서는 알림(다른 탭에서 바뀐 카드를 다시 출제한다는 한 줄) — 글자는
+   설정·개정의 조용한 알림(.status-msg)과 같고, 여기서는 윗줄의 아래 여백에 이어 선다 */
+.stage > .status-msg {
+  margin: 0 0 var(--space-4);
 }
 
 /* 복습 모드(타이핑/첫글자/낭송/장절) — 등불이 아니라 표지라서 하늘빛 글자 한 줄.
@@ -32,6 +39,20 @@
 .mode-tag {
   font-weight: 600;
   color: var(--color-info);
+}
+
+/*
+ * 물음 — 카드 윗단. 아래의 점선이 "아직 열리지 않은 것"의 경계다: 답을 열기 전부터
+ * 서 있고, 열리면 그 아래에서 말씀이 나타난다(물음은 자리를 지킨다).
+ */
+.prompt {
+  padding-bottom: var(--space-8);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+/* 쟁반은 제 여백(auto)으로 카드 아랫단에 내려가므로 뺀다 */
+.prompt + :not(.stage-foot) {
+  margin-top: var(--space-8);
 }
 
 /* 화면당 하나뿐인 물음 — 장절이나 주제. 답(본문)이 나타나면 본문이 주인공이다 */
@@ -69,20 +90,41 @@
 /*
  * 정답 — 낭송의 틀. TMS 낭송 순서(주제 → 장절 → 말씀 → 장절)대로 선다:
  * 여는 장절은 왼쪽, 말씀, 닫는 장절은 오른쪽 끝 — 카드 아랫단에 다시 찍힌 장절처럼.
- * 공개 전 경계는 점선(아직 열리지 않은 것의 관례).
+ * 틀은 물음과 쟁반 사이의 빈 자리를 다 차지하고, 말씀 묶음이 그 가운데에 선다 —
+ * 짧은 구절이 카드 위쪽에 몰리고 아래가 통째로 비지 않게.
  */
 .answer {
-  border-top: 1px dashed var(--color-border);
-  margin-top: var(--space-12);
-  padding-top: var(--space-10);
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   animation: reveal var(--dur-short) var(--ease-out) both;
 }
 
-@media (max-width: 768px) {
-  .answer {
-    margin-top: var(--space-8);
-    padding-top: var(--space-8);
-  }
+.prompt + .answer {
+  margin-top: 0;
+  padding-block: var(--space-8);
+}
+
+/* 채점 결과 다음에 서는 정답 — 가운데로 띄우지 않고 결과에 바로 잇는다(결과와 정답은
+   이어 읽는 한 편이다). 틀린 곳을 표시한 본문 뒤에는 헤어라인으로 가른다(위는 내가 적은
+   것, 아래는 말씀). 점선은 물음 아래 하나뿐이다 */
+.diff-view + .answer,
+.diff-score + .answer {
+  justify-content: flex-start;
+  margin-top: 0;
+  padding-block: var(--space-8);
+}
+
+.diff-view:has(.diff-words):not(:has(.diff-score.good)) + .answer {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-line);
+}
+
+/* 완벽한 타이핑 결과 — 표시할 차이가 없는 본문은 바로 아래 낭송의 틀과 같은 글이라
+   점수 한 줄만 남긴다 */
+.diff-view:has(.diff-score.good):has(+ .answer) .diff-words {
+  display: none;
 }
 
 .answer-head {
@@ -108,12 +150,11 @@
   color: var(--color-muted);
 }
 
+/* 장절은 어디서나 같은 글자다 — 물음 제목의 장절과 같은 비례 숫자, 자간 0 */
 .answer-ref {
   color: var(--color-info);
   font-weight: 600;
   margin: 0;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
 }
 
 .answer .verse {
@@ -142,7 +183,7 @@
   border-radius: var(--radius);
   padding: var(--space-1) var(--space-4);
   cursor: pointer;
-  line-height: 1.6;
+  line-height: var(--leading-normal);
   transition:
     transform var(--dur-micro) var(--ease-out),
     background-color var(--dur-micro) var(--ease-out),
@@ -167,7 +208,7 @@
   cursor: default;
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--color-warn) 80%, transparent);
-  text-decoration-thickness: 2px;
+  text-decoration-thickness: var(--space-1);
   text-underline-offset: 0.25em;
   animation: reveal var(--dur-short) var(--ease-out) both;
 }
@@ -181,6 +222,24 @@
 .fl-peeks {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+}
+
+/* 쟁반 안의 실패 안내 — 버튼 바로 위. 쟁반의 위 여백이 이미 띄우므로 제 여백은 뺀다 */
+.stage-foot [role='status'] .diff-score {
+  margin-top: 0;
+}
+
+/* 채점 결과 아래의 설명 두 줄 — 쟁반 밖, 본문의 끝 */
+.stage-notes {
+  margin-top: var(--space-6);
+}
+
+.stage-notes p {
+  margin: 0;
+}
+
+.stage-notes p + p {
+  margin-top: var(--space-2);
 }
 
 /* 학습 1단계의 낭송 규칙 — 카드 안의 옅은 우물. 띠를 두르지 않는다 */
@@ -250,51 +309,78 @@
 }
 
 /* ── 말씀 상태 개정 ─────────────────────────────────────────── */
-.recal-units {
-  margin-top: var(--space-6);
+.recal-picker-title {
+  margin: 0 0 var(--space-6);
 }
 
-/* 개정 단위 한 줄 — 목록 행. 오른쪽 꺾쇠는 "누르면 들어간다"는 표지 */
-.recal-unit {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  width: 100%;
-  background: none;
-  border: none;
+.recal-lead {
+  margin: var(--space-6) 0 0;
+}
+
+.recal-empty {
+  margin: 0 0 var(--space-6);
+}
+
+.recal-units-card {
+  padding-block: var(--space-4);
+  margin-bottom: 0;
+}
+
+.recal-units-inactive {
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--color-line);
+}
+
+.recal-unit-item {
   border-bottom: 1px solid var(--color-line);
-  color: var(--color-text);
-  font: inherit;
-  font-weight: 600;
-  padding: var(--space-4) var(--space-1);
-  cursor: pointer;
-  text-align: left;
-  transition: background-color var(--dur-micro) var(--ease-out);
 }
 
-.recal-unit:last-child {
+.recal-unit-item:last-child {
   border-bottom: none;
 }
 
-.recal-unit-name {
+/* 개정 단위 한 줄 — 줄의 모양(음수 좌우 여백, 둥근 눌림·hover 상자, 안쪽 포커스 링)은 목록의
+   구절 줄과 함께 buttons.css의 .verse-row·.recal-unit이 정한다. 여기는 이 줄만의 것 */
+.recal-unit {
+  gap: var(--space-4);
+  font-weight: 600;
+}
+
+.recal-unit-main {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-6);
+}
+
+.recal-unit-name {
   min-width: 0;
 }
 
 .recal-unit .chevron {
+  flex-shrink: 0;
   color: var(--color-muted);
 }
 
-/* 개정할 구절이 없는 단위 — 글자를 옅게, 금지 커서, 그리고 disabled 속성.
-   들어갈 곳이 없으니 꺾쇠도 내린다 */
+/* 개정할 구절이 없는 단위 — opacity로 흐리지 않고 보통 굵기·muted 글자로 물러선다 */
 .recal-unit:disabled {
   color: var(--color-muted);
-  opacity: 0.55;
+  font-weight: 400;
   cursor: not-allowed;
 }
 
-.recal-unit:disabled .chevron {
-  visibility: hidden;
+.recal-units-inactive .recal-unit {
+  width: 100%;
+  margin-inline: 0;
+  padding-inline: 0;
+  border-radius: 0;
+}
+
+.recal-units-inactive .recal-unit .chevron {
+  display: none;
 }
 
 .recal-unit-meta {
@@ -303,42 +389,83 @@
   font-variant-numeric: tabular-nums;
 }
 
-.recal-mode-tag {
-  margin: 0 0 var(--space-2);
-  font-size: var(--text-sm);
+.recal-unit-meta.has-due {
+  color: var(--color-text);
+  font-weight: 600;
 }
 
-.recal-notice,
+/* 꺼진 줄의 보조 표기는 줄의 글자색을 그대로 물려받는다 — 고대비에서 .muted가 본문색으로
+   오를 때 '0구절'만 이름보다 진해졌다 */
+.recal-unit:disabled .recal-unit-meta {
+  color: inherit;
+}
+
+.recal-prompt-ref {
+  font-weight: 600;
+}
+
+.recal-blank p {
+  margin: 0;
+}
+
+/* 본문 끝의 컨텍스트 제약 안내 — 설정의 상시 안내와 같은 조용한 읽는 우물(모양은 controls.css의
+   .setting-notice·.recal-hint 한 규칙이 정한다). 여기는 자리만: 바로 위 .answer의 아래 여백과
+   겹치지 않도록 여백은 0으로 두고, 우물이 한 덩이 더 서는 카드는 .answer의 세로 여백을 한 단
+   줄인다(쉬는 자리에서 우물이 쟁반 선에 가리지 않게) */
+.answer:has(+ .recal-hint) {
+  padding-block: var(--space-4);
+}
+
 .recal-hint {
-  margin: var(--space-4) 0 0;
+  margin: 0;
 }
 
-.recal-empty {
-  margin: var(--space-6) 0 0;
+.stage-card > .recal-hint:has(+ .stage-foot) {
+  margin-bottom: var(--space-6);
+}
+
+/* 쟁반 안 알림 — controls.css의 .stage-foot > p 보다 명시도를 높여 버튼과의 틈을 지킨다 */
+.stage-foot > p.recal-notice {
+  margin-top: 0;
+  margin-bottom: var(--space-6);
+}
+
+/* 판정 셋 — 복습의 .rating-bar와 같은 가로 한 줄 3열. 글자 크기(1rem)를 줄이지 않고
+   flex-wrap + 5.5rem 기준으로 360px 이상에서는 균등 3열, 320px·큰 글자(150%+)에서는
+   2+1(아랫줄 전폭) 또는 1열로 스스로 줄바꿈해 반칸 외톨이 버튼 없이 높이를 맞춘다 */
+.recal-verdicts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
 .recal-verdicts .btn {
+  flex: 1 1 5.5rem;
+  width: auto;
+  min-width: 0;
   display: flex;
+  flex-direction: column-reverse;
   align-items: center;
-  gap: var(--space-4);
-  text-align: left;
-}
-
-.recal-verdicts .btn:first-child {
+  justify-content: center;
+  gap: var(--space-2);
   margin-top: 0;
+  padding: var(--space-4) var(--space-2);
+  text-align: center;
+  text-wrap: balance;
 }
 
-@media (max-width: 560px) {
-  .stage-foot:has(.recal-verdicts) {
-    padding-top: var(--space-4);
-    padding-bottom: var(--space-4);
-  }
+/* 감사 차례는 두 행동의 무게가 다르다(주 진행 + 파괴적 강등) — 전폭 2줄로 가른다 */
+.recal-verdicts.is-audit {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
 
-  .recal-verdicts .btn {
-    min-height: var(--touch-min);
-    padding-block: var(--space-4);
-    margin-top: var(--space-4);
-  }
+.recal-verdicts.is-audit .btn {
+  flex: none;
+  width: 100%;
+  flex-direction: row;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-8);
 }
 
 /* 키보드 단축키 표지 — 터치 기기에서는 누를 키가 없으니 감춘다 */
@@ -351,7 +478,7 @@
   font-family: inherit;
   font-size: var(--text-xs);
   font-weight: 600;
-  line-height: 1.6;
+  line-height: var(--leading-normal);
   text-align: center;
   color: var(--color-muted);
 }
@@ -374,11 +501,6 @@
   .key-hint {
     display: none;
   }
-
-  .recal-verdicts .btn {
-    justify-content: center;
-    text-align: center;
-  }
 }
 
 /* 판정 버튼의 상태색 테두리 — a11y.css의 일괄 경계색(.btn:not(...))보다 구체적이어야
@@ -395,20 +517,21 @@
   border-color: var(--color-bad);
 }
 
-/* 개정 결과 — 판정 셋을 나란히 센다. 칸 위의 짧은 상태색 선이 어느 판정인지 가리킨다 */
+/* 개정 결과 — 판정 셋을 나란히 센다. 칸 위의 상태색 선이 판정을 가리키고, 숫자는 크고
+   굵게(.stat-value)·단위는 한 단 가볍게 세운다(설정의 기록과 같은 굵기) */
 .recal-summary {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
-  margin: var(--space-12) 0 var(--space-4);
+  gap: var(--space-6);
+  margin: var(--space-10) 0 0;
   text-align: left;
 }
 
 .recal-summary > div {
   display: flex;
   flex-direction: column;
-  padding: var(--space-4) var(--space-4) 0;
-  border-top: 2px solid var(--tally-color, var(--color-line));
+  padding: var(--space-4) 0 0;
+  border-top: var(--space-1) solid var(--tally-color, var(--color-line));
 }
 
 .recal-summary dt {
@@ -419,19 +542,34 @@
 
 .recal-summary dd {
   margin: auto 0 0;
-  padding-top: var(--space-1);
-  font-size: var(--text-xl);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
+  padding-top: var(--space-2);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.recal-summary .is-zero dd {
+  color: var(--color-muted);
+}
+
+.recal-done-notes {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-line);
+  text-align: left;
+}
+
+.recal-done-notes p {
+  margin: 0;
+}
+
+.recal-done-notes p + p {
+  margin-top: var(--space-4);
 }
 
 @media (max-width: 380px) {
   .recal-summary {
-    gap: var(--space-2);
-  }
-
-  .recal-summary > div {
-    padding-inline: var(--space-2);
+    gap: var(--space-4);
   }
 }
 
@@ -445,10 +583,4 @@
 
 .recal-summary .tally-forgotten {
   --tally-color: var(--color-bad);
-}
-
-@media (hover: hover) {
-  .recal-unit:not(:disabled):hover {
-    background-color: color-mix(in srgb, var(--color-panel-alt) 45%, transparent);
-  }
 }
