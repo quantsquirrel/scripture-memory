@@ -14,6 +14,10 @@ import {
 import { gradeRef } from '../../domain/ref'
 import { Answer } from './Answer'
 
+/** 타이핑 감사의 입력란 이름과 채점 버튼 — 소개 장면의 감사 카드도 같은 글자를 쓴다 */
+export const TYPING_LABEL = '말씀을 입력하세요 (구두점 무시)'
+export const GRADE_ACTION = '채점'
+
 /** 등급 확정 콜백 — 증거(accuracy/peeks)를 반드시 함께 넘긴다 */
 export type RateFn = (
   r: Rating,
@@ -135,7 +139,7 @@ export function TypingMode({
     return (
       <>
         <label className="muted small" htmlFor="review-typing">
-          말씀을 입력하세요 (구두점 무시)
+          {TYPING_LABEL}
         </label>
         <div className="typing-field">
           <textarea
@@ -170,7 +174,7 @@ export function TypingMode({
             setGrade(gradeTyping(verse.text, attempt))
           }}
         >
-          채점
+          {GRADE_ACTION}
         </button>
       </>
     )

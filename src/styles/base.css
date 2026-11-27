@@ -132,7 +132,7 @@ main {
   letter-spacing: -0.01em;
 }
 
-/* Ivan 워드마크 — i는 앱 아이콘의 i를 줄인 SVG 마크다(기하는 App.tsx). 후광 없는 금색 점을
+/* Ivan 워드마크 — i는 앱 아이콘의 i를 줄인 SVG 마크다(기하는 components/Wordmark.tsx). 후광 없는 금색 점을
    기둥 정중앙에 올리고, 기둥은 'van'의 x높이·굵기에 맞춰 기준선에 선다.
    자간을 벌리는 곳은 이 워드마크 하나뿐이다(라벨·태그는 자간을 벌리지 않는다) */
 .brand-wordmark {

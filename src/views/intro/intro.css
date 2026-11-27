@@ -1,0 +1,482 @@
+/*
+ * 소개 장면 — 첫 실행에 한 번 뜨는 두 축 모션(DESIGN.md '소개 장면'). 이 파일은 장면 조각과 함께
+ * 따로 떨어져 장면을 열 때만 받는다(첫 화면 CSS에 들지 않는다).
+ *
+ * 부품은 앱의 것을 그대로 쓴다: 워드마크(.brand-wordmark), 카드(.panel·.card-head·.mode-tag·.prompt),
+ * 입력란(.typing-input), 주 버튼(.btn-primary), 채점 결과(DiffView), 등급 칸(RatingChoices), 숫자
+ * 묶음(.figures), 우물(.callout). 여기 적는 것은 장면 판 위의 자리와, 시안이 앱 부품과 다르게 정한
+ * 곳의 장면 범위 덮어쓰기뿐이다 — 복습 화면의 같은 부품은 바뀌지 않는다.
+ *
+ * 움직임은 Intro.tsx가 시각 t마다 transform·opacity(와 다 사라진 것의 visibility)만 적는다.
+ * 그래프는 SVG 경로를 갈아 그린다. CSS 애니메이션·전이는 쓰지 않는다 — 앱 부품이 가져오는 것도
+ * 장면 안에서는 끈다(아래).
+ */
+
+/* 장면 판의 크기 — 앱 화면에 없는 장면 고유의 치수라 토큰이 아니라 여기 한 곳에 이름을 붙인다 */
+.intro {
+  /* 윗줄: 건너뛰기 한 줄(터치 높이 + 위아래 숨) */
+  --intro-topbar: calc(var(--touch-min) + 2 * var(--space-4));
+  /* 1장·4장 워드마크 — 앱 머리의 워드마크와 같은 기하를 크게 */
+  --intro-wordmark-lg: calc(var(--space-24) + var(--space-12));
+  --intro-wordmark-md: calc(var(--space-24) - var(--space-2));
+  /* 3장 그래프의 높이 */
+  --intro-chart: calc(5 * var(--space-24) + var(--space-16));
+  /* 4장 두 축의 그림 칸 — 그림 폭 = 칸 폭, 높이는 그 절반 */
+  --intro-axis-viz: calc(var(--space-24) + var(--space-12));
+
+  position: fixed;
+  inset: 0;
+  /* 하단 독(100)보다 위, 설치한 앱의 상태바 덮개(200)보다 아래 — 덮개는 장면 위에서도 상태바를 지킨다 */
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* 아래 안전 영역(홈 인디케이터) 위에서 끝난다 — 판의 높이는 이 안에서 잰다 */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/*
+ * 장면의 움직임은 재생기 하나가 시각 t로 적는다. 재사용하는 앱 부품의 CSS 애니메이션·전이(채점 점수
+ * 띠의 reveal, 버튼·등급 칸의 transform 전이 등)가 살아 있으면 둘이 겹친다: 애니메이션의 끝값이
+ * 인라인 opacity를 이겨 점수 띠가 페이드 없이 튀어나오고, 전이가 매 프레임의 transform을 120ms씩
+ * 늦게 따라온다. 부품 쪽 규칙과 명시도를 다투지 않도록 장면 안에서는 important로 끈다.
+ */
+.intro *,
+.intro *::before,
+.intro *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* 장면이 떠 있는 동안 뒤의 문서가 흐르지 않게 */
+html:has(.intro) {
+  overflow: hidden;
+}
+
+/* 대화 상자 자체에 포커스를 두어 낭독기가 이름과 요약을 읽게 한다. 누르는 것이 아니라 링은 없다 */
+.intro:focus {
+  outline: none;
+}
+
+.intro-topbar {
+  flex: none;
+  width: min(var(--layout-max), calc(100% - 2 * var(--space-8)));
+  height: calc(var(--intro-topbar) + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+/* 건너뛰기 — 앱의 보조 버튼을 내용 폭으로 */
+.intro .intro-skip {
+  width: auto;
+  margin: 0;
+  padding-block: 0;
+  font-size: var(--text-sm);
+}
+
+.intro-viewport {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* 장면은 한 열(최대 560px) 안의 판에 놓고, 화면이 낮으면 판을 통째로 줄인다(높이·배율은 Intro.tsx) */
+.intro-frame {
+  position: relative;
+  flex: none;
+  width: min(var(--layout-max), calc(100vw - 2 * var(--space-8)));
+  transform-origin: top center;
+}
+
+/* 글꼴을 받고 자리를 재기 전에는 장면을 그리지 않는다(네 장면이 한꺼번에 비치지 않게). '시작하기'는
+   그동안 포커스·낭독·누름에도 잡히지 않는다 — 건너뛰기만 서 있다 */
+.intro:not([data-ready]) :is(.intro-frame, .intro-lamp) {
+  opacity: 0;
+}
+
+.intro:not([data-ready]) .intro-cta {
+  visibility: hidden;
+}
+
+/* 자리를 잴 때만 움직임을 걷어 낸다 — 재는 값은 움직임과 무관한 판 위의 자리다 */
+.intro.is-measuring :is([data-fx], .intro-frame, .rate-suggest) {
+  transform: none !important;
+}
+
+.intro [data-fx] {
+  will-change: transform, opacity;
+}
+
+.intro-scene {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 장면 안의 글줄은 브라우저 기본 여백 없이 — 자리는 아래 규칙과 부품 제 규칙이 정한다 */
+:where(.intro-scene) :is(p, h2, h3, ul, dl, dd) {
+  margin: 0;
+  padding: 0;
+}
+
+:where(.intro-scene) ul {
+  list-style: none;
+}
+
+.intro-title {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.015em;
+}
+
+.intro-lede {
+  margin-top: var(--space-4);
+  line-height: var(--leading-normal);
+  color: var(--color-muted);
+}
+
+.intro-note {
+  margin-top: var(--space-8);
+  line-height: var(--leading-normal);
+}
+
+.intro-foot {
+  margin-top: var(--space-4);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+  color: var(--color-muted);
+}
+
+/* 워드마크 감싸개는 줄 상자를 만들지 않는다 — 본문 행간(1.6)의 줄이 서면 워드마크 위아래가 벌어진다 */
+.intro-wm {
+  display: flex;
+}
+
+/* 워드마크의 기둥은 기준선에서 자라난다 */
+.intro .brand-i-icon rect {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+/* ── 1장: 등불과 워드마크 ── */
+.intro-s1 {
+  align-items: center;
+  justify-content: center;
+  padding-bottom: calc(2 * var(--space-24));
+}
+
+.intro-s1 .intro-wm {
+  font-size: var(--intro-wordmark-lg);
+}
+
+.intro-s1-sub {
+  margin-top: var(--space-12);
+  line-height: var(--leading-tight);
+  color: var(--color-muted);
+}
+
+/* ── 2장: 축자 객관 채점 — 앱의 타이핑 감사 카드 ── */
+.intro-s2,
+.intro-s3 {
+  justify-content: center;
+  padding-bottom: var(--space-12);
+}
+
+.intro .intro-card {
+  margin: var(--space-12) 0 0;
+  padding: var(--stage-pad);
+}
+
+.intro-work {
+  position: relative;
+}
+
+.intro-typing {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+/* 앱의 빈 입력란은 다섯 줄 높이지만 장면 판에는 세 줄로 선다(시안) */
+.intro .typing-input {
+  min-height: calc(3lh + 2 * var(--space-6) + 2px);
+}
+
+.intro-ch {
+  opacity: 0;
+}
+
+/* 채점 버튼: 꺼진 등불(아래)과 켜진 등불(위)을 겹쳐 두고 위의 불투명도만 바꾼다 */
+.intro-grade {
+  position: relative;
+  margin-top: var(--space-6);
+}
+
+.intro .intro-grade .btn {
+  margin-top: 0;
+}
+
+.intro .intro-grade .intro-grade-lit {
+  position: absolute;
+  inset: 0;
+}
+
+/* 채점 결과 — 시안은 범례 줄 없이 점수와 본문만 세운다 */
+.intro .diff-score {
+  margin-top: 0;
+}
+
+.intro .diff-words {
+  margin: var(--space-4) 0 0;
+}
+
+.intro .diff-legend {
+  display: none;
+}
+
+/* 등급 칸: 제안 없는 칸 넷(아래) 위에 제안 칸 하나(위)를 겹쳐 두고 위의 불투명도만 바꾼다 */
+.intro-rating {
+  display: grid;
+}
+
+.intro-rating > * {
+  grid-area: 1 / 1;
+}
+
+.intro .intro-suggest .rate:not(.suggested) {
+  visibility: hidden;
+}
+
+/* ── 3장: FSRS 간격 반복 ── */
+.intro-chart {
+  position: relative;
+  margin-top: var(--space-16);
+  height: var(--intro-chart);
+}
+
+.intro-chart svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.intro-hair {
+  stroke: var(--color-line);
+  stroke-width: 1;
+}
+
+.intro-ghost {
+  fill: none;
+  stroke: var(--color-muted);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 2 4;
+}
+
+.intro-ivan {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.intro-lab {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: var(--text-xs);
+  line-height: 1;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 숫자 묶음 — 앱의 .figures를 네 칸 격자로. 회차마다 값을 겹쳐 두고 불투명도로 바꾼다 */
+.intro .intro-readout {
+  display: grid;
+  grid-template-columns: 0.72fr 1.18fr 0.92fr 1.3fr;
+  margin-top: var(--space-12);
+}
+
+.intro .intro-readout > div {
+  padding: 0 var(--space-6);
+}
+
+.intro .intro-readout > div:first-child {
+  padding-left: 0;
+}
+
+.intro .intro-readout dt {
+  line-height: var(--leading-normal);
+}
+
+.intro .intro-readout dd {
+  position: relative;
+  height: calc(var(--text-md) * 1.5 + var(--space-1));
+  margin-top: var(--space-1);
+}
+
+.intro-readout dd span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.intro-tone-good {
+  color: var(--color-ok);
+}
+
+.intro-tone-warn {
+  color: var(--color-warn);
+}
+
+.intro-tone-bad {
+  color: var(--color-bad);
+}
+
+/* ── 4장: 두 축을 한 장에 ── */
+.intro-s4 {
+  align-items: stretch;
+}
+
+.intro-s4-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-bottom: var(--space-8);
+}
+
+.intro-s4-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.intro-s4 .intro-wm {
+  font-size: var(--intro-wordmark-md);
+}
+
+.intro-hero {
+  margin-top: var(--space-12);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.intro-course {
+  margin-top: var(--space-4);
+  line-height: var(--leading-tight);
+  color: var(--color-muted);
+}
+
+.intro-axes {
+  margin-top: var(--space-20);
+}
+
+.intro-axes li {
+  display: grid;
+  grid-template-columns: var(--intro-axis-viz) 1fr;
+  align-items: center;
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.intro-axes li:last-child {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.intro-axis-viz {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--touch-min);
+}
+
+.intro-axis-viz.verse {
+  margin: 0;
+  font-size: var(--text-xl);
+  line-height: 1;
+}
+
+.intro-axis-viz svg {
+  width: var(--intro-axis-viz);
+  height: calc(var(--intro-axis-viz) / 2);
+  overflow: visible;
+}
+
+.intro-spark-ivan {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+}
+
+.intro-spark-ghost {
+  fill: none;
+  stroke: var(--color-muted);
+  stroke-width: 1.25;
+  stroke-dasharray: 1.5 3;
+  stroke-linecap: round;
+}
+
+.intro-axis-name {
+  font-weight: 700;
+  line-height: var(--leading-tight);
+}
+
+.intro-axis-desc {
+  margin-top: var(--space-2);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  color: var(--color-muted);
+}
+
+/* 우물 — 학습 1단계의 낭송 규칙(.callout)과 같은 면, 글줄은 한 단 촘촘히(시안) */
+.intro .intro-link {
+  margin: var(--space-8) 0 0;
+  line-height: var(--leading-normal);
+}
+
+.intro .intro-cta {
+  flex: none;
+  margin: 0 0 var(--space-8);
+}
+
+/* ── 등불: 장면을 건너다니는 하나뿐인 금색 ── */
+.intro-lamp {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform, opacity;
+}
+
+.intro-lamp span {
+  position: absolute;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  will-change: transform, opacity;
+}
