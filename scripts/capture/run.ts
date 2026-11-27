@@ -27,6 +27,7 @@ import {
   fixtures,
   measure,
   type Metric,
+  park,
   position,
   Session,
   settle,
@@ -289,6 +290,8 @@ async function capture(
     page.on('pageerror', (e) => into.pageErrors.push(`${theme}: ${e.message}`))
     if (state.contrast) await page.emulateMedia({ contrast: 'more' })
     await state.run(new Session(page, base))
+    // 누른 자리에 남은 마우스는 자동 조작의 흔적이다 — 일부러 올린 상태가 아니면 치우고 찍는다
+    if (!state.hover) await park(page)
     for (const vp of viewportsOf(state).filter((v) => (v === 'pc') !== phone)) {
       const size = VIEWPORTS[vp]
       await page.setViewportSize(size)

@@ -182,7 +182,7 @@ export const FOCUS: StateDef[] = [
   },
 ]
 
-const hover = { screen: 'hover', pcOnly: true, view: 'keep' } as const
+const hover = { screen: 'hover', pcOnly: true, view: 'keep', hover: true } as const
 
 export const HOVER: StateDef[] = [
   {
