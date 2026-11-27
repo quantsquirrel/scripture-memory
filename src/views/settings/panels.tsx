@@ -429,7 +429,7 @@ export function DataPanel({
   )
 }
 
-export function AboutPanel() {
+export function AboutPanel({ onReplayIntro }: { onReplayIntro: () => void }) {
   return (
     <section className="ground">
       <h2>정보</h2>
@@ -459,6 +459,10 @@ export function AboutPanel() {
           <dd>주제 → 장절 → 말씀 → 장절.</dd>
         </div>
       </dl>
+      {/* 첫 실행에 한 번 저절로 뜬 소개 장면(두 축)을 다시 연다 — 오늘의 주 행동이 아니라 보조 버튼 */}
+      <button type="button" className="btn" onClick={onReplayIntro}>
+        소개 다시 보기
+      </button>
     </section>
   )
 }

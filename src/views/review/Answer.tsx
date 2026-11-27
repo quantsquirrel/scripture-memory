@@ -1,9 +1,10 @@
 import { Crumb } from '../../components/Crumb'
 import { crumbOf, topicOf, topicOrdinalOf, type VerseEntry } from '../../data/verses'
-import type { StoredCard } from '../../domain/card'
+import type { Direction, StoredCard } from '../../domain/card'
 
-export function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
-  if (sc.direction === 'topic') {
+/** 카드 윗단의 물음 — 무엇을 묻는지는 카드의 방향(direction)만으로 정해진다 */
+export function Prompt({ direction, verse }: { direction: Direction; verse: VerseEntry }) {
+  if (direction === 'topic') {
     const { nth, total } = topicOrdinalOf(verse)
     return (
       <div className="prompt">
@@ -23,7 +24,7 @@ export function Prompt({ sc, verse }: { sc: StoredCard; verse: VerseEntry }) {
       </div>
     )
   }
-  if (sc.direction === 'ref') {
+  if (direction === 'ref') {
     return (
       <div className="prompt">
         <h2 className="prompt-main">{verse.ref}</h2>

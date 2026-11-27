@@ -33,7 +33,13 @@ import {
 
 const message = (e: unknown): string => (e instanceof Error ? e.message : String(e))
 
-export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
+export function Settings({
+  onRecalibrate,
+  onReplayIntro,
+}: {
+  onRecalibrate: () => void
+  onReplayIntro: () => void
+}) {
   const data = useSettingsData()
   const [msg, setMsg] = useState<StatusNote | null>(null)
   const [resetMsg, setResetMsg] = useState<StatusNote | null>(null)
@@ -239,7 +245,7 @@ export function Settings({ onRecalibrate }: { onRecalibrate: () => void }) {
         onRecalibrate={onRecalibrate}
       />
 
-      <AboutPanel />
+      <AboutPanel onReplayIntro={onReplayIntro} />
     </div>
   )
 }

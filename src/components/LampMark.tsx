@@ -1,10 +1,13 @@
-/** 후광 고리 — 바깥에서 안으로 겹칠수록 진해져 번짐이 계단 없이 이어진다 */
-const HALO: readonly (readonly [radius: number, opacity: number])[] = [
+/** 후광 고리 — 바깥에서 안으로 겹칠수록 진해져 번짐이 계단 없이 이어진다. 소개 장면의 등불도 같은 고리를 두른다 */
+export const LAMP_HALO: readonly (readonly [radius: number, opacity: number])[] = [
   [31, 0.04],
   [26, 0.06],
   [21, 0.09],
   [16.5, 0.16],
 ]
+
+/** 등불 알맹이의 반지름 — 후광 고리는 이것의 몇 배로 번진다 */
+export const LAMP_CORE_R = 11.5
 
 /**
  * 등불 — 워드마크 i의 점(앱 아이콘과 같은 금색 점)에 옅은 후광을 두른 것. 복습을 마치거나
@@ -15,10 +18,10 @@ const HALO: readonly (readonly [radius: number, opacity: number])[] = [
 export function LampMark() {
   return (
     <svg className="lamp" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
-      {HALO.map(([r, opacity]) => (
+      {LAMP_HALO.map(([r, opacity]) => (
         <circle key={r} cx="32" cy="32" r={r} fill="var(--color-accent)" opacity={opacity} />
       ))}
-      <circle cx="32" cy="32" r="11.5" fill="var(--color-accent)" />
+      <circle cx="32" cy="32" r={LAMP_CORE_R} fill="var(--color-accent)" />
     </svg>
   )
 }

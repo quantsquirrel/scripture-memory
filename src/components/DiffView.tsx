@@ -14,10 +14,7 @@ export function DiffView({ grade, target }: { grade: TypingGrade; target: string
   const summary = describe(grade)
   return (
     <div className="diff-view">
-      <div
-        className={`diff-score ${grade.perfect ? 'good' : grade.accuracy >= 0.9 ? 'warn' : 'bad'}`}
-        role="status"
-      >
+      <div className={`diff-score ${scoreTone(grade)}`} role="status">
         {grade.perfect
           ? '완벽합니다! (word-perfect)'
           : `정확도 ${Math.round(grade.accuracy * 100)}%`}
@@ -39,6 +36,11 @@ export function DiffView({ grade, target }: { grade: TypingGrade; target: string
       )}
     </div>
   )
+}
+
+/** 채점 결과의 상태색 — 완벽하면 ok, 등급 '어려움'의 문턱(90%) 이상이면 warn, 그 밖은 bad */
+export function scoreTone(grade: TypingGrade): 'good' | 'warn' | 'bad' {
+  return grade.perfect ? 'good' : grade.accuracy >= 0.9 ? 'warn' : 'bad'
 }
 
 /** 색으로만 표현되던 차이를 문장으로 — 스크린리더가 읽을 텍스트 대안 */
