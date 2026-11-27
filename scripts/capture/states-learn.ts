@@ -11,10 +11,22 @@ import {
   seed,
   verse,
 } from './seed'
-import type { Session } from './session'
+import { type Session, settle } from './session'
 import { scrollCard } from './states-review'
 
 const stage = { screen: 'learn', stage: true } as const
+
+/**
+ * 무대 카드의 스타일을 한 번 다시 계산하게 한다 — 쓰이지 않는 사용자 속성을 적을 뿐이라 보이는 것은 그대로다.
+ * 등장한 뒤에 스타일이 다시 계산된 카드는 Chromium이 다르게 그려, 모서리의 안티에일리어싱이 1~3/255
+ * 달라진다. 그 재계산이 실행에 따라 일어나기도 아니기도 하는 상태에서 미리 한 번 일으켜 둔다.
+ */
+async function restyleCard(s: Session): Promise<void> {
+  await settle(s.page)
+  await s.page.locator('.stage-card').evaluate((card) => {
+    card.style.setProperty('--capture-restyled', '1')
+  })
+}
 
 /** 1단계에서 시작해 2단계 보드까지 */
 async function toBoard(s: Session, v: string): Promise<void> {
@@ -101,6 +113,8 @@ export const LEARN: StateDef[] = [
       await s.seed(graduate(['D4-28a']))
       await s.open('#/learn/T1-17a')
       await s.button('타이핑 검증으로 건너뛰기').waitFor()
+      // 이 카드는 그 재계산이 기기가 바쁠 때 열두 번에 한 번쯤만 일어나, PC·390 그림의 카드 모서리가 흔들렸다
+      await restyleCard(s)
       await scrollCard(s, '.callout:has(button)')
     },
   },
