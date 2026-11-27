@@ -171,6 +171,33 @@ test.describe('첫 실행 소개', () => {
     await expect(skipButton(page)).toBeVisible()
   })
 
+  test('처음부터 숨은 탭으로 열리면 보일 때까지 재생을 시작하지 않는다', async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => true })
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'hidden',
+      })
+    })
+    await pauseClock(page)
+    await page.goto(BASE)
+    await introReady(page)
+    await page.clock.runFor(5000)
+    // 숨은 5초를 재생했다면 2장(2.4초~)에 가 있다
+    await expect(page.locator('[data-part="s2"]')).toBeHidden()
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => false })
+      Object.defineProperty(document, 'visibilityState', {
+        configurable: true,
+        get: () => 'visible',
+      })
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await page.clock.runFor(1000)
+    await expect(page.locator('[data-part="s1"]')).toBeVisible()
+    await expect(page.locator('[data-part="s2"]')).toBeHidden()
+  })
+
   test.describe('글꼴을 받는 동안', () => {
     test.use({ serviceWorkers: 'block' })
 
