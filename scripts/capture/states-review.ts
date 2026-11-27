@@ -15,7 +15,7 @@ import {
   seed,
   verse,
 } from './seed'
-import type { Session } from './session'
+import { type Session, settle } from './session'
 
 const FILLER_IDS = ['AS2a', 'AS3a', 'AS4a']
 
@@ -49,8 +49,11 @@ export async function openReview(s: Session, sd: Seed, mode: string): Promise<vo
 /**
  * 무대 카드를 안에서 내린다 — 긴 말씀은 페이지가 아니라 카드 안에서 흐른다.
  * 맨 아래로, 또는 고른 요소가 보이는 데까지. 폭이 바뀌어 다시 짜여도(390 → 360) 그 자리를 지킨다.
+ * 글꼴이 다 실려 글줄이 선 뒤에 자리를 잡는다 — 먼저 잡으면 대체 글꼴로 짠 짧은 본문에서 잰 자리에
+ * 멈춰, 글꼴이 실리며 늘어난 본문의 끝까지 내려가지 않았다(기기가 바쁠 때).
  */
 export async function scrollCard(s: Session, selector?: string): Promise<void> {
+  await settle(s.page)
   await s.page.locator('.stage-card').evaluate((card, target) => {
     const place = () => {
       if (target === null) card.scrollTo(0, card.scrollHeight)

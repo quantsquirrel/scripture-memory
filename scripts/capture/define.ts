@@ -41,6 +41,8 @@ export interface StateDef {
   stage?: boolean
   /** PC 폭만 — 폰에는 hover가 없다(hover: none) */
   pcOnly?: boolean
+  /** 마우스를 올린 모습을 찍는다 — run()이 올려 둔 마우스를 그림 직전에 화면 밖으로 치우지 않는다 */
+  hover?: boolean
   /** 뷰포트 캡처 전 스크롤: 'top'(기본), 요소 CSS 선택자, 'focus'(포커스한 요소), 'keep' */
   view?: string
   /** 'relay': 연동 서버 주소(VITE_PAIRING_RELAY_URL)를 넣은 빌드에서 */

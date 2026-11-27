@@ -21,6 +21,8 @@ export function fixtures(f: Fixtures): void {
   try {
     if (f.theme === 'auto') localStorage.removeItem('theme')
     else localStorage.setItem('theme', f.theme)
+    // 첫 실행 소개는 빈 기기의 첫 화면을 덮는다 — 이미 띄웠다는 표시를 e2e와 같은 값으로 넣어 건너뛴다
+    localStorage.setItem('intro-seen', '1')
   } catch {
     // 저장소가 막힌 문서(about:blank 등)
   }
@@ -209,6 +211,16 @@ export class Session {
   async see(text: string | RegExp): Promise<void> {
     await this.page.getByText(text).first().waitFor()
   }
+}
+
+/**
+ * 마우스를 화면 밖으로 치운다 — 창을 떠난 것과 같아서 어떤 요소도 :hover가 아니게 된다.
+ * 상태를 만드느라 누른 자리에 마우스가 남으면 그 자리에 선 버튼이 hover 채움을 띤 채 찍힌다.
+ * 그것도 누른 자리를 0.4초 덮는 앱의 가림막(SettleShield)이 걷히기 앞이냐 뒤냐에 따라 갈려서,
+ * 같은 빌드의 PC 그림이 실행마다 달랐다. 누른 적 없는 페이지에는 아무 이벤트도 가지 않는다.
+ */
+export async function park(page: Page): Promise<void> {
+  await page.mouse.move(-1, -1)
 }
 
 /**
