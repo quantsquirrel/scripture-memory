@@ -48,6 +48,7 @@ diff -r -q -x '*.html' /tmp/a /tmp/b && echo 같다    # 또는 compare.ts /tmp/
 
 - 시계 `2026-11-24 09:00 KST`(`seed.ts`의 `NOW`, `clock.setFixedTime`), 타임존 Asia/Seoul. 시드의 due·기록 시각도 NOW에서 잰 거리다
 - `Math.random`(복습 큐 셔플이 due 순을 그대로 두게 — 가장 이른 카드가 첫 장), `crypto.getRandomValues`·`randomUUID`(연동 코드)
+- 첫 실행 소개(`src/views/intro`)는 건너뛴다: 빈 기기의 첫 화면을 덮으므로, 이 기기에서 이미 띄웠다는 표시(`localStorage`의 `intro-seen`)를 e2e(`playwright.config.ts`)와 같은 값으로 넣어 둔다. 소개 장면 자체는 아직 상태 목록에 없다
 - 움직임: 모든 애니메이션·전환이 처음부터 0초(끝난 모습 그대로). 입력 커서는 숨긴다
 - 글꼴: 레이아웃 뒤 `document.fonts`가 다 실릴 때까지 기다린다(unicode-range 조각)
 - 래스터: Chromium을 `--disable-partial-raster --disable-gpu-rasterization --disable-lcd-text --force-color-profile=srgb`로 띄운다(없으면 PC 그림의 테두리 안티에일리어싱이 실행마다 몇 픽셀씩 달랐다)

@@ -21,6 +21,8 @@ export function fixtures(f: Fixtures): void {
   try {
     if (f.theme === 'auto') localStorage.removeItem('theme')
     else localStorage.setItem('theme', f.theme)
+    // 첫 실행 소개는 빈 기기의 첫 화면을 덮는다 — 이미 띄웠다는 표시를 e2e와 같은 값으로 넣어 건너뛴다
+    localStorage.setItem('intro-seen', '1')
   } catch {
     // 저장소가 막힌 문서(about:blank 등)
   }
