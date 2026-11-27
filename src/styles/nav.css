@@ -41,7 +41,6 @@
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
   transition:
     color var(--dur-micro) var(--ease-out),
     background-color var(--dur-micro) var(--ease-out);

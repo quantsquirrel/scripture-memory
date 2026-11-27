@@ -57,6 +57,15 @@
   background: var(--color-panel);
 }
 
+/* 한 줄 입력란(장절, 연동 코드, 토큰, 날짜, 숫자, 선택)은 어느 화면에서나 주 버튼과 같은
+   높이로 선다 — 입력란 바로 아래에 버튼이 서는 자리가 많아 둘의 높이가 같아야 한 묶음으로
+   읽힌다. 요소 이름을 함께 적어 a11y.css의 최소 높이(44px)보다 앞선다 */
+input.ref-input,
+select.ref-input {
+  min-height: var(--touch-primary);
+  padding-block: var(--space-4);
+}
+
 /* 날짜·숫자 값은 짧다 — 패널 폭만큼 늘이지 않고 내용 폭에 맞춘다. */
 .ref-input[type='date'] {
   display: block;
@@ -91,8 +100,7 @@
   -webkit-appearance: none;
   appearance: none;
   margin-top: 0;
-  min-height: var(--touch-primary);
-  padding: var(--space-4) var(--space-20) var(--space-4) var(--space-6);
+  padding-right: var(--space-20);
   cursor: pointer;
 }
 
@@ -109,7 +117,7 @@
    좁은 화면이나 큰 글자(150%+)에서는 내용 폭에 맞춰 스스로 한 열로 내린다.
    최소 기준 폭(10rem · 8rem)은 rem 단위라 글자 배율을 따라가고, 360px 100%에서도
    '복습 정착 기간 (일)' 이름표가 한 줄에 들어 두 칸의 윗변이 나란히 맞는다.
-   date 입력의 달력 아이콘 높이 차이를 흡수하도록 두 칸 높이를 --touch-primary(48px)로 맞춘다 */
+   두 칸의 높이는 한 줄 입력란의 공용 높이(위의 input.ref-input)가 맞춘다 */
 .field-row {
   display: flex;
   flex-wrap: wrap;
@@ -135,8 +143,6 @@
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  min-height: var(--touch-primary);
-  padding: var(--space-4) var(--space-6);
 }
 
 @media (hover: hover) {

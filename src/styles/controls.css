@@ -169,6 +169,11 @@
   outline-offset: calc(-1 * var(--space-1));
 }
 
+/* 눌린 동안에도 같은 면(홈의 개정 안내 줄과 같다) — 터치에는 호버가 없다 */
+.install-action:active {
+  background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
+}
+
 .install-action .chevron {
   flex-shrink: 0;
   color: var(--color-muted);
@@ -223,16 +228,21 @@
   line-height: var(--leading-normal);
 }
 
-/* 늘 떠 있는 제약 안내(예: 연동 서버 미설정) — 읽는 우물(panel-alt + md 반경, 테두리 없음)에
-   muted 작은 글자로 내려앉혀 조작부보다 물러선다 */
-.setting-notice {
-  margin: 0 0 var(--space-8);
+/* 작은 읽는 우물 — 설정의 늘 떠 있는 제약 안내(예: 연동 서버 미설정)와 말씀 상태 개정의
+   컨텍스트 안내. 읽는 우물(panel-alt + md 반경, 테두리 없음)에 muted 작은 글자로 내려앉혀
+   조작부보다 물러선다. 모양은 여기 한 곳에서 정하고, 자리(여백)는 화면마다 제 규칙이 정한다 */
+.setting-notice,
+.recal-hint {
   padding: var(--space-4) var(--space-6);
   border-radius: var(--radius);
   background: var(--color-panel-alt);
   color: var(--color-muted);
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+.setting-notice {
+  margin: 0 0 var(--space-8);
 }
 
 /* 설정의 완료·진행·만료 알림 — 상자 없이 조작 바로 아래 서는 조용한 한 줄.
@@ -278,8 +288,9 @@
   margin-top: 0;
 }
 
-/* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게. 점선 테두리는 "아직 쓰이지
-   않은 한 번짜리"라는 표지다(정답 공개 전 점선과 같은 관례) */
+/* 연동 코드 — 다른 기기에서 보고 옮겨 칠 수 있게 크게(스케일의 가장 큰 단, 홈의 큰 숫자와
+   같은 크기. 화면 폭을 따라 늘지 않는다). 점선 테두리는 "아직 쓰이지 않은 한 번짜리"라는
+   표지다(정답 공개 전 점선과 같은 관례) */
 .pair-code-box {
   text-align: center;
   margin: var(--space-4) 0 var(--space-6);
@@ -290,7 +301,7 @@
 
 .pair-code {
   display: block;
-  font-size: clamp(var(--text-3xl), 10vw, calc(var(--text-3xl) * 1.5));
+  font-size: var(--text-3xl);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.16em;
@@ -309,14 +320,16 @@
   width: auto;
   display: inline-block;
   margin-top: var(--space-6);
-  padding-inline: var(--space-12);
+  /* 내용 폭으로 서는 버튼의 좌우 여백 — 위험 구역의 '초기화'와 같다 */
+  padding-inline: var(--space-10);
 }
 
 .pair-input {
   letter-spacing: 0.12em;
 }
 
-/* 기록 — 숫자 두 개(.figures)의 값. 지표는 물러서므로 큰 숫자도 본문색, 단위는 보통 굵기 */
+/* 기록과 개정 결과의 큰 숫자 — 지표는 물러서므로 큰 숫자도 본문색이다. 숫자만 한 단 크고
+   굵으며(700), 뒤의 단위는 숫자 묶음의 값과 같은 굵기(600)로 선다 */
 .stat-value {
   font-size: var(--text-xl);
   font-weight: 700;

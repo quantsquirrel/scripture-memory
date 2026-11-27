@@ -36,6 +36,11 @@
   color: var(--color-muted);
 }
 
+/* 눌린 동안에도 같은 면 — 터치에는 호버가 없어 눌린 표시가 하나도 없었다 */
+.notice-row:active {
+  background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
+}
+
 @media (hover: hover) {
   .notice-row:hover {
     background: color-mix(in srgb, var(--color-panel-alt), var(--color-text) 5%);
@@ -153,18 +158,26 @@
   }
 
   /* 쟁반 높이만큼 바닥을 비운다 — 맨 아래 줄이 쟁반 밑에 깔리지 않게.
-     쟁반과의 틈은 진행률 묶음(.ground)의 아래 여백이 맡는다 */
-  .app:has(.home-action) {
-    padding-bottom: calc(
-      var(--dock-gap) + var(--dock-height) + var(--touch-primary) + 2 * var(--space-6)
+     쟁반과의 틈은 진행률 묶음(.ground)의 아래 여백이 맡는다.
+     버튼은 글이 길면 줄이 는다('이어서: … · 외 N구절'은 360폭에서 두 줄, 글자를 200%로 키우면
+     세 줄). 그래서 버튼의 자리를 글자 크기를 따르는 세 줄로 셈한다(--home-tray-btn: 글줄 셋 +
+     위아래 여백 + 테두리) — 한 줄로 셈했을 때는 글자를 키우면 표의 마지막 줄이 쟁반에 가려
+     내려도 닿지 않았다. 버튼이 한 줄인 날에는 맨 아래에 그만큼 빈 자리가 남는다 */
+  html:has(.home-action) {
+    --home-tray-btn: max(
+      var(--touch-primary),
+      calc(3 * var(--text-base) * var(--leading-tight) + 2 * var(--space-6) + 2px)
+    );
+    /* 키보드로 옮겨 간 포커스가 쟁반 뒤에 숨지 않게 */
+    scroll-padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--home-tray-btn) + 2 * var(--space-6) +
+        var(--space-8)
     );
   }
 
-  /* 키보드로 옮겨 간 포커스가 쟁반 뒤에 숨지 않게 */
-  html:has(.home-action) {
-    scroll-padding-bottom: calc(
-      var(--dock-gap) + var(--dock-height) + var(--touch-primary) + 2 * var(--space-6) +
-        var(--space-8)
+  .app:has(.home-action) {
+    padding-bottom: calc(
+      var(--dock-gap) + var(--dock-height) + var(--home-tray-btn) + 2 * var(--space-6)
     );
   }
 }
@@ -268,10 +281,12 @@
 }
 
 /* 표 전체가 한 격자다 — 이름 열은 가장 긴 이름("5확신, 8동행, 60구절")에 맞춰 서고,
-   각 줄은 subgrid로 그 열을 나눠 쓴다(줄마다 따로 재면 열이 어긋나거나 이름이 잘렸다) */
+   각 줄은 subgrid로 그 열을 나눠 쓴다(줄마다 따로 재면 열이 어긋나거나 이름이 잘렸다).
+   자리가 모자라면(좁은 화면에서 글자를 키웠을 때) 이름 열이 줄어들고 이름이 줄을 바꾼다 —
+   줄어들지 못하던 때에는 표가 화면 밖으로 나가 오른쪽 수가 잘렸다 */
 .col-list {
   display: grid;
-  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr) max-content;
   column-gap: var(--space-6);
   list-style: none;
   margin: var(--space-8) 0 0;
@@ -301,11 +316,9 @@
 }
 
 .col-label {
+  min-width: 0;
   font-size: var(--text-sm);
   font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .col-count {

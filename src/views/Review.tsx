@@ -135,8 +135,9 @@ export function Review({ onExit }: { onExit: () => void }) {
         </span>
         <span className="review-count">남은 카드 {remaining}</span>
       </div>
+      {/* 알림의 글자는 설정·개정의 조용한 알림과 같다(.status-msg) */}
       {notice !== null && (
-        <p className="muted small" role="status">
+        <p className="status-msg" role="status">
           {notice}
         </p>
       )}

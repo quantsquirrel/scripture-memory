@@ -82,7 +82,7 @@ CHECKS: list[tuple[str, str, float, str]] = [
     ("muted", "panel", AA_TEXT, "보조 텍스트 / 패널 (.muted .small 다수)"),
     ("muted", "panel2", AA_TEXT, "보조 텍스트 / 입력 배경 (.fl-dots, .rate-interval)"),
     ("accent", "bg", AA_UI, "포커스 링 / 페이지 배경 (바닥에 선 버튼·뒤로 가기)"),
-    ("accent", "panel", AA_TEXT, "활성 세그먼트 글자 / 패널 (.seg.active, .col-tab.active)"),
+    ("accent", "panel", AA_TEXT, "활성 세그먼트 글자 / 패널 (.seg.active)"),
     ("accent-text", "accent", AA_TEXT, "주 버튼 라벨·제안 표지 / 금색 채움 (.rate-suggest)"),
     ("blue", "panel", AA_TEXT, "장절·모드 표지·묶음 제목 / 패널 (.answer-ref, .mode-tag, .group-title)"),
     ("blue", "bg", AA_TEXT, "장절 하늘빛 / 페이지 배경 (바닥에 선 글자 대비 여유)"),

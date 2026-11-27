@@ -10,9 +10,12 @@ body {
   overflow-x: clip;
 }
 
-/* 스크롤바·선택 영역·입력 커서처럼 직접 그리지 않은 면도 팔레트에서 고른다 */
+/* 스크롤바·선택 영역·입력 커서처럼 직접 그리지 않은 면도 팔레트에서 고른다.
+   터치로 누를 때 브라우저가 덮는 하늘색 사각형(탭 하이라이트)은 끈다 — 눌린 표시는
+   누르는 것마다 제 :active가 맡는다(버튼은 1px 내려앉고, 줄은 한 단 밝아진다) */
 html {
   scrollbar-color: var(--color-line) var(--color-bg);
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -173,9 +176,17 @@ h3 {
   min-width: 0;
 }
 
-h2 {
+/* 카드 제목의 글자. 설정의 펼친 접이식 머리(.tech-details[open] summary)도 카드 제목이라 같은
+   규칙에서 받는다 — 값을 두 곳에 적었을 때 줄 높이와 자간이 따로 놀았다 */
+h2,
+.tech-details[open] summary {
   font-size: var(--text-md);
+  font-weight: 700;
+  line-height: var(--leading-tight);
   letter-spacing: -0.01em;
+}
+
+h2 {
   margin: 0 0 var(--space-6);
 }
 
@@ -192,6 +203,12 @@ h3 {
 .small {
   font-size: var(--text-sm);
   line-height: var(--leading-normal);
+}
+
+/* 작은 글자 문단의 위아래 여백 — 정하지 않으면 브라우저 기본값(1em)이 14px 글자에서
+   격자 밖 14px이 된다. :where라 명시도가 낮아 자리마다 정한 여백이 그대로 이긴다 */
+p:where(.small) {
+  margin-block: var(--space-6);
 }
 
 /* 괄호 묶음·날짜처럼 갈라지면 뜻이 흐려지는 짧은 덩어리 */
@@ -277,14 +294,22 @@ h3 {
   margin: 0;
 }
 
+/* 제목 줄 바로 아래의 글은 제목 줄의 아래 여백만큼만 떨어진다(문단의 기본 위 여백을 더하지
+   않는다). :where라 명시도가 낮아 제 여백을 정한 문단은 그대로다 */
+.ground-head + :where(p) {
+  margin-top: 0;
+}
+
 /* 머리줄 오른쪽 끝의 이동 버튼 — 글자 끝이 내용의 오른쪽 가장자리와 맞도록 */
 .ground-head .btn-ghost {
   padding: var(--space-2) 0 var(--space-2) var(--space-2);
 }
 
-/* 경로 표기 — 과정 › 단원 › 묶음. 구분 기호는 화면 낭독기가 읽지 않는다 */
+/* 경로 표기 — 과정 › 단원 › 묶음. 구분 기호는 화면 낭독기가 읽지 않는다.
+   줄 높이는 어느 자리에서나 같다(머리줄, 홈, 정답의 주제 줄) — 긴 경로가 꺾여도 줄 사이가 같게 */
 .crumb {
   min-width: 0;
+  line-height: var(--leading-tight);
 }
 
 .crumb-sep {
@@ -408,6 +433,17 @@ h3 {
   border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
 }
 
+/* 같은 자리를 연달아 누른 둘째 누름을 받아서 버리는 가림막(components/SettleShield.tsx가 방금 누른
+   자리에 세웠다 거둔다). 보이지 않는다. 크기는 누른 점에서 사방으로 터치 타깃 하나만큼 — 연달아 누른
+   두 누름은 그 안에 떨어진다. 독(100)과 설치한 앱의 안전 영역 덮개(200)보다 위에 선다 */
+.settle-shield {
+  position: fixed;
+  z-index: 300;
+  width: calc(2 * var(--touch-min));
+  height: calc(2 * var(--touch-min));
+  transform: translate(-50%, -50%);
+}
+
 .stage-foot > :first-child {
   margin-top: 0;
 }
@@ -458,6 +494,24 @@ h3 {
     scrollbar-color: var(--color-line) transparent;
     /* 쟁반이 가리는 높이(+ 숨 한 칸) — 버튼 한 줄 쟁반: 버튼 + 위아래 여백 */
     --foot-clear: calc(var(--touch-primary) + 2 * var(--stage-pad) + var(--space-4));
+  }
+
+  /*
+   * 쟁반은 카드보다 높아지지 않는다. 알림이 뜬 쟁반(첫글자 실패 안내, 개정의 저장 실패)은 버튼
+   * 위에 글이 서너 줄 더 서서, 작은 화면에서 글자를 키우면 카드보다 높아졌다(360×640 글자
+   * 200%에서 쟁반 496px, 카드 465px) — 붙어 있는 쟁반의 아랫줄 버튼이 카드 밖으로 잘려 닿지
+   * 않았다. 넘칠 때는 쟁반 안에서 흐른다: 안내는 누른 자리에서 그대로 보이고 아랫줄은 쟁반을
+   * 내려 닿는다. 글자 100%에서는 어느 폭에서도 쟁반이 카드의 절반을 조금 넘는 데 그친다.
+   * 100%는 카드의 안쪽 높이다 — 가둔 카드의 높이는 화면이 정하므로 잴 수 있다.
+   */
+  .stage-foot {
+    /* 흐르는 상자는 flex 안에서 내용보다 작게 줄어들 수 있다 — 줄어들지 않게 못 박는다
+       (없으면 긴 말씀 아래에서 쟁반이 여백만 남기고 접힌다) */
+    flex-shrink: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line) transparent;
   }
 
   /* 버튼 두 줄 쟁반(학습의 첫글자 보드) — 버튼 둘과 그 사이 여백(.btn의 margin-top) */
@@ -570,6 +624,9 @@ h3 {
      * 한 줄짜리 글자는 첫·마지막 기준선이 같아서 워드마크·보조 문구는 그대로다.
      */
     align-items: last baseline;
+    /* 머리의 폭을 잴 수 있게 한다(아래의 보조 문구 규칙). PC에서만 — 모바일에서는 독이 이 안에서
+       화면에 붙어 있어(position: fixed) 가두면 독이 머리를 따라간다 */
+    container: header / inline-size;
   }
 
   .brand {
@@ -582,6 +639,15 @@ h3 {
 
   .brand-sub {
     display: inline;
+  }
+
+  /* 글자를 150% 넘게 키우면 워드마크·보조 문구·탭 넷이 한 줄에 들지 않는다 — 보조 문구가
+     두 줄로 꺾여 머리가 높아지고 탭이 열 밖으로 밀렸다. 탭에 자리를 내주고 물러난다.
+     경계 22rem은 열의 폭(--layout-max 560px에서 좌우 여백을 뺀 528px)이 글자 150%에서 되는 값이다 */
+  @container header (width < 22rem) {
+    .brand-sub {
+      display: none;
+    }
   }
 
   .screen-title {

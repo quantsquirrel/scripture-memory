@@ -1,6 +1,16 @@
 /** 새 구절 학습 (src/views/Learn.tsx, src/views/learn/*) */
 import { peek, type StateDef, vary } from './define'
-import { ALL_IDS, graduate, LONG, oneOff, partial, progress, seed, verse } from './seed'
+import {
+  ALL_IDS,
+  graduate,
+  idsOfCollection,
+  LONG,
+  oneOff,
+  partial,
+  progress,
+  seed,
+  verse,
+} from './seed'
 import type { Session } from './session'
 import { scrollCard } from './states-review'
 
@@ -47,11 +57,12 @@ export const LEARN: StateDef[] = [
   {
     id: 'learn-missing',
     screen: 'learn',
-    title: '없는 구절 id: 구절을 찾을 수 없습니다',
+    title: '없는 구절 id: 구절을 찾을 수 없습니다 카드와 홈으로',
     how: '#/learn/NOPE',
     run: async (s) => {
       await s.open('#/learn/NOPE')
-      await s.see('구절을 찾을 수 없습니다.')
+      await s.page.getByRole('heading', { name: '구절을 찾을 수 없습니다' }).waitFor()
+      await s.button('홈으로').waitFor()
     },
   },
   ...vary(
@@ -264,6 +275,23 @@ export const LEARN: StateDef[] = [
       // 다음 구절은 효과가 비동기로 고른다 — 고를 것이 없어 버튼이 끝내 서지 않는지 잠시 본다
       await s.page.waitForTimeout(400)
       if ((await s.button(/^다음 구절:/).count()) > 0) throw new Error('다음 구절 버튼이 섰다')
+    },
+  },
+  {
+    ...stage,
+    id: 'learn-graduated-resume',
+    title: "4단계 졸업 장면 — 강등한 구절이 남아 다음 걸음이 '이어서: …'",
+    how: 'LV1a를 첫글자 단계(강등)로 둔 채 LV3a를 타이핑 완벽으로 졸업',
+    run: async (s) => {
+      await s.seed(
+        seed(graduate([...idsOfCollection('AS'), 'LV2a'], { cards: false }), {
+          learning: [progress('LV1a', 'firstLetter'), progress('LV3a', 'typing')],
+        }),
+      )
+      await s.open('#/learn/LV3a')
+      await gradeTyping(s, verse('LV3a').text, 'good')
+      await s.click('졸업하고 복습 큐에 추가')
+      await s.button(/^이어서:/).waitFor()
     },
   },
 ]
