@@ -96,8 +96,34 @@ const GRADE: Record<Rating, Grade> = {
  * RatedCard만 받는다. 즉 "카드 상태 변경"과 "증거 레코드"는 타입으로 묶여 있다.
  */
 function applyRating(s: SerializedCard, rating: Rating, now: Date): SerializedCard {
-  const { card } = scheduler.next(reviveCard(s), now, GRADE[rating])
-  return serializeCard(card)
+  return serializeCard(nextCard(scheduler, reviveCard(s), now, rating))
+}
+
+const DAY_MS = 86_400_000
+
+/**
+ * 등급 하나를 매긴 다음 카드 — 등급 칸 미리보기(previewWith)·실제 적용(applyRating)·소개 장면
+ * 예상치(forecastReviews)가 모두 이 함수를 지난다. 미리보기와 적용이 다른 계산을 타면 등급 칸이
+ * 실제와 다른 간격을 보인다.
+ *
+ * ts-fsrs 5.4는 복습 상태 카드에서만 '쉬움' 간격을 '좋음'+1일 이상으로 올리고, 학습·재학습 카드가
+ * 좋음·쉬움 둘 다로 졸업할 때는 각자 안정도로만 간격을 잡는다. 안정도가 낮으면 둘 다 1일이 된다.
+ * Anki(FSRS 학습 카드의 쉬움 졸업)와 같이 그때 쉬움을 좋음+1일로 올린다. 바꾸는 것은 간격과
+ * 기한뿐이고, 안정도·난이도 등은 ts-fsrs가 낸 그대로다.
+ */
+function nextCard(
+  f: ReturnType<typeof makeScheduler>,
+  card: Card,
+  now: Date,
+  rating: Rating,
+): Card {
+  const next = f.next(card, now, GRADE[rating]).card
+  const learning = card.state === State.Learning || card.state === State.Relearning
+  if (rating !== 4 || !learning || next.state !== State.Review) return next
+  const good = f.next(card, now, FsrsRating.Good).card
+  if (good.state !== State.Review || next.scheduled_days > good.scheduled_days) return next
+  const days = good.scheduled_days + 1
+  return { ...next, scheduled_days: days, due: new Date(now.getTime() + days * DAY_MS) }
 }
 
 const RATED = Symbol('domain/rated')
@@ -197,7 +223,7 @@ function previewWith(
   now: Date,
 ): Record<Rating, string> {
   const preview = (r: Rating): string =>
-    formatInterval(f.next(card, now, GRADE[r]).card.due.getTime() - now.getTime())
+    formatInterval(nextCard(f, card, now, r).due.getTime() - now.getTime())
   return { 1: preview(1), 2: preview(2), 3: preview(3), 4: preview(4) }
 }
 
@@ -236,8 +262,6 @@ export interface ReviewForecast {
   readonly unreviewedRecall: number
 }
 
-const DAY_MS = 86_400_000
-
 /** 예상치의 출발 시각. 흔들림이 없으면 결과는 출발 시각과 무관하다 — 계산을 순수하게 두려고 고정한다 */
 const FORECAST_START = new Date(Date.UTC(2026, 0, 1))
 
@@ -257,7 +281,7 @@ let forecaster: ReturnType<typeof makeScheduler> | undefined
 export function forecastReviews(ratings: readonly Rating[]): ReviewForecast {
   const f = (forecaster ??= makeScheduler(DEFAULT_RETENTION, false))
   let card = createEmptyCard(FORECAST_START)
-  for (let i = 0; i < 2; i++) card = f.next(card, card.due, GRADE[3]).card
+  for (let i = 0; i < 2; i++) card = nextCard(f, card, card.due, 3)
   const today = card.due.getTime()
   const day = (d: Date) => Math.round((d.getTime() - today) / DAY_MS)
   const preview = Object.freeze(previewWith(f, card, card.due))
@@ -266,7 +290,7 @@ export function forecastReviews(ratings: readonly Rating[]): ReviewForecast {
   let afterFirst: Card | undefined
   for (const rating of ratings) {
     const at = card.due
-    card = f.next(card, at, GRADE[rating]).card
+    card = nextCard(f, card, at, rating)
     afterFirst ??= card
     reviews.push(
       Object.freeze({
